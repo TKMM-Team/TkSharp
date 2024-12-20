@@ -9,6 +9,7 @@
 
     <ItemGroup>
       <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+      <PackageReference Include="LibHac" Version="0.19.0" />
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
       <PackageReference Include="Revrs" Version="1.0.6" />
       <PackageReference Include="SarcLibrary" Version="3.2.0" />

@@ -10,6 +10,17 @@
         <ApplicationIcon>Assets/icon.ico</ApplicationIcon>
     </PropertyGroup>
 
+	<PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
+		<PublishSingleFile>true</PublishSingleFile>
+		<TrimmerSingleWarn>false</TrimmerSingleWarn>
+		<PublishTrimmed>true</PublishTrimmed>
+		<TrimMode>partial</TrimMode>
+	</PropertyGroup>
+
+    <PropertyGroup>
+        <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+    </PropertyGroup>
+
     <ItemGroup>
         <AvaloniaResource Include="Assets\**"/>
     </ItemGroup>
