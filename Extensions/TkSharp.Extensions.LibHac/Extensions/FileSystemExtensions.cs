@@ -17,6 +17,13 @@ public static class FileSystemExtensions
 {
     public static SwitchFs GetSwitchFs(this IStorage storage, string filePath, KeySet keys)
     {
+        if (storage is ConcatenationStorage) {
+            if (IsXci(storage)) {
+                return OpenXci(keys, storage);
+            }
+            return OpenNsp(keys, storage);
+        }
+
         ReadOnlySpan<char> extension = Path.GetExtension(filePath.AsSpan());
 
         return extension switch {
@@ -25,7 +32,13 @@ public static class FileSystemExtensions
             _ => throw new ArgumentException($"Unsupported file extension: '{extension}'", nameof(filePath)),
         };
     }
-
+    private static bool IsXci(IStorage storage)
+    {
+        Span<byte> buffer = stackalloc byte[4];
+        storage.Read(0x100, buffer).ThrowIfFailure();
+        return buffer.SequenceEqual("HEAD"u8);
+    }
+    
     private static SwitchFs OpenNsp(KeySet keys, IStorage storage)
     {
         SharedRef<IStorage> storageShared = new(storage);

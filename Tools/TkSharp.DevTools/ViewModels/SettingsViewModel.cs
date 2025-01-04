@@ -6,6 +6,7 @@ using LibHac.Common.Keys;
 using Microsoft.Extensions.Logging;
 using TkSharp.Core;
 using TkSharp.DevTools.Helpers.Ryujinx;
+using Avalonia.Platform.Storage;
 
 namespace TkSharp.DevTools.ViewModels;
 
@@ -30,6 +31,12 @@ public partial class SettingsPageViewModel : ObservableObject
 
     [ObservableProperty]
     private string? _gameDumpFolderPath;
+
+    [ObservableProperty]
+    private string? _sdCardRootPath;
+
+    [ObservableProperty]
+    private string? _splitFilesPath;
 
     public static SettingsPageViewModel Load()
     {
