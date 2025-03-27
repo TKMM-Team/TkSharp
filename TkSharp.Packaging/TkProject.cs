@@ -172,4 +172,43 @@ public partial class TkProject(string folderPath) : ObservableObject
         using Stream output = writer.OpenWrite(thumbnailFilePath);
         output.Write(buffer.Span);
     }
+
+    public async ValueTask PackageOptimizer(Stream output, CancellationToken ct = default)
+    {
+        TkLog.Instance.LogInformation("Packaging TotK Optimizer from project '{ModName}'", Mod.Name);
+
+        ArchiveModWriter writer = new();
+        await BuildMetadata(writer, ct: ct);
+        
+        using MemoryStream contentArchiveOutput = new();
+        writer.Compile(contentArchiveOutput);
+
+        TkPackWriter.Write(output, Mod, contentArchiveOutput.GetSpan());
+        
+        TkLog.Instance.LogInformation("Packaged '{ModName}'", Mod.Name);
+    }
+
+    public async ValueTask BuildMetadata(ITkModWriter writer, ITkSystemSource? systemSource = null, CancellationToken ct = default)
+    {
+        PackThumbnails(writer);
+        
+        FolderModSource source = new(FolderPath);
+        TkOptimizerBuilder builder = new(source, writer, systemSource);
+        Mod.Changelog = await builder.BuildMetadataAsync(ct);
+
+        foreach (TkModOption option in Mod.OptionGroups.SelectMany(group => group.Options)) {
+            if (!TryGetPath(option, out string? optionPath)) {
+                continue;
+            }
+            
+            FolderModSource optionSource = new(optionPath);
+            string id = option.Id.ToString();
+            writer.SetRelativeFolder(id);
+            
+            TkOptimizerBuilder optionBuilder = new(optionSource, writer, systemSource?.GetRelative(id));
+            option.Changelog = await optionBuilder.BuildMetadataAsync(ct);
+        }
+        
+        TkLog.Instance.LogInformation("Metadata build completed");
+    }
 }
