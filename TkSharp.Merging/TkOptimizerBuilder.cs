@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using TkSharp.Core;
 using TkSharp.Core.Models;
 
@@ -9,6 +10,7 @@ public class TkOptimizerBuilder
     private readonly ITkModWriter _writer;
     private readonly Dictionary<string, TkChangelogEntry> _entries = [];
     private readonly TkChangelog _changelog;
+    private readonly object _entriesLock = new();
 
     public TkOptimizerBuilder(ITkModSource source, ITkModWriter writer, ITkSystemSource? systemSource)
     {
@@ -68,7 +70,11 @@ public class TkOptimizerBuilder
                 }
                 return;
 
-            case { Root: "romfs" or "extras" }:
+            case { Root: "romfs" }:
+                AddChangelogMetadata(path, ref canonical, ChangelogEntryType.Copy, zsDictionaryId: -1);
+                goto Copy;
+                
+            case { Root:"extras" }:
                 goto Copy;
         }
 
@@ -77,6 +83,18 @@ public class TkOptimizerBuilder
     Copy:
         using (Stream output = _writer.OpenWrite(Path.Combine(path.Root.ToString(), canonical))) {
             content.CopyTo(output);
+        }
+    }
+
+    private void AddChangelogMetadata(in TkPath path, ref string canonical, ChangelogEntryType type, int zsDictionaryId)
+    {
+        lock (_entriesLock) {
+            ref TkChangelogEntry? entry = ref CollectionsMarshal.GetValueRefOrAddDefault(_entries, canonical, out bool exists);
+            if (!exists || entry is null) {
+                entry = new TkChangelogEntry(
+                    canonical, type, path.Attributes, zsDictionaryId
+                );
+            }
         }
     }
 
