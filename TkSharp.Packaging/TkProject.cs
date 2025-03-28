@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.Logging;
 using TkSharp.Core;
 using TkSharp.Core.Extensions;
+using TkSharp.Core.IO;
 using TkSharp.Core.IO.ModSources;
 using TkSharp.Core.Models;
 using TkSharp.Merging;
@@ -193,8 +194,9 @@ public partial class TkProject(string folderPath) : ObservableObject
         PackThumbnails(writer);
         
         FolderModSource source = new(FolderPath);
-        TkOptimizerBuilder builder = new(source, writer, systemSource);
-        Mod.Changelog = await builder.BuildMetadataAsync(ct);
+        var nullRom = new NullTkRom();
+        TkChangelogBuilder builder = new(source, writer, nullRom, systemSource);
+        Mod.Changelog = await builder.BuildAsync(ct);
 
         foreach (TkModOption option in Mod.OptionGroups.SelectMany(group => group.Options)) {
             if (!TryGetPath(option, out string? optionPath)) {
@@ -205,8 +207,8 @@ public partial class TkProject(string folderPath) : ObservableObject
             string id = option.Id.ToString();
             writer.SetRelativeFolder(id);
             
-            TkOptimizerBuilder optionBuilder = new(optionSource, writer, systemSource?.GetRelative(id));
-            option.Changelog = await optionBuilder.BuildMetadataAsync(ct);
+            TkChangelogBuilder optionBuilder = new(optionSource, writer, nullRom, systemSource?.GetRelative(id));
+            option.Changelog = await optionBuilder.BuildAsync(ct);
         }
         
         TkLog.Instance.LogInformation("Metadata build completed");
