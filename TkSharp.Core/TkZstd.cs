@@ -120,6 +120,10 @@ public class TkZstd
 
     public static bool IsCompressed(in Stream stream)
     {
+        if (stream.Length < sizeof(uint)) {
+            return false;
+        }
+        
         bool result = stream.Read<uint>() == ZSTD_MAGIC;
         stream.Seek(-sizeof(uint), SeekOrigin.Current);
         return result;
