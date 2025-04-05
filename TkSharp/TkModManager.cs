@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
+using CommunityToolkit.HighPerformance;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.Logging;
+using Revrs.Extensions;
 using TkSharp.Core;
 using TkSharp.Core.Extensions;
 using TkSharp.Core.Models;
@@ -151,14 +153,33 @@ public sealed partial class TkModManager : ObservableObject, ITkSystemProvider
             return;
         }
         
+    Retry:
         Directory.CreateDirectory(DataFolderPath);
+
+        string currentDbFile = Path.Combine(DataFolderPath, "state.db");
+        string backupDbFile = Path.Combine(DataFolderPath, "state.db.bak");
+
+        try {
+            File.Copy(currentDbFile, backupDbFile, true);
+        }
+        catch (Exception ex) {
+            TkLog.Instance.LogError(ex, "Failed to create backup. The application data cannot not be saved.");
+            return;
+        }
 
         try {
             using MemoryStream ms = new();
             TkModManagerSerializer.Write(ms, this);
 
-            using FileStream fs = File.Create(Path.Combine(DataFolderPath, "state.db"));
-            fs.Write(ms.GetSpan());
+            Span<byte> buffer = ms.ToArray();
+
+            if (buffer.Read<uint>() != TkModManagerSerializer.MAGIC) {
+                TkLog.Instance.LogError("Mod manager state became corrupted in memory and was not saved. Retrying...");
+                goto Retry;
+            }
+
+            using FileStream fs = File.Create(currentDbFile);
+            fs.Write(buffer);
         }
         catch (IOException ex) {
             TkLog.Instance.LogWarning(ex, "State save failed with an IO exception (likely concurrent saving).");

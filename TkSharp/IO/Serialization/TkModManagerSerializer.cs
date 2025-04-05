@@ -7,7 +7,7 @@ namespace TkSharp.IO.Serialization;
 
 internal static class TkModManagerSerializer
 {
-    private const uint MAGIC = 0x4D4D4B54;
+    public const uint MAGIC = 0x4D4D4B54;
     private const uint VERSION = 0x10100000;
     
     public static void Write(in Stream output, TkModManager manager)
