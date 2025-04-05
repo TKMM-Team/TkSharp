@@ -89,7 +89,7 @@ public sealed class RsdbRowChangelogBuilder<TKey>(string keyName) : ITkChangelog
     private bool TryGetKeyHash(in BymlMap row, out ulong keyHash, [MaybeNullWhen(false)] out TKey key)
     {
         if (!row.TryGetValue(_keyName, out Byml? keyEntry)) {
-            keyHash = default;
+            keyHash = 0;
             key = default;
             return false;
         }
