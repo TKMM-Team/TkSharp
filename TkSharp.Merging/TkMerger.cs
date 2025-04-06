@@ -182,10 +182,12 @@ public sealed class TkMerger
     {
         using RentedBuffer<byte> fakeVanilla = _rom.Zstd.Decompress(@base);
 
-        IEnumerable<ArraySegment<byte>> changelogs = TkChangelogBuilder.CreateChangelogsExternal(changelog.Canonical, fakeVanilla.Segment, targets.Select(stream => {
-            using RentedBuffer<byte> alloc = _rom.Zstd.Decompress(stream);
-            return alloc.Segment;
-        }), changelog.Attributes);
+        IEnumerable<ArraySegment<byte>> changelogs = TkChangelogBuilder.CreateChangelogsExternal(
+            changelog.Canonical, flags: default, fakeVanilla.Segment, targets.Select(stream => {
+                using RentedBuffer<byte> alloc = _rom.Zstd.Decompress(stream);
+                return alloc.Segment;
+            }), changelog.Attributes
+        );
 
         merger.Merge(changelog, changelogs, fakeVanilla.Segment, output);
     }
@@ -386,7 +388,7 @@ public sealed class TkMerger
                 : entry.Versions[0];
             return Path.Combine("romfs", $"{entry.Canonical}{targetVersion}");
         }
-        
+
         return Path.Combine("romfs", $"{entry.Canonical}{GetBestVersion(_rom.GameVersion, entry.Versions)}");
     }
 

@@ -12,7 +12,7 @@ namespace TkSharp.Merging.ChangelogBuilders;
 
 public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilder>, ITkChangelogBuilder
 {
-    public bool Build(string canonical, in TkPath path, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
+    public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
     {
         BymlMap changelog = [];
         BymlMap src = Byml.FromBinary(srcBuffer).GetMap()["Data"].GetMap();

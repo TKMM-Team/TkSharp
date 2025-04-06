@@ -9,7 +9,7 @@ namespace TkSharp.Merging.ChangelogBuilders;
 
 public sealed class BymlChangelogBuilder : Singleton<BymlChangelogBuilder>, ITkChangelogBuilder
 {
-    public bool Build(string canonical, in TkPath path, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
+    public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
     {
         Byml vanillaByml = Byml.FromBinary(vanillaBuffer);
         Byml srcByml = Byml.FromBinary(srcBuffer, out Endianness endianness, out ushort version);

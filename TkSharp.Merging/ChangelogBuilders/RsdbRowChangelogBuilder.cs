@@ -25,15 +25,17 @@ public sealed class RsdbRowChangelogBuilder<TKey>(string keyName) : ITkChangelog
 {
     private readonly string _keyName = keyName;
 
-    public bool Build(string canonical, in TkPath path, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
+    public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
     {
         ulong dbNameHash = GetDbNameHash(path);
 
         Dictionary<TKey, Byml> changelog = [];
+        HashSet<TKey> foundKeys = [];
+        
         Byml root = Byml.FromBinary(srcBuffer, out Endianness endianness, out ushort version);
         BymlArray rows = root.GetArray();
 
-        BymlArray? vanillaRows = null;
+        BymlArray vanillaRows = Byml.FromBinary(vanillaBuffer).GetArray();
 
         BymlTrackingInfo bymlTrackingInfo = new(path.Canonical, depth: 0);
 
@@ -48,12 +50,13 @@ public sealed class RsdbRowChangelogBuilder<TKey>(string keyName) : ITkChangelog
                 continue;
             }
             
+            foundKeys.Add(key);
+            
             if (!RsdbRowIndex.TryGetIndex(dbNameHash, keyHash, out int index)) {
                 goto UpdateChangelog;
             }
 
             if (!RsdbRowCache.TryGetVanilla(dbNameHash, keyHash, path.FileVersion, out Byml? vanillaRow)) {
-                vanillaRows ??= Byml.FromBinary(vanillaBuffer).GetArray();
                 vanillaRow = vanillaRows[index];
             }
             
@@ -63,6 +66,26 @@ public sealed class RsdbRowChangelogBuilder<TKey>(string keyName) : ITkChangelog
             
         UpdateChangelog:
             changelog[key] = rowEntry;
+        }
+
+        if (flags.TrackRemovedRsDbEntries) {
+            for (int i = 0; i < vanillaRows.Count; i++) {
+                Byml rowEntry = vanillaRows[i];
+                BymlMap entry = rowEntry.GetMap();
+                
+                if (!TryGetKeyHash(entry, out ulong _, out TKey? key)) {
+                    TkLog.Instance.LogWarning(
+                        "Vanilla RSDB file '{Canonical}' has an invalid entry at {Index}. The key field '{KeyName}' is missing.",
+                        canonical, i, _keyName);
+                    continue;
+                }
+
+                if (foundKeys.Contains(key)) {
+                    continue;
+                }
+                
+                changelog[key] = BymlChangeType.Remove;
+            }
         }
 
         if (changelog.Count is 0) {

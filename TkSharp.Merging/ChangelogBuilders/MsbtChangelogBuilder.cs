@@ -11,7 +11,7 @@ public sealed class MsbtChangelogBuilder : Singleton<MsbtChangelogBuilder>, ITkC
         DuplicateKeyMode = MsbtDuplicateKeyMode.UseLastOccurrence
     };
     
-    public bool Build(string canonical, in TkPath path, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
+    public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
     {
         if (srcBuffer.AsSpan().Read<ulong>() != Msbt.MAGIC) {
             TkLog.Instance.LogWarning("Expected MSBT file but found invalid magic: {CanonicalPath}", canonical);

@@ -8,7 +8,8 @@ using TkSharp.Merging.ChangelogBuilders;
 
 namespace TkSharp.Merging;
 
-public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom tk, ITkSystemSource? systemSource)
+public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom tk,
+    ITkSystemSource? systemSource, TkChangelogBuilderFlags flags = default)
 {
     private readonly ITkModSource _source = source;
     private readonly ITkModWriter _writer = writer;
@@ -137,7 +138,7 @@ public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom
             return;
         }
 
-        bool isVanilla = !builder.Build(canonical, path, decompressed.IsEmpty ? raw.Segment : decompressed.Segment, vanilla.Segment, (path, canon) => {
+        bool isVanilla = !builder.Build(canonical, path, flags, decompressed.IsEmpty ? raw.Segment : decompressed.Segment, vanilla.Segment, (path, canon) => {
             AddChangelogMetadata(path, ref canon, ChangelogEntryType.Changelog, zsDictionaryId, path.FileVersion);
             string outputFile = Path.Combine(path.Root.ToString(), canon);
             return _writer.OpenWrite(outputFile);
@@ -149,7 +150,7 @@ public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom
         }
     }
 
-    public static IEnumerable<ArraySegment<byte>> CreateChangelogsExternal(string canonical, ArraySegment<byte> @base, IEnumerable<ArraySegment<byte>> changelogs, TkFileAttributes attributes)
+    public static IEnumerable<ArraySegment<byte>> CreateChangelogsExternal(string canonical, TkChangelogBuilderFlags flags, ArraySegment<byte> @base, IEnumerable<ArraySegment<byte>> changelogs, TkFileAttributes attributes)
     {
         TkPath path = new(canonical, 100, attributes, "romfs", "");
 
@@ -162,7 +163,7 @@ public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom
         foreach (ArraySegment<byte> changelog in changelogs) {
             using MemoryStream output = new();
             TkPath pathIteratorStackInstance = new(canonical, 100, attributes, "romfs", "");
-            builder.Build(canonical, pathIteratorStackInstance, changelog, @base, (_, _) => output);
+            builder.Build(canonical, pathIteratorStackInstance, flags, changelog, @base, (_, _) => output);
             yield return output.GetSpan();
         }
     }
