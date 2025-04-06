@@ -1,5 +1,8 @@
+#pragma warning disable CS0657 // Not a valid attribute location for this declaration
+
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using CommunityToolkit.HighPerformance.Buffers;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.Logging;
@@ -17,6 +20,7 @@ namespace TkSharp.Packaging;
 public partial class TkProject(string folderPath) : ObservableObject
 {
     [ObservableProperty]
+    [property: JsonIgnore]
     private string _folderPath = folderPath;
 
     [ObservableProperty]
@@ -91,7 +95,7 @@ public partial class TkProject(string folderPath) : ObservableObject
         Directory.CreateDirectory(FolderPath);
         string projectFilePath = Path.Combine(FolderPath, ".tkproj");
         using FileStream output = File.Create(projectFilePath);
-        JsonSerializer.Serialize(output, Mod);
+        JsonSerializer.Serialize(output, this);
 
         SaveOptionsGroups();
     }
