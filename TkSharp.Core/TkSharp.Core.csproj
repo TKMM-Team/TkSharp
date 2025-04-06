@@ -9,11 +9,11 @@
 
     <ItemGroup>
       <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.2" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.3" />
       <PackageReference Include="Revrs" Version="1.0.6" />
       <PackageReference Include="SarcLibrary" Version="3.2.0" />
       <PackageReference Include="SharpCompress" Version="0.39.0" />
-      <PackageReference Include="System.IO.Hashing" Version="9.0.2" />
+      <PackageReference Include="System.IO.Hashing" Version="9.0.3" />
       <PackageReference Include="Tkmm.BymlLibrary" Version="1.2.2" />
       <PackageReference Include="Ulid" Version="1.3.4" />
       <PackageReference Include="ZstdSharp.Port" Version="0.8.5" />
