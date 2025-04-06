@@ -1,6 +1,8 @@
 using BymlLibrary;
 using BymlLibrary.Nodes.Containers;
+using Microsoft.Extensions.Logging;
 using Revrs;
+using TkSharp.Core;
 using TkSharp.Core.IO.Buffers;
 using TkSharp.Core.Models;
 using TkSharp.Merging.Mergers.BinaryYaml;
@@ -69,7 +71,7 @@ public sealed class RsdbRowMerger(string keyName) : ITkMerger
 
         switch (changelog.Value) {
             case IDictionary<uint, Byml> hashMap32:
-                MergeHashMap32(hashMap32, rows, tracking);
+                MergeMap(hashMap32, rows, tracking);
                 break;
             case IDictionary<string, Byml> map:
                 MergeMap(map, rows, tracking);
@@ -77,38 +79,36 @@ public sealed class RsdbRowMerger(string keyName) : ITkMerger
         }
     }
 
-    private void MergeMap(IDictionary<string, Byml> changelog, BymlArray @base, BymlMergeTracking tracking)
+    private void MergeMap<TKey>(IDictionary<TKey, Byml> changelog, BymlArray @base, BymlMergeTracking tracking) where TKey : notnull
     {
-        foreach (Byml entry in @base) {
+        for (int i = 0; i < @base.Count; i++) {
+            Byml entry = @base[i];
             BymlMap baseMap = entry.GetMap();
-            string key = baseMap[_keyName].GetString();
+            var key = baseMap[_keyName].Get<TKey>();
 
             if (!changelog.Remove(key, out Byml? changelogEntry)) {
                 continue;
+            }
+            
+            if (!tracking.TryGetValue(@base, out BymlMergeTrackingEntry? trackingEntry)) {
+                tracking[@base] = trackingEntry = new BymlMergeTrackingEntry();
+            }
+
+            if (changelogEntry.Value is BymlChangeType.Remove) {
+                trackingEntry.KeyedRemovals[key] = i;
+                continue;
+            }
+
+            if (trackingEntry.KeyedRemovals.Remove(key)) {
+                TkLog.Instance.LogWarning(
+                    "An RSDB entry with the key '{Key}' was removed by one mod and later modified. " +
+                    "The entry has been re-added and may cause issues.", key);
             }
 
             BymlMerger.MergeMap(baseMap, changelogEntry.GetMap(), tracking);
         }
 
-        foreach ((_, Byml value) in changelog) {
-            @base.Add(value);
-        }
-    }
-
-    private void MergeHashMap32(IDictionary<uint, Byml> changelog, BymlArray @base, BymlMergeTracking tracking)
-    {
-        foreach (Byml entry in @base) {
-            BymlMap baseMap = entry.GetMap();
-            uint key = baseMap[_keyName].GetUInt32();
-
-            if (!changelog.Remove(key, out Byml? changelogEntry)) {
-                continue;
-            }
-
-            BymlMerger.MergeMap(baseMap, changelogEntry.GetMap(), tracking);
-        }
-
-        foreach ((_, Byml value) in changelog) {
+        foreach ((_, Byml value) in changelog) {   
             @base.Add(value);
         }
     }

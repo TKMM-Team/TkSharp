@@ -36,6 +36,10 @@ public class BymlMergeTracking(string canonical) : Dictionary<BymlArray, BymlMer
         foreach (int i in entry.Removals.Where(i => @base.Count > i)) {
             @base[i] = BymlChangeType.Remove;
         }
+        
+        foreach ((_, int i) in entry.KeyedRemovals.Where(i => @base.Count > i.Value)) {
+            @base[i] = BymlChangeType.Remove;
+        }
 
         IEnumerable<(int Key, Byml[])> additions = entry.Additions
             .SelectMany(x => x)

@@ -11,4 +11,6 @@ public class BymlMergeTrackingEntry
     public List<List<(int InsertIndex, Byml Entry)>> Additions { get; } = [];
 
     public HashSet<int> Removals { get; } = [];
+
+    public Dictionary<object, int> KeyedRemovals { get; } = [];
 }
