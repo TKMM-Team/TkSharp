@@ -170,8 +170,16 @@ public class BymlArrayChangelogBuilderProvider : Singleton<BymlArrayChangelogBui
             "AlreadyReadInfo" => new BymlKeyedArrayChangelogBuilder("UpdateGameDataFlag"),
             "ConditionList" => new BymlKeyedArrayChangelogBuilder("WeaponEssence"),
             "WeaponTypeAndSubModelMapping" => new BymlKeyedArrayChangelogBuilder("WeaponType"),
-            "Translate" or "Rotate" or "Scale" or "MarginNegative" or "MarginPositive" or "Rot" or "Trans" or "Pivot" or "PlayerPosOnClearEvent" or "EnokidaCameraPos" or "NearWoodStoragePos" => BymlDirectIndexArrayChangelogBuilder.Instance,
+            "Translate" or "Rotate" or "Scale" or "MarginNegative" or "MarginPositive" or "Rot" or "Trans"
+                or "Pivot" or "PlayerPosOnClearEvent" or "EnokidaCameraPos"
+                or "NearWoodStoragePos" => BymlDirectIndexArrayChangelogBuilder.Instance,
             "StaffRollSetArray" => BymlDirectIndexArrayChangelogBuilder.Instance,
+            "ArmorCategory" or "ArmorDyeColor" or "ArmorSeries" or "BowEffect" or "FoodEffect"
+                or "MaterialBowAttachmentTag" or "MaterialCategory" or "ShieldEffect" or "WeaponCategory"
+                or "WeaponEffect" => info.Type switch {
+                "game__ui__PouchSortTable" => BymlDirectIndexArrayChangelogBuilder.Instance,
+                _ => BymlArrayChangelogBuilder.Instance
+            },
             _ => info.Type switch {
                 "game__component__ConditionParam" => BymlDirectIndexArrayChangelogBuilder.Instance,
                 _ => BymlArrayChangelogBuilder.Instance
