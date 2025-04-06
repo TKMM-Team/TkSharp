@@ -1,5 +1,7 @@
 ﻿using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.Extensions.Logging;
+using TkSharp.Core;
 using TkSharp.Core.Models;
 
 namespace TkSharp.Extensions.GameBanana;
@@ -47,11 +49,16 @@ public partial class GameBananaModRecord : ObservableObject
             return;
         }
 
-        await using Stream image = await GameBanana.Get($"{img.BaseUrl}/{img.SmallFile}", ct);
-        await using MemoryStream ms = new();
-        await image.CopyToAsync(ms, ct);
-        ms.Seek(0, SeekOrigin.Begin);
-        
-        Thumbnail = TkThumbnail.CreateBitmap(ms);
+        try {
+            await using Stream image = await GameBanana.Get($"{img.BaseUrl}/{img.SmallFile}", ct);
+            await using MemoryStream ms = new();
+            await image.CopyToAsync(ms, ct);
+            ms.Seek(0, SeekOrigin.Begin);
+
+            Thumbnail = TkThumbnail.CreateBitmap(ms);
+        }
+        catch (Exception ex) {
+            TkLog.Instance.LogError(ex, "Failed to download GameBanana thumbnails");
+        }
     }
 }
