@@ -29,7 +29,7 @@ public static class TkNandUtils
         LayeredFileSystem fs = new(sources);
 
         SwitchFs switchFs = SwitchFs.OpenNcaDirectory(keys, fs);
-        TkGameRomUtils.IsValid(switchFs, out hasUpdate);
+        bool result = TkGameRomUtils.IsValid(switchFs, out hasUpdate);
 
         if (switchFsContainer is not null) {
             foreach (IFileSystem disposable in sources) {
@@ -37,7 +37,7 @@ public static class TkNandUtils
             }
             
             switchFsContainer.Add((nandFolderPath, switchFs));
-            return hasUpdate;
+            return result;
         }
 
         foreach (IFileSystem disposable in sources) {
@@ -46,6 +46,6 @@ public static class TkNandUtils
         
         fs.Dispose();
         switchFs.Dispose();
-        return hasUpdate;
+        return result;
     }
 }
