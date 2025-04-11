@@ -112,7 +112,7 @@ public sealed class TkResourceSizeCollector
             _ => extension switch {
                 ".ainb" => size + AinbResourceSizeCalculator.GetResourceSize(data),
                 ".asb" => size + AsbResourceSizeCalculator.GetResourceSize(data),
-                ".bgyml" => (size + 1000) * 8,
+                ".bgyml" => (size + 2000) * 8,
                 ".baatarc" => size + 0x100,
                 ".baev" => size + 0x120,
                 ".bagst" => size + 0x100,
@@ -166,7 +166,7 @@ public sealed class TkResourceSizeCollector
         return path.Length switch {
             > 15 when path[^15..] is ".casset.byml.zs" => ".casset.byml",
             > 6 when path[^6..] is ".ta.zs" => Path.GetExtension(path),
-            > 3 when path[^3..] is ".zs" => Path.GetExtension(path)[..^3],
+            > 3 when path[^3..] is ".zs" => Path.GetExtension(path[..^3]),
             _ => Path.GetExtension(path)
         };
     }
