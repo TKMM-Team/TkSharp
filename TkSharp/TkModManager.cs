@@ -160,7 +160,7 @@ public sealed partial class TkModManager : ObservableObject, ITkSystemProvider
         string backupDbFile = Path.Combine(DataFolderPath, "state.db.bak");
 
         try {
-            File.Copy(currentDbFile, backupDbFile, true);
+            if (File.Exists(currentDbFile)) File.Copy(currentDbFile, backupDbFile, true);
         }
         catch (Exception ex) {
             TkLog.Instance.LogError(ex, "Failed to create backup. The application data cannot not be saved.");
