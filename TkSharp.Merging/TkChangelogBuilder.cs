@@ -138,8 +138,8 @@ public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom
             return;
         }
 
-        bool isVanilla = !builder.Build(canonical, path, flags, decompressed.IsEmpty ? raw.Segment : decompressed.Segment, vanilla.Segment, (path, canon) => {
-            AddChangelogMetadata(path, ref canon, ChangelogEntryType.Changelog, zsDictionaryId, path.FileVersion);
+        bool isVanilla = !builder.Build(canonical, path, flags, decompressed.IsEmpty ? raw.Segment : decompressed.Segment, vanilla.Segment, (path, canon, archiveCanon) => {
+            AddChangelogMetadata(path, ref canon, ChangelogEntryType.Changelog, zsDictionaryId, path.FileVersion, archiveCanon);
             string outputFile = Path.Combine(path.Root.ToString(), canon);
             return _writer.OpenWrite(outputFile);
         });
@@ -163,12 +163,13 @@ public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom
         foreach (ArraySegment<byte> changelog in changelogs) {
             using MemoryStream output = new();
             TkPath pathIteratorStackInstance = new(canonical, 100, attributes, "romfs", "");
-            builder.Build(canonical, pathIteratorStackInstance, flags, changelog, @base, (_, _) => output);
+            builder.Build(canonical, pathIteratorStackInstance, flags, changelog, @base, (_, _, _) => output);
             yield return output.GetSpan();
         }
     }
 
-    private void AddChangelogMetadata(in TkPath path, ref string canonical, ChangelogEntryType type, int zsDictionaryId, int fileVersion)
+    private void AddChangelogMetadata(in TkPath path, ref string canonical, ChangelogEntryType type, int zsDictionaryId,
+        int fileVersion, string? archiveCanonical = null)
     {
         if (path.Canonical.Length > 4 && path.Canonical[..4] is "Mals") {
             _changelog.MalsFiles.Add(canonical);
@@ -185,6 +186,10 @@ public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom
         if (fileVersion != -1) {
             entry.Versions.Add(fileVersion);
             canonical += fileVersion.ToString();
+        }
+
+        if (archiveCanonical is not null) {
+            entry.ArchiveCanonicals.Add(archiveCanonical);
         }
     }
 
@@ -215,7 +220,8 @@ public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom
                 "RSDB/XLinkPropertyTableList.Product.rstbl.byml"
             } => RsdbRowChangelogBuilder.RowId,
             { Extension: ".msbt" } => MsbtChangelogBuilder.Instance,
-            { Extension: ".bfarc" or ".bkres" or ".blarc" or ".genvb" or ".pack" or ".sarc" or ".ta" } => SarcChangelogBuilder.Instance,
+            { Extension: ".bfarc" or ".bkres" or ".blarc" or ".genvb" or ".sarc" or ".ta" } => SarcChangelogBuilder.Instance,
+            { Extension: ".pack" } => PackChangelogBuilder.Instance,
             { Extension: ".bgyml" } => BymlChangelogBuilder.Instance,
             { Extension: ".byml" } when path.Canonical[..4] is not "RSDB" && path.Canonical[..8] is not "GameData" => BymlChangelogBuilder.Instance,
             _ => null

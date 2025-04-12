@@ -3,7 +3,7 @@ using TkSharp.Core;
 
 namespace TkSharp.Merging.ChangelogBuilders;
 
-public sealed class SarcChangelogBuilder : Singleton<SarcChangelogBuilder>, ITkChangelogBuilder
+public class PackChangelogBuilder : Singleton<PackChangelogBuilder>, ITkChangelogBuilder
 {
     private static readonly byte[] _deletedFileMark = "TKSCRMVD"u8.ToArray();
 
@@ -16,6 +16,14 @@ public sealed class SarcChangelogBuilder : Singleton<SarcChangelogBuilder>, ITkC
         Sarc sarc = Sarc.FromBinary(srcBuffer);
 
         foreach ((string name, ArraySegment<byte> data) in sarc) {
+            var nested = new TkPath(
+                name,
+                fileVersion: path.FileVersion,
+                TkFileAttributes.None,
+                root: "romfs",
+                name
+            );
+            
             if (!vanilla.TryGetValue(name, out ArraySegment<byte> vanillaData)) {
                 // Custom file, use entire content
                 goto MoveContent;
@@ -26,20 +34,12 @@ public sealed class SarcChangelogBuilder : Singleton<SarcChangelogBuilder>, ITkC
                 continue;
             }
 
-            var nested = new TkPath(
-                name,
-                fileVersion: path.FileVersion,
-                TkFileAttributes.None,
-                root: "romfs",
-                name
-            );
-
             if (TkChangelogBuilder.GetChangelogBuilder(nested) is not ITkChangelogBuilder builder) {
                 goto MoveContent;
             }
 
             builder.Build(name, nested, flags, data, vanillaData,
-                (_, canon, _) => changelog.OpenWrite(canon)
+                (tkPath, canon, _) => openWrite(tkPath, canon, archiveCanonical: canonical)
             );
 
             continue;

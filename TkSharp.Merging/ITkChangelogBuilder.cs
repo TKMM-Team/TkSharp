@@ -1,8 +1,8 @@
 using TkSharp.Core;
 
 namespace TkSharp.Merging;
-
-public delegate Stream OpenWriteChangelog(TkPath path, string canonical);
+ 
+public delegate Stream OpenWriteChangelog(TkPath path, string canonical, string? archiveCanonical = null);
 
 public interface ITkChangelogBuilder
 {
