@@ -22,14 +22,18 @@ public static class TkChangelogReader
         
         int changelogFileCount = input.Read<int>();
         for (int i = 0; i < changelogFileCount; i++) {
+            TkChangelogEntry entry = new(
+                input.ReadString()!,
+                input.Read<ChangelogEntryType>(),
+                input.Read<TkFileAttributes>(),
+                input.Read<int>(),
+                ReadVersions(input)
+            );
+
+            ReadFileList(input, entry.ArchiveCanonicals);
+            
             result.ChangelogFiles.Add(
-                new TkChangelogEntry(
-                    input.ReadString()!,
-                    input.Read<ChangelogEntryType>(),
-                    input.Read<TkFileAttributes>(),
-                    input.Read<int>(),
-                    ReadVersions(input)
-                )
+                entry
             );
         }
 

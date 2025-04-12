@@ -33,6 +33,7 @@ public static class TkChangelogWriter
             output.Write(changelog.Attributes);
             output.Write(changelog.ZsDictionaryId);
             WriteVersions(output, changelog.Versions);
+            WriteFileList(output, changelog.ArchiveCanonicals);
         }
     }
 

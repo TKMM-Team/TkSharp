@@ -3,7 +3,8 @@ using System.Text.Json.Serialization;
 namespace TkSharp.Core.Models;
 
 [method: JsonConstructor]
-public class TkChangelogEntry(string canonical, ChangelogEntryType type, TkFileAttributes attributes, int zsDictionaryId, List<int>? versions = null)
+public class TkChangelogEntry(string canonical, ChangelogEntryType type, TkFileAttributes attributes, int zsDictionaryId,
+    List<int>? versions = null, List<string>? archiveCanonicals = null)
 {
     public string Canonical { get; set; } = canonical;
 
@@ -14,6 +15,8 @@ public class TkChangelogEntry(string canonical, ChangelogEntryType type, TkFileA
     public int ZsDictionaryId { get; init; } = zsDictionaryId;
 
     public List<int> Versions { get; } = versions ?? [];
+
+    public List<string> ArchiveCanonicals { get; } = archiveCanonicals ?? [];
 
     public void Deconstruct(out string canonical, out ChangelogEntryType type, out TkFileAttributes attributes, out int zsDictionaryId)
     {
