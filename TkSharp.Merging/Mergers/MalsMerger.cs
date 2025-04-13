@@ -42,7 +42,8 @@ public static class MalsMerger
                 TkLog.Instance.LogWarning("Invalid mals file name: {FileName}", target);
                 continue;
             }
-            
+
+            ReadOnlySpan<char> debug = target.AsSpan()[5..9];
             ReadOnlySpan<byte> targetLocale = target.AsSpan()[5..9]
                 .Cast<char, byte>();
             
@@ -59,7 +60,7 @@ public static class MalsMerger
                 continue;
             }
 
-            if (level < 2 && localeLang == LANG_EN) {
+            if (level < 2 && lang == LANG_EN) {
                 best = target;
             }
         }
