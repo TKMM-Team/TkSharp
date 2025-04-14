@@ -139,7 +139,13 @@ public class TkExtensibleRomProvider : ITkRomProvider
     private TkSwitchRom? TryBuild<T>(in TkExtensibleConfig<T> config, KeySet keys, SwitchFsContainer collected,
         string? preferredVersion, ref Title? main, ref Title? update, ref Title? alternateUpdate)
     {
-        if (!config.Get(out _, keys, collected)) {
+        try {
+            if (!config.Get(out _, keys, collected)) {
+                return null;
+            }
+        }
+        catch (Exception ex) {
+            TkLog.Instance.LogError(ex, "[ROM *] Error while building rom.");
             return null;
         }
 
