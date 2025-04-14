@@ -43,7 +43,6 @@ public static class MalsMerger
                 continue;
             }
 
-            ReadOnlySpan<char> debug = target.AsSpan()[5..9];
             ReadOnlySpan<byte> targetLocale = target.AsSpan()[5..9]
                 .Cast<char, byte>();
             
