@@ -7,7 +7,7 @@ using TkSharp.Merging;
 
 namespace TkSharp.IO.Readers;
 
-public sealed class SevenZipModReader(ITkSystemProvider systemProvider, ITkRomProvider romProvider) : ITkModReader
+public sealed class SevenZipModReader(ITkSystemProvider systemProvider, ITkRomProvider romProvider, ITkModReaderProvider readerProvider) : ITkModReader
 {
     private readonly ITkSystemProvider _systemProvider = systemProvider;
     private readonly ITkRomProvider _romProvider = romProvider;
@@ -19,8 +19,13 @@ public sealed class SevenZipModReader(ITkSystemProvider systemProvider, ITkRomPr
         }
         
         using SevenZipArchive archive = SevenZipArchive.Open(context.Stream);
-        if (!ArchiveModReader.LocateRoot(archive, out string? root)) {
+        (string? root, TkMod? embeddedMod, bool hasValidRoot) = await ArchiveModReader.LocateRoot(archive, readerProvider);
+        if (!hasValidRoot) {
             return null;
+        }
+
+        if (embeddedMod is not null) {
+            return embeddedMod;
         }
 
         context.EnsureId();

@@ -7,11 +7,11 @@ using TkSharp.Merging;
 
 namespace TkSharp.IO.Readers;
 
-public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomProvider romProvider) : ITkModReader
+public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomProvider romProvider, ITkModReaderProvider readerProvider) : ITkModReader
 {
     private static readonly SearchValues<string> _validFoldersSearchValues = SearchValues.Create(
         ["romfs", "exefs", "cheats", "extras"], StringComparison.OrdinalIgnoreCase);
-    
+
     private readonly ITkSystemProvider _systemProvider = systemProvider;
     private readonly ITkRomProvider _romProvider = romProvider;
 
@@ -20,21 +20,26 @@ public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomPro
         if (context.Input is not string fileName || context.Stream is null) {
             return null;
         }
-        
+
         using IArchive archive = ArchiveFactory.Open(context.Stream);
-        if (!LocateRoot(archive, out string? root)) {
+        (string? root, TkMod? embeddedMod, bool hasValidRoot) = await LocateRoot(archive, readerProvider);
+        if (!hasValidRoot) {
             return null;
         }
 
+        if (embeddedMod is not null) {
+            return embeddedMod;
+        }
+
         context.EnsureId();
-        
+
         ArchiveModSource source = new(archive, root);
         ITkModWriter writer = _systemProvider.GetSystemWriter(context);
 
         TkChangelogBuilder builder = new(source, writer, _romProvider.GetRom(),
             _systemProvider.GetSystemSource(context.Id.ToString())
         );
-        
+
         TkChangelog changelog = await builder.BuildAsync(ct)
             .ConfigureAwait(false);
 
@@ -50,36 +55,51 @@ public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomPro
         return input is string path &&
                Path.GetExtension(path.AsSpan()) is ".zip" or ".rar";
     }
-    
-    internal static bool LocateRoot(IArchive archive, out string? root)
+
+    internal static async ValueTask<(string? root, TkMod? embeddedMod, bool result)> LocateRoot(IArchive archive, ITkModReaderProvider readerProvider)
     {
+        (string? Root, TkMod? Embedded, bool Result) result = (null, null, false);
+
+        foreach (IArchiveEntry entry in archive.Entries) {
+            if (entry.Key is not null
+                && Path.GetExtension(entry.Key.AsSpan()) is ".tkcl"
+                && readerProvider.GetReader(entry.Key) is ITkModReader reader) {
+                await using Stream entryStream = entry.OpenEntryStream();
+                result.Embedded = await reader.ReadMod(entry.Key, entryStream);
+            }
+
+            if (result.Embedded is not null) {
+                return result with { Result = true };
+            }
+        }
+
         foreach (IArchiveEntry entry in archive.Entries) {
             ReadOnlySpan<char> key = entry.Key.AsSpan();
             ReadOnlySpan<char> normalizedKey = key[^1] is '/' or '\\' ? key[..^1] : key;
-            
+
             if (normalizedKey.Length < 5) {
                 continue;
             }
-            
+
             ReadOnlySpan<char> normalizedKeyLowercase = normalizedKey
                 .ToString()
                 .ToLowerInvariant();
-            
+
             if (normalizedKeyLowercase[..5] is "romfs" or "exefs" || normalizedKeyLowercase[..6] is "cheats" or "extras") {
-                root = null;
-                return true;
+                result.Root = null;
+                return result with { Result = true };
             }
-            
+
             if (entry.IsDirectory) {
                 switch (Path.GetFileName(normalizedKeyLowercase)) {
                     case "romfs" or "exefs":
-                        root = normalizedKey[..^5].ToString();
-                        return true;
+                        result.Root = normalizedKey[..^5].ToString();
+                        return result with { Result = true };
                     case "cheats" or "extras":
-                        root = normalizedKey[..^6].ToString();
-                        return true;
+                        result.Root = normalizedKey[..^6].ToString();
+                        return result with { Result = true };
                 }
-                
+
                 continue;
             }
 
@@ -87,11 +107,10 @@ public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomPro
                 continue;
             }
 
-            root = normalizedKey[..index].ToString();
-            return true;
+            result.Root = normalizedKey[..index].ToString();
+            return result with { Result = true };
         }
 
-        root = null;
-        return false;
+        return result;
     }
 }

@@ -3,15 +3,19 @@ using TkSharp.IO.Readers;
 
 namespace TkSharp;
 
-public class TkModReaderProvider(ITkSystemProvider tkWriterProvider, ITkRomProvider tkRomProvider)
-    : ITkModReaderProvider
+public class TkModReaderProvider : ITkModReaderProvider
 {
-    private readonly List<ITkModReader> _readers = [
-        new ArchiveModReader(tkWriterProvider, tkRomProvider),
-        new FolderModReader(tkWriterProvider, tkRomProvider),
-        new SevenZipModReader(tkWriterProvider, tkRomProvider),
-        new TkPackReader(tkWriterProvider),
-    ];
+    private readonly List<ITkModReader> _readers;
+
+    public TkModReaderProvider(ITkSystemProvider tkWriterProvider, ITkRomProvider tkRomProvider)
+    {
+        _readers = [
+            new ArchiveModReader(tkWriterProvider, tkRomProvider, this),
+            new FolderModReader(tkWriterProvider, tkRomProvider),
+            new SevenZipModReader(tkWriterProvider, tkRomProvider, this),
+            new TkPackReader(tkWriterProvider),
+        ];
+    }
 
     public void Register(ITkModReader reader)
     {
