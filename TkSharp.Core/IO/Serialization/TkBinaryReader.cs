@@ -7,7 +7,8 @@ namespace TkSharp.Core.IO.Serialization;
 
 public static class TkBinaryReader
 {
-    public static TkMod ReadTkMod(TkModContext context, in Stream input, ITkSystemProvider systemProvider)
+    public static TkMod ReadTkMod(TkModContext context, in Stream input, ITkSystemProvider systemProvider,
+        TkSystemVersion systemVersion = TkSystemVersion.Latest)
     {
         context.EnsureId(input.Read<Ulid>());
         
@@ -19,7 +20,7 @@ public static class TkBinaryReader
             Name = input.ReadString()!,
             Description = input.ReadString()!,
             Thumbnail = ReadTkThumbnail(input),
-            Changelog = TkChangelogReader.Read(input, source),
+            Changelog = TkChangelogReader.Read(input, source, systemVersion),
             Version = input.ReadString()!,
             Author = input.ReadString()!
         };

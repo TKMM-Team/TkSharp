@@ -1,4 +1,5 @@
 using CommunityToolkit.HighPerformance;
+using TkSharp.Core;
 using TkSharp.Core.IO.Serialization;
 using TkSharp.Core.IO.Serialization.Models;
 using TkSharp.Core.Models;
@@ -38,7 +39,8 @@ internal static class TkModManagerSerializer
             : -1);
     }
     
-    public static TkModManager Read(in Stream input, string dataFolderPath)
+    public static TkModManager Read(in Stream input, string dataFolderPath,
+        TkSystemVersion systemVersion = TkSystemVersion.Latest)
     {
         TkModManager manager = new(dataFolderPath);
 
@@ -53,7 +55,7 @@ internal static class TkModManagerSerializer
         int modCount = input.Read<int>();
         for (int i = 0; i < modCount; i++) {
             manager.Mods.Add(
-                TkBinaryReader.ReadTkMod(new TkModContext(), input, manager)
+                TkBinaryReader.ReadTkMod(new TkModContext(), input, manager, systemVersion)
             );
         }
         

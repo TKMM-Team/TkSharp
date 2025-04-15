@@ -7,7 +7,8 @@ namespace TkSharp.Core.IO.Serialization;
 
 public static class TkChangelogReader
 {
-    public static TkChangelog Read(in Stream input, ITkSystemSource? source)
+    public static TkChangelog Read(in Stream input, ITkSystemSource? source,
+        TkSystemVersion systemVersion = TkSystemVersion.Latest)
     {
         if (input.Read<uint>() != MAGIC) {
             throw new InvalidDataException(
@@ -30,7 +31,9 @@ public static class TkChangelogReader
                 ReadVersions(input)
             );
 
-            ReadFileList(input, entry.ArchiveCanonicals);
+            if (systemVersion > TkSystemVersion.V1) {
+                ReadFileList(input, entry.ArchiveCanonicals);
+            }
             
             result.ChangelogFiles.Add(
                 entry

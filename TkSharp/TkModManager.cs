@@ -1,10 +1,8 @@
 using System.Collections.ObjectModel;
-using CommunityToolkit.HighPerformance;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.Logging;
 using Revrs.Extensions;
 using TkSharp.Core;
-using TkSharp.Core.Extensions;
 using TkSharp.Core.Models;
 using TkSharp.IO;
 using TkSharp.IO.Serialization;
@@ -33,6 +31,19 @@ public sealed partial class TkModManager : ObservableObject, ITkSystemProvider
 
         using FileStream fs = File.OpenRead(portableManagerStateFile);
         return TkModManagerSerializer.Read(fs, dataFolderPath);
+    }
+
+    internal static TkModManager CreateLegacy(string dataFolderPath, string legacyDataFolderPath, TkSystemVersion systemVersion)
+    {
+        string portableManagerStateFile = Path.Combine(legacyDataFolderPath, "state.db");
+        if (!File.Exists(portableManagerStateFile)) {
+            return new TkModManager(dataFolderPath) {
+                _isStateFrozen = false
+            };
+        }
+
+        using FileStream fs = File.OpenRead(portableManagerStateFile);
+        return TkModManagerSerializer.Read(fs, legacyDataFolderPath, systemVersion);
     }
 
     public string DataFolderPath { get; }
