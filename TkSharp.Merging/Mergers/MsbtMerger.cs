@@ -6,13 +6,13 @@ namespace TkSharp.Merging.Mergers;
 
 public sealed class MsbtMerger : Singleton<MsbtMerger>, ITkMerger
 {
-    public void Merge(TkChangelogEntry entry, RentedBuffers<byte> inputs, ArraySegment<byte> vanillaData, Stream output)
+    public MergeResult Merge(TkChangelogEntry entry, RentedBuffers<byte> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
         throw new NotSupportedException(
             "Merging memory chained MSBT files is not supported.");
     }
 
-    public void Merge(TkChangelogEntry entry, IEnumerable<ArraySegment<byte>> inputs, ArraySegment<byte> vanillaData, Stream output)
+    public MergeResult Merge(TkChangelogEntry entry, IEnumerable<ArraySegment<byte>> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
         Msbt baseMsbt = Msbt.FromBinary(vanillaData);
 
@@ -24,9 +24,11 @@ public sealed class MsbtMerger : Singleton<MsbtMerger>, ITkMerger
         }
         
         baseMsbt.WriteBinary(output);
+        
+        return MergeResult.Default;
     }
 
-    public void MergeSingle(TkChangelogEntry entry, ArraySegment<byte> input, ArraySegment<byte> @base, Stream output)
+    public MergeResult MergeSingle(TkChangelogEntry entry, ArraySegment<byte> input, ArraySegment<byte> @base, Stream output)
     {
         Msbt baseMsbt = Msbt.FromBinary(@base);
         Msbt changelog = Msbt.FromBinary(input);
@@ -36,5 +38,7 @@ public sealed class MsbtMerger : Singleton<MsbtMerger>, ITkMerger
         }
         
         baseMsbt.WriteBinary(output);
+        
+        return MergeResult.Default;
     }
 }

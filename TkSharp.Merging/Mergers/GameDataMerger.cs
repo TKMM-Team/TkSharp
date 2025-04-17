@@ -12,7 +12,7 @@ public sealed class GameDataMerger : Singleton<GameDataMerger>, ITkMerger
 {
     private static readonly BymlRowComparer _rowComparer = new("Hash");
     
-    public void Merge(TkChangelogEntry entry, RentedBuffers<byte> inputs, ArraySegment<byte> vanillaData, Stream output)
+    public MergeResult Merge(TkChangelogEntry entry, RentedBuffers<byte> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
         Byml merged = Byml.FromBinary(vanillaData, out Endianness endianness, out ushort version);
         BymlMap root = merged.GetMap();
@@ -31,9 +31,11 @@ public sealed class GameDataMerger : Singleton<GameDataMerger>, ITkMerger
 
         SaveDataWriter.CalculateMetadata(root["MetaData"].GetMap(), baseData);
         merged.WriteBinary(output, endianness, version);
+        
+        return MergeResult.Default;
     }
 
-    public void Merge(TkChangelogEntry entry, IEnumerable<ArraySegment<byte>> inputs, ArraySegment<byte> vanillaData, Stream output)
+    public MergeResult Merge(TkChangelogEntry entry, IEnumerable<ArraySegment<byte>> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
         Byml merged = Byml.FromBinary(vanillaData, out Endianness endianness, out ushort version);
         BymlMap root = merged.GetMap();
@@ -52,9 +54,11 @@ public sealed class GameDataMerger : Singleton<GameDataMerger>, ITkMerger
 
         SaveDataWriter.CalculateMetadata(root["MetaData"].GetMap(), baseData);
         merged.WriteBinary(output, endianness, version);
+        
+        return MergeResult.Default;
     }
 
-    public void MergeSingle(TkChangelogEntry entry, ArraySegment<byte> input, ArraySegment<byte> @base, Stream output)
+    public MergeResult MergeSingle(TkChangelogEntry entry, ArraySegment<byte> input, ArraySegment<byte> @base, Stream output)
     {
         Byml merged = Byml.FromBinary(@base, out Endianness endianness, out ushort version);
         BymlMap root = merged.GetMap();
@@ -71,6 +75,8 @@ public sealed class GameDataMerger : Singleton<GameDataMerger>, ITkMerger
 
         SaveDataWriter.CalculateMetadata(root["MetaData"].GetMap(), baseData);
         merged.WriteBinary(output, endianness, version);
+        
+        return MergeResult.Default;
     }
 
     private static void MergeEntry(BymlMap merged, BymlMap changelog, GameDataMergeTracking gameDataTracking, BymlMergeTracking tracking)

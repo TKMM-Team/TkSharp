@@ -9,7 +9,7 @@ namespace TkSharp.Merging.Mergers;
 
 public sealed class RsdbTagMerger : Singleton<RsdbTagMerger>, ITkMerger
 {
-    public void Merge(TkChangelogEntry entry, RentedBuffers<byte> inputs, ArraySegment<byte> vanillaData, Stream output)
+    public MergeResult Merge(TkChangelogEntry entry, RentedBuffers<byte> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
         RsdbTagTable tagTable = new(
             Byml.FromBinary(vanillaData, out Endianness endianness, out ushort version).GetMap());
@@ -20,9 +20,11 @@ public sealed class RsdbTagMerger : Singleton<RsdbTagMerger>, ITkMerger
 
         Byml merged = tagTable.Compile();
         merged.WriteBinary(output, endianness, version);
+        
+        return MergeResult.Default;
     }
 
-    public void Merge(TkChangelogEntry entry, IEnumerable<ArraySegment<byte>> inputs, ArraySegment<byte> vanillaData, Stream output)
+    public MergeResult Merge(TkChangelogEntry entry, IEnumerable<ArraySegment<byte>> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
         RsdbTagTable tagTable = new(
             Byml.FromBinary(vanillaData, out Endianness endianness, out ushort version).GetMap());
@@ -33,9 +35,11 @@ public sealed class RsdbTagMerger : Singleton<RsdbTagMerger>, ITkMerger
 
         Byml merged = tagTable.Compile();
         merged.WriteBinary(output, endianness, version);
+        
+        return MergeResult.Default;
     }
 
-    public void MergeSingle(TkChangelogEntry entry, ArraySegment<byte> input, ArraySegment<byte> @base, Stream output)
+    public MergeResult MergeSingle(TkChangelogEntry entry, ArraySegment<byte> input, ArraySegment<byte> @base, Stream output)
     {
         RsdbTagTable tagTable = new(
             Byml.FromBinary(@base, out Endianness endianness, out ushort version).GetMap());
@@ -44,6 +48,8 @@ public sealed class RsdbTagMerger : Singleton<RsdbTagMerger>, ITkMerger
 
         Byml merged = tagTable.Compile();
         merged.WriteBinary(output, endianness, version);
+        
+        return MergeResult.Default;
     }
 
     private static void MergeEntry(RsdbTagTable table, ArraySegment<byte> input)

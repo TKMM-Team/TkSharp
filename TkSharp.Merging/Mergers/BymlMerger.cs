@@ -13,7 +13,7 @@ namespace TkSharp.Merging.Mergers;
 
 public sealed class BymlMerger : Singleton<BymlMerger>, ITkMerger
 {
-    public void Merge(TkChangelogEntry entry, RentedBuffers<byte> inputs, ArraySegment<byte> vanillaData, Stream output)
+    public MergeResult Merge(TkChangelogEntry entry, RentedBuffers<byte> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
         Byml merged = Byml.FromBinary(vanillaData, out Endianness endianness, out ushort version);
         BymlMergeTracking tracking = new(entry.Canonical);
@@ -25,9 +25,11 @@ public sealed class BymlMerger : Singleton<BymlMerger>, ITkMerger
         
         tracking.Apply();
         merged.WriteBinary(output, endianness, version);
+        
+        return MergeResult.Default;
     }
 
-    public void Merge(TkChangelogEntry entry, IEnumerable<ArraySegment<byte>> inputs, ArraySegment<byte> vanillaData, Stream output)
+    public MergeResult Merge(TkChangelogEntry entry, IEnumerable<ArraySegment<byte>> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
         Byml merged = Byml.FromBinary(vanillaData, out Endianness endianness, out ushort version);
         BymlMergeTracking tracking = new(entry.Canonical);
@@ -39,9 +41,11 @@ public sealed class BymlMerger : Singleton<BymlMerger>, ITkMerger
         
         tracking.Apply();
         merged.WriteBinary(output, endianness, version);
+        
+        return MergeResult.Default;
     }
 
-    public void MergeSingle(TkChangelogEntry entry, ArraySegment<byte> input, ArraySegment<byte> @base, Stream output)
+    public MergeResult MergeSingle(TkChangelogEntry entry, ArraySegment<byte> input, ArraySegment<byte> @base, Stream output)
     {
         Byml merged = Byml.FromBinary(@base, out Endianness endianness, out ushort version);
         Byml changelog = Byml.FromBinary(input);
@@ -51,6 +55,8 @@ public sealed class BymlMerger : Singleton<BymlMerger>, ITkMerger
         
         tracking.Apply();
         merged.WriteBinary(output, endianness, version);
+        
+        return MergeResult.Default;
     }
 
     public static void Merge(Byml @base, Byml changelog, BymlMergeTracking tracking)

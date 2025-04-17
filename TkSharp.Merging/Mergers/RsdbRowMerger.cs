@@ -22,7 +22,7 @@ public sealed class RsdbRowMerger(string keyName) : ITkMerger
     private readonly string _keyName = keyName;
     private readonly BymlRowComparer _rowComparer = new(keyName);
 
-    public void Merge(TkChangelogEntry entry, RentedBuffers<byte> inputs, ArraySegment<byte> vanillaData, Stream output)
+    public MergeResult Merge(TkChangelogEntry entry, RentedBuffers<byte> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
         Byml merged = Byml.FromBinary(vanillaData, out Endianness endianness, out ushort version);
         BymlArray rows = merged.GetArray();
@@ -36,9 +36,11 @@ public sealed class RsdbRowMerger(string keyName) : ITkMerger
 
         rows.Sort(_rowComparer);
         merged.WriteBinary(output, endianness, version);
+        
+        return MergeResult.Default;
     }
 
-    public void Merge(TkChangelogEntry entry, IEnumerable<ArraySegment<byte>> inputs, ArraySegment<byte> vanillaData, Stream output)
+    public MergeResult Merge(TkChangelogEntry entry, IEnumerable<ArraySegment<byte>> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
         Byml merged = Byml.FromBinary(vanillaData, out Endianness endianness, out ushort version);
         BymlArray rows = merged.GetArray();
@@ -52,9 +54,11 @@ public sealed class RsdbRowMerger(string keyName) : ITkMerger
 
         rows.Sort(_rowComparer);
         merged.WriteBinary(output, endianness, version);
+        
+        return MergeResult.Default;
     }
 
-    public void MergeSingle(TkChangelogEntry entry, ArraySegment<byte> input, ArraySegment<byte> @base, Stream output)
+    public MergeResult MergeSingle(TkChangelogEntry entry, ArraySegment<byte> input, ArraySegment<byte> @base, Stream output)
     {
         Byml merged = Byml.FromBinary(@base, out Endianness endianness, out ushort version);
         BymlArray rows = merged.GetArray();
@@ -63,6 +67,8 @@ public sealed class RsdbRowMerger(string keyName) : ITkMerger
         tracking.Apply();
         rows.Sort(_rowComparer);
         merged.WriteBinary(output, endianness, version);
+        
+        return MergeResult.Default;
     }
 
     private void MergeEntry(BymlArray rows, Span<byte> input, BymlMergeTracking tracking)
