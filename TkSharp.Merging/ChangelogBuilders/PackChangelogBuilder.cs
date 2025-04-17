@@ -6,14 +6,21 @@ namespace TkSharp.Merging.ChangelogBuilders;
 public class PackChangelogBuilder : Singleton<PackChangelogBuilder>, ITkChangelogBuilder
 {
     private static readonly byte[] _deletedFileMark = "TKSCRMVD"u8.ToArray();
+    
+    public bool CanProcessWithoutVanilla => true;
 
     public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags,
         ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
     {
-        Sarc vanilla = Sarc.FromBinary(vanillaBuffer);
-
-        Sarc changelog = [];
         Sarc sarc = Sarc.FromBinary(srcBuffer);
+        
+        if (vanillaBuffer.Count == 0) {
+            ExtractCustom(sarc, canonical, path, flags, openWrite);
+            return true;
+        }
+        
+        Sarc vanilla = Sarc.FromBinary(vanillaBuffer);
+        Sarc changelog = [];
 
         foreach ((string name, ArraySegment<byte> data) in sarc) {
             var nested = new TkPath(
@@ -39,13 +46,18 @@ public class PackChangelogBuilder : Singleton<PackChangelogBuilder>, ITkChangelo
             }
 
             builder.Build(name, nested, flags, data, vanillaData,
-                (tkPath, canon, _) => openWrite(tkPath, canon, archiveCanonical: canonical)
+                (tkPath, canon, _) => {
+                    changelog[name] = [];
+                    return openWrite(tkPath, canon, archiveCanonical: canonical);
+                }
             );
 
             continue;
 
         MoveContent:
-            changelog[name] = data;
+            changelog[name] = [];
+            using Stream inlineOut = openWrite(nested, name, archiveCanonical: canonical);
+            inlineOut.Write(data);
         }
 
         foreach ((string key, _) in vanilla) {
@@ -61,5 +73,21 @@ public class PackChangelogBuilder : Singleton<PackChangelogBuilder>, ITkChangelo
         using Stream output = openWrite(path, canonical);
         changelog.Write(output, changelog.Endianness);
         return true;
+    }
+
+    private static void ExtractCustom(Sarc sarc, string canonical, in TkPath path, in TkChangelogBuilderFlags flags, OpenWriteChangelog openWrite)
+    {
+        foreach ((string name, ArraySegment<byte> data) in sarc) {
+            var nested = new TkPath(
+                name,
+                fileVersion: path.FileVersion,
+                TkFileAttributes.None,
+                root: "romfs",
+                name
+            );
+            
+            using Stream inlineOut = openWrite(nested, name, archiveCanonical: canonical);
+            inlineOut.Write(data);
+        }
     }
 }

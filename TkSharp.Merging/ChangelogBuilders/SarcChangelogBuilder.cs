@@ -6,6 +6,8 @@ namespace TkSharp.Merging.ChangelogBuilders;
 public sealed class SarcChangelogBuilder : Singleton<SarcChangelogBuilder>, ITkChangelogBuilder
 {
     private static readonly byte[] _deletedFileMark = "TKSCRMVD"u8.ToArray();
+    
+    public bool CanProcessWithoutVanilla => false;
 
     public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags,
         ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)

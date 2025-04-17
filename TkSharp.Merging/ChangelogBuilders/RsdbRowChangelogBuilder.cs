@@ -24,6 +24,8 @@ public static class RsdbRowChangelogBuilder
 public sealed class RsdbRowChangelogBuilder<TKey>(string keyName) : ITkChangelogBuilder where TKey : notnull
 {
     private readonly string _keyName = keyName;
+    
+    public bool CanProcessWithoutVanilla => false;
 
     public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
     {

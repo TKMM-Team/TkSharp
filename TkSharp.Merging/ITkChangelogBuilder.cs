@@ -7,6 +7,12 @@ public delegate Stream OpenWriteChangelog(TkPath path, string canonical, string?
 public interface ITkChangelogBuilder
 {
     /// <summary>
+    /// True if this changelog builder can process
+    /// a changelog without a vanilla file buffer.
+    /// </summary>
+    public bool CanProcessWithoutVanilla { get; }
+    
+    /// <summary>
     /// Builds a changelog of the provided target.
     /// </summary>
     /// <param name="canonical"></param>

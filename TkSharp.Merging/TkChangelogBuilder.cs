@@ -130,7 +130,9 @@ public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom
         using RentedBuffer<byte> vanilla
             = _tk.GetVanilla(canonical, path.Attributes);
 
-        if (vanilla.IsEmpty) {
+        // Let the changelog builder handle
+        // pack files without a vanilla file  
+        if (vanilla.IsEmpty && !builder.CanProcessWithoutVanilla) {
             AddChangelogMetadata(path, ref canonical, ChangelogEntryType.Copy, zsDictionaryId, path.FileVersion);
             outputFilePath = Path.Combine(path.Root.ToString(), canonical);
             using Stream output = _writer.OpenWrite(outputFilePath);
@@ -138,8 +140,11 @@ public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom
             return;
         }
 
+        TkFileAttributes parentAttributes = path.Attributes;
         bool isVanilla = !builder.Build(canonical, path, flags, decompressed.IsEmpty ? raw.Segment : decompressed.Segment, vanilla.Segment, (path, canon, archiveCanon) => {
-            AddChangelogMetadata(path, ref canon, ChangelogEntryType.Changelog, zsDictionaryId, path.FileVersion, archiveCanon);
+            AddChangelogMetadata(path, ref canon, ChangelogEntryType.Changelog, zsDictionaryId, path.FileVersion,
+                // Force the parent attributes onto the entry for all parent archives
+                archiveCanon, archiveCanon is not null ? parentAttributes : null);
             string outputFile = Path.Combine(path.Root.ToString(), canon);
             return _writer.OpenWrite(outputFile);
         });
@@ -169,7 +174,7 @@ public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom
     }
 
     private void AddChangelogMetadata(in TkPath path, ref string canonical, ChangelogEntryType type, int zsDictionaryId,
-        int fileVersion, string? archiveCanonical = null)
+        int fileVersion, string? archiveCanonical = null, TkFileAttributes? archiveAttributes = null)
     {
         if (path.Canonical.Length > 4 && path.Canonical[..4] is "Mals") {
             _changelog.MalsFiles.Add(canonical);
@@ -179,7 +184,7 @@ public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom
         ref TkChangelogEntry? entry = ref CollectionsMarshal.GetValueRefOrAddDefault(_entries, canonical, out bool exists);
         if (!exists || entry is null) {
             entry = new TkChangelogEntry(
-                canonical, type, path.Attributes, zsDictionaryId
+                canonical, type, archiveAttributes ?? path.Attributes, zsDictionaryId
             );
         }
 
