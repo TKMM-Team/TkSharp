@@ -10,7 +10,7 @@
     <ItemGroup>
       <PackageReference Include="LanguageExt.Core" Version="4.4.9" />
       <PackageReference Include="MessageStudio" Version="1.1.1" />
-      <PackageReference Include="Revrs" Version="1.0.6" />
+      <PackageReference Include="Revrs" Version="1.1.0" />
       <PackageReference Include="RstbLibrary" Version="1.0.2" />
     </ItemGroup>
 
