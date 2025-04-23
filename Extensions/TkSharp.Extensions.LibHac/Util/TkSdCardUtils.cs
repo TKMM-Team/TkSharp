@@ -56,7 +56,7 @@ internal static class TkSdCardUtils
 
     CheckDumps:
         TkLog.Instance.LogDebug("[ROM *] [SD Card] Checking DBI folder.");
-        string dbiFolder = Path.Combine(sdCardFolderPath, "DBI");
+        string dbiFolder = Path.Combine(sdCardFolderPath, "switch", "DBI");
         CheckForDumps(keys, dbiFolder, ref result, ref hasUpdate, switchFsContainer);
     
         TkLog.Instance.LogDebug("[ROM *] [SD Card] Checking legacy NxDumpTool folder.");
