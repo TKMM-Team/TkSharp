@@ -160,7 +160,14 @@ public sealed class TkMerger
                 continue;
             }
 
-            foreach (string subSdkFile in changelog.SubSdkFiles) {
+            IEnumerable<(string, byte[])> subSkdFileContents = changelog.SubSdkFiles.Select(file => {
+                using Stream input = changelog.Source.OpenRead($"exefs/{file}");
+                byte[] buffer = new byte[input.Length];
+                input.ReadExactly(buffer, 0, buffer.Length);
+                return (file, buffer);
+            }).DistinctBy(x => x);
+
+            foreach ((string, byte[]) subSdkFile in subSkdFileContents) {
                 if (index > 9) {
                     index++;
                     continue;
