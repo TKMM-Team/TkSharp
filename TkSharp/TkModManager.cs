@@ -77,7 +77,7 @@ public sealed partial class TkModManager : ObservableObject, ITkSystemProvider
 
     public IEnumerable<TkChangelog> GetMergeTargets() => GetMergeTargets(GetCurrentProfile());
 
-    public static IEnumerable<TkChangelog> GetMergeTargets(TkProfile profile)
+    public static IEnumerable<TkChangelog> GetMergeTargets(TkProfile profile, Func<TkProfileMod, bool>? predicate = null)
     {
         foreach ((TkModOptionGroup group, HashSet<TkModOption> options) in profile.Mods.SelectMany(x => x.SelectedOptions)) {
             if (group.Type is not (OptionGroupType.MultiRequired or OptionGroupType.SingleRequired)) {
@@ -93,7 +93,7 @@ public sealed partial class TkModManager : ObservableObject, ITkSystemProvider
         
         return profile
             .Mods
-            .Where(x => x.IsEnabled)
+            .Where(x => x.IsEnabled && predicate?.Invoke(x) is true)
             .SelectMany(x => x.SelectedOptions.Values
                 .SelectMany(group => group)
                 .OrderByDescending(option => option.Priority)
