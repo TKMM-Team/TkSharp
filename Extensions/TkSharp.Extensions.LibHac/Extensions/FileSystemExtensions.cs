@@ -18,7 +18,7 @@ public static class FileSystemExtensions
     public static SwitchFs GetSwitchFs(this IStorage storage, string filePath, KeySet keys)
     {
         if (storage is ConcatenationStorage) {
-            return IsXci(storage) ? OpenXci(keys, storage) : OpenNsp(keys, storage);
+            return IsNsp(storage) ? OpenNsp(keys, storage) : OpenXci(keys, storage);
         }
 
         ReadOnlySpan<char> extension = Path.GetExtension(filePath.AsSpan());
@@ -30,11 +30,11 @@ public static class FileSystemExtensions
         };
     }
     
-    private static bool IsXci(IStorage storage)
+    private static bool IsNsp(IStorage storage)
     {
         Span<byte> buffer = stackalloc byte[4];
-        storage.Read(0x100, buffer).ThrowIfFailure();
-        return buffer.SequenceEqual("HEAD"u8);
+        storage.Read(0, buffer).ThrowIfFailure();
+        return buffer.SequenceEqual("PFS0"u8);
     }
     
     private static SwitchFs OpenNsp(KeySet keys, IStorage storage)
