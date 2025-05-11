@@ -1,23 +1,26 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using LanguageExt;
 using SarcLibrary;
 using TkSharp.Core;
 using TkSharp.Core.Extensions;
 using TkSharp.Core.IO.Buffers;
 using TkSharp.Core.Models;
+using TkSharp.Merging.Mergers;
 using TkSharp.Merging.ResourceSizeTable;
 
 namespace TkSharp.Merging.PackFile;
 
 public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector resourceSizeCollector, ITkRom rom)
 {
-    private readonly ConcurrentBag<PackFileEntry> _cache = [];
+    private readonly ConcurrentBag<Either<PackFileEntry, PackFileDelayMergeEntry>> _cache = [];
     private readonly ConcurrentDictionary<string, Sarc> _trackedArchives = [];
+    private readonly TkMerger _merger = merger;
 
     public void Write()
     {
-        foreach (IGrouping<PackFileEntryKey, PackFileEntry> packFile in _cache.GroupBy(x => (x.Key), x => x)) {
+        foreach (IGrouping<PackFileEntryKey, Either<PackFileEntry, PackFileDelayMergeEntry>> packFile in _cache.GroupBy(x => x.Match(r => r.Key, l => l.Key), x => x)) {
             PackFileEntryKey key = packFile.Key;
             string relativePath = rom.CanonicalToRelativePath(key.ArchiveCanonical, key.Attributes);
 
@@ -32,53 +35,81 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
         }
     }
 
-    private void WritePackFile(Sarc sarc, string relativePath, PackFileEntryKey key, IEnumerable<PackFileEntry> entries)
+    private void WritePackFile(Sarc sarc, string relativePath, PackFileEntryKey key,
+        IEnumerable<Either<PackFileEntry, PackFileDelayMergeEntry>> entries)
     {
-        if (relativePath.Contains("Dm", StringComparison.OrdinalIgnoreCase)) {
-            Debugger.Break();
-        }
-        
-        List<string> removals = [];
+        foreach (Either<PackFileEntry, PackFileDelayMergeEntry> either in entries) {
+            string name = either.Match(r => r.Changelog.Canonical, l => l.Changelog.Canonical);
+            
+            either.Match(
+                entry => {
+                    using MemoryStream output = new();
+                    
+                    if (!sarc.TryGetValue(name, out ArraySegment<byte> baseData)) {
+                        _merger.MergeCustomTarget(entry.Merger, entry.Inputs[0], entry.Inputs.AsSpan(1..), entry.Changelog, output);
+                        goto UpdateSarc;
+                    }
 
-        foreach (PackFileEntry entry in entries) {
-            string name = entry.Changelog.Canonical;
+                    if (PackMerger.IsRemovedEntry(baseData)) {
+                        sarc.Remove(name);
+                        return;
+                    }
 
-            if (sarc.ContainsKey(name)) {
-                removals.Add(name);
-                continue;
-            }
+                    using (RentedBuffers<byte> inputs = RentedBuffers<byte>.Allocate(entry.Inputs)) {
+                        entry.Merger.Merge(entry.Changelog, inputs, baseData, output);
+                    }
+                    
+                UpdateSarc:
+                    ArraySegment<byte> buffer = output.GetSpan();
+                    sarc[name] = buffer;
+                    resourceSizeCollector.Collect(buffer.Count, name, buffer);
+                },
+                entry => {
+                    ArraySegment<byte> entryData = sarc[name];
 
-            if (entry.Data is MemoryStream msData) {
-                ArraySegment<byte> buffer = msData.GetSpan();
-                sarc[name] = buffer;
-                resourceSizeCollector.Collect(buffer.Count, name, buffer);
-                continue;
-            }
+                    if (PackMerger.IsRemovedEntry(entryData)) {
+                        sarc.Remove(name);
+                        return;
+                    }
+                    
+                    if (entry.Data is MemoryStream msData) {
+                        ArraySegment<byte> buffer = msData.GetSpan();
+                        sarc[name] = buffer;
+                        resourceSizeCollector.Collect(buffer.Count, name, buffer);
+                        return;
+                    }
 
-            using (Stream sarcEntry = sarc.OpenWrite(name)) {
-                entry.Data.CopyTo(sarcEntry);
-                entry.Data.Seek(0, SeekOrigin.Begin);
-            }
+                    using (Stream sarcEntry = sarc.OpenWrite(name)) {
+                        entry.Data.CopyTo(sarcEntry);
+                        entry.Data.Seek(0, SeekOrigin.Begin);
+                    }
 
-            ArraySegment<byte> entryData = sarc[name];
-            resourceSizeCollector.Collect(entryData.Count, name, entryData);
-        }
-
-        foreach (string removal in removals) {
-            sarc.Remove(removal);
+                    resourceSizeCollector.Collect(entryData.Count, name, entryData);
+                }
+            );   
         }
 
         using MemoryStream ms = new();
         sarc.Write(ms);
-        merger.CopyMergedToSimpleOutput(ms, relativePath, key.Attributes, key.ZsDictionaryId);
+        _merger.CopyMergedToSimpleOutput(ms, relativePath, key.Attributes, key.ZsDictionaryId);
     }
 
-    public void Collect(Stream input, TkChangelogEntry changelog)
+    public void Collect(TkChangelogEntry changelog, Stream input)
     {
         foreach (string archiveCanonical in changelog.ArchiveCanonicals) {
             _cache.Add(new PackFileEntry(
                 new PackFileEntryKey(archiveCanonical, changelog.Attributes, changelog.ZsDictionaryId),
                 changelog, input)
+            );
+        }
+    }
+
+    public void Collect(TkChangelogEntry changelog, ITkMerger merger, Stream[] streams)
+    {
+        foreach (string archiveCanonical in changelog.ArchiveCanonicals) {
+            _cache.Add(new PackFileDelayMergeEntry(
+                new PackFileEntryKey(archiveCanonical, changelog.Attributes, changelog.ZsDictionaryId),
+                changelog, merger, streams)
             );
         }
     }
@@ -93,6 +124,14 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
         public readonly PackFileEntryKey Key = key;
         public readonly TkChangelogEntry Changelog = changelog;
         public readonly Stream Data = data;
+    }
+
+    private readonly struct PackFileDelayMergeEntry(PackFileEntryKey key, TkChangelogEntry changelog, ITkMerger merger, Stream[] inputs)
+    {
+        public readonly PackFileEntryKey Key = key;
+        public readonly TkChangelogEntry Changelog = changelog;
+        public readonly ITkMerger Merger = merger;
+        public readonly Stream[] Inputs = inputs;
     }
 
     private readonly struct PackFileEntryKey(string archiveCanonical, TkFileAttributes attributes, int zsDictionaryId) : IEquatable<PackFileEntryKey>

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using CommunityToolkit.HighPerformance.Buffers;
 using LanguageExt;
 using Microsoft.Extensions.Logging;
@@ -81,6 +82,7 @@ public sealed class TkMerger
             MergeTarget(changelog, target);
         }
 
+        _packFileCollector.Write();
         _resourceSizeCollector.Write();
     }
 
@@ -93,17 +95,27 @@ public sealed class TkMerger
 
         switch (target.Case) {
             case (ITkMerger merger, Stream[] { Length: > 1 } streams): {
+                if (changelog.ArchiveCanonicals.Count > 0) {
+                    _packFileCollector.Collect(changelog, merger, streams);
+                    return;
+                }
+                
                 using RentedBuffer<byte> vanilla = _rom.GetVanilla(relativeFilePath);
                 if (vanilla.IsEmpty) {
-                    MergeCustomTarget(merger, streams[0], streams.Skip(1), changelog, output);
+                    MergeCustomTarget(merger, streams[0], streams.AsSpan(1..), changelog, output);
                     break;
                 }
 
-                using RentedBuffers<byte> inputs = RentedBuffers<byte>.Allocate(streams);
+                using RentedBuffers<byte> inputs = RentedBuffers<byte>.Allocate(streams, disposeStreams: true);
                 result = merger.Merge(changelog, inputs, vanilla.Segment, output);
                 break;
             }
             case (ITkMerger merger, Stream[] { Length: 1 } streams): {
+                if (changelog.ArchiveCanonicals.Count > 0) {
+                    _packFileCollector.Collect(changelog, merger, streams);
+                    return;
+                } 
+                
                 using RentedBuffer<byte> vanilla = _rom.GetVanilla(relativeFilePath);
                 Stream single = streams[0];
                 if (vanilla.IsEmpty) {
@@ -204,24 +216,26 @@ public sealed class TkMerger
         }
     }
 
-    private void MergeCustomTarget(ITkMerger merger, Stream @base, IEnumerable<Stream> targets, TkChangelogEntry changelog, Stream output)
+    internal void MergeCustomTarget(ITkMerger merger, Stream @base, ReadOnlySpan<Stream> targets, TkChangelogEntry changelog, Stream output)
     {
         using RentedBuffer<byte> fakeVanilla = _rom.Zstd.Decompress(@base);
+        MergeCustomTarget(merger, fakeVanilla.Segment, targets, changelog, output);
+    }
 
-        IEnumerable<ArraySegment<byte>> changelogs = TkChangelogBuilder.CreateChangelogsExternal(
-            changelog.Canonical, flags: default, fakeVanilla.Segment, targets.Select(stream => {
-                using RentedBuffer<byte> alloc = _rom.Zstd.Decompress(stream);
-                return alloc.Segment;
-            }), changelog.Attributes
+    internal static void MergeCustomTarget(ITkMerger merger, ArraySegment<byte> @base, ReadOnlySpan<Stream> targets, TkChangelogEntry changelog, Stream output)
+    {
+        using RentedBuffers<byte> targetsBuffer = RentedBuffers<byte>.Allocate(targets); 
+        ArraySegment<byte>[] changelogs = TkChangelogBuilder.CreateChangelogsExternal(
+            changelog.Canonical, flags: default, @base, targetsBuffer, changelog.Attributes
         );
 
-        merger.Merge(changelog, changelogs, fakeVanilla.Segment, output);
+        merger.Merge(changelog, changelogs, @base, output);
     }
 
     private void CopyToOutput(Stream input, string relativePath, TkChangelogEntry changelog)
     {
         if (changelog.ArchiveCanonicals.Count > 0) {
-            _packFileCollector.Collect(input, changelog);
+            Debug.Fail("This should never be reached!");
             return;
         }
         
@@ -258,7 +272,7 @@ public sealed class TkMerger
     private void CopyMergedToOutput(in MemoryStream input, string relativePath, TkChangelogEntry changelog)
     {
         if (changelog.ArchiveCanonicals.Count != 0) {
-            _packFileCollector.Collect(input, changelog);
+            Debug.Fail("This should never be reached!");
             return;
         }
         

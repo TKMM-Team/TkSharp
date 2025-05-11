@@ -14,7 +14,7 @@ public readonly ref struct RentedBuffers<T> : IDisposable where T : unmanaged
         return new RentedBuffers<T>(sizes);
     }
 
-    public static RentedBuffers<byte> Allocate(Stream[] streams, bool disposeStreams = false)
+    public static RentedBuffers<byte> Allocate(ReadOnlySpan<Stream> streams, bool disposeStreams = false)
     {
         int totalBufferSize = 0;
         Range[] sections = ArrayPool<Range>.Shared.Rent(streams.Length);
