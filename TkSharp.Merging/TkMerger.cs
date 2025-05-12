@@ -179,15 +179,14 @@ public sealed class TkMerger
                 return (file, buffer);
             }).DistinctBy(x => x);
 
-            foreach ((string, byte[]) subSdkFile in subSkdFileContents) {
+            foreach ((string _, byte[] data) in subSkdFileContents) {
                 if (index > 9) {
                     index++;
                     continue;
                 }
 
-                using Stream input = changelog.Source.OpenRead($"exefs/{subSdkFile}");
                 using Stream output = mergeOutput.OpenWrite($"exefs/subsdk{++index}");
-                input.CopyTo(output);
+                output.Write(data);
             }
         }
 
