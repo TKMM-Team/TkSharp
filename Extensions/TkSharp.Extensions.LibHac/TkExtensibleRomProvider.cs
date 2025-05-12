@@ -38,29 +38,39 @@ public class TkExtensibleRomProvider : ITkRomProvider
     {
         hasBaseGame = hasUpdate = true;
         error = null;
+        Func<ITkRom?> defaultValue = () => null;
 
         _ = _config.PreferredVersion.Get(out string? preferredVersion);
+        
+        int? preferredVersionValue = int.TryParse(preferredVersion?.Replace(".", string.Empty), out int parsedVersionInline)
+            ? parsedVersionInline
+            : null;
 
         TkLog.Instance.LogDebug("[ROM *] Checking Extracted Game Dump");
         if (_config.ExtractedGameDumpFolderPath.Get(out IEnumerable<string>? extractedGameDumpPaths)) {
-            if (GetPreferred(extractedGameDumpPaths, preferredVersion, out int version) is not string extractedGameDumpPath) {
+            if (GetPreferred(extractedGameDumpPaths, preferredVersionValue, out int version) is not string extractedGameDumpPath) {
                 error = TkLocalizationInterface.Locale["TkExtensibleRomProvider_InvalidGameDump"];
-                return null;
+                goto Continue;
             }
 
             if (version < 110) {
                 error = TkLocalizationInterface.Locale["TkExtensibleRomProvider_InvalidGameDumpVersion"];
                 return null;
             }
+            
+            defaultValue = () => new ExtractedTkRom(extractedGameDumpPath, _checksums);
 
-            return new ExtractedTkRom(extractedGameDumpPath, _checksums);
+            if (version == preferredVersionValue) {
+                return defaultValue();
+            }
         }
 
+    Continue:
         TkLog.Instance.LogDebug("[ROM *] Looking for Keys");
         if (TryGetKeys() is not KeySet keys) {
             hasBaseGame = hasUpdate = false;
             error = TkLocalizationInterface.Locale["TkExtensibleRomProvider_MissingKeys"];
-            return null;
+            return defaultValue();
         }
 
         // Track a list of SwitchFs instances in use
@@ -69,22 +79,22 @@ public class TkExtensibleRomProvider : ITkRomProvider
         Title? main = null, update = null, alternateUpdate = null;
 
         TkLog.Instance.LogDebug("[ROM *] Checking Packaged Base Game");
-        if (TryBuild(_config.PackagedBaseGame, keys, collected, preferredVersion, ref main, ref update, ref alternateUpdate) is { } buildAfterBaseGame) {
+        if (TryBuild(_config.PackagedBaseGame, keys, collected, preferredVersionValue, ref main, ref update, ref alternateUpdate) is { } buildAfterBaseGame) {
             return buildAfterBaseGame;
         }
 
         TkLog.Instance.LogDebug("[ROM *] Checking Packaged Update");
-        if (TryBuild(_config.PackagedUpdate, keys, collected, preferredVersion, ref main, ref update, ref alternateUpdate) is { } buildAfterUpdate) {
+        if (TryBuild(_config.PackagedUpdate, keys, collected, preferredVersionValue, ref main, ref update, ref alternateUpdate) is { } buildAfterUpdate) {
             return buildAfterUpdate;
         }
 
         TkLog.Instance.LogDebug("[ROM *] Checking SD Card");
-        if (TryBuild(_config.SdCard, keys, collected, preferredVersion, ref main, ref update, ref alternateUpdate) is { } buildAfterSdCard) {
+        if (TryBuild(_config.SdCard, keys, collected, preferredVersionValue, ref main, ref update, ref alternateUpdate) is { } buildAfterSdCard) {
             return buildAfterSdCard;
         }
 
         TkLog.Instance.LogDebug("[ROM *] Checking NAND");
-        if (TryBuild(_config.NandFolders, keys, collected, preferredVersion, ref main, ref update, ref alternateUpdate) is { } buildAfterNand) {
+        if (TryBuild(_config.NandFolders, keys, collected, preferredVersionValue, ref main, ref update, ref alternateUpdate) is { } buildAfterNand) {
             return buildAfterNand;
         }
 
@@ -92,7 +102,7 @@ public class TkExtensibleRomProvider : ITkRomProvider
             if (update is null) {
                 TkLog.Instance.LogWarning(
                     "[ROM *] The configured preferred version ({Version}) could not be found",
-                    preferredVersion);
+                    preferredVersionValue);
             }
 
             try {
@@ -104,7 +114,7 @@ public class TkExtensibleRomProvider : ITkRomProvider
             }
             catch (Exception ex) {
                 TkLog.Instance.LogError(ex, "[ROM *] Configuration Error");
-                return null;
+                return defaultValue();
             }
         }
 
@@ -112,7 +122,7 @@ public class TkExtensibleRomProvider : ITkRomProvider
         hasUpdate = update is not null;
 
         error = TkLocalizationInterface.Locale["TkExtensibleRomProvider_InvalidConfig", hasBaseGame, hasUpdate];
-        return null;
+        return defaultValue();
     }
 
     private KeySet? TryGetKeys()
@@ -192,15 +202,11 @@ public class TkExtensibleRomProvider : ITkRomProvider
         }
     }
 
-    private static string? GetPreferred(IEnumerable<string> extractedGameDumpPaths, string? preferredVersion, out int foundVersion)
+    private static string? GetPreferred(IEnumerable<string> extractedGameDumpPaths, int? preferredVersion, out int foundVersion)
     {
-        int? parsedVersion = int.TryParse(preferredVersion?.Replace(".", string.Empty), out int parsedVersionInline)
-            ? parsedVersionInline
-            : null;
-
         foundVersion = -1;
 
-        if (parsedVersion is not int version) {
+        if (preferredVersion is not int version) {
             foreach (string path in extractedGameDumpPaths) {
                 if (TkGameDumpUtils.CheckGameDump(path, out _, out foundVersion)) {
                     return path;
