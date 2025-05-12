@@ -15,11 +15,11 @@ public class BymlArrayChangelogBuilder : IBymlArrayChangelogBuilder
         Queue<int> additions = [];
 
         using var vanillaRecordsFound = RentedBitArray.Create(vanilla.Count);
-        using var srcRecordsThatAreVanilla = RentedBitArray.Create(src.Count);
+        using var srcRecordsThatAreVanilla = RentedBitArray.Create(src.Count); 
 
         for (int i = 0; i < src.Count; i++) {
             Byml element = src[i];
-            if (!vanilla.TryGetIndex(element, Byml.ValueEqualityComparer.Default, out int vanillaIndex)) {
+            if (!vanilla.TryGetIndex(element, Byml.ValueEqualityComparer.Default, vanillaRecordsFound, out int vanillaIndex)) {
                 additions.Enqueue(i);
                 continue;
             }
