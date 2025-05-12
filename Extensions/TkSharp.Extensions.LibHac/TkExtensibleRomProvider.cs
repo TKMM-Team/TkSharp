@@ -79,22 +79,22 @@ public class TkExtensibleRomProvider : ITkRomProvider
         Title? main = null, update = null, alternateUpdate = null;
 
         TkLog.Instance.LogDebug("[ROM *] Checking Packaged Base Game");
-        if (TryBuild(_config.PackagedBaseGame, keys, collected, preferredVersionValue, ref main, ref update, ref alternateUpdate) is { } buildAfterBaseGame) {
+        if (TryBuild(_config.PackagedBaseGame, keys, collected, preferredVersion, ref main, ref update, ref alternateUpdate) is { } buildAfterBaseGame) {
             return buildAfterBaseGame;
         }
 
         TkLog.Instance.LogDebug("[ROM *] Checking Packaged Update");
-        if (TryBuild(_config.PackagedUpdate, keys, collected, preferredVersionValue, ref main, ref update, ref alternateUpdate) is { } buildAfterUpdate) {
+        if (TryBuild(_config.PackagedUpdate, keys, collected, preferredVersion, ref main, ref update, ref alternateUpdate) is { } buildAfterUpdate) {
             return buildAfterUpdate;
         }
 
         TkLog.Instance.LogDebug("[ROM *] Checking SD Card");
-        if (TryBuild(_config.SdCard, keys, collected, preferredVersionValue, ref main, ref update, ref alternateUpdate) is { } buildAfterSdCard) {
+        if (TryBuild(_config.SdCard, keys, collected, preferredVersion, ref main, ref update, ref alternateUpdate) is { } buildAfterSdCard) {
             return buildAfterSdCard;
         }
 
         TkLog.Instance.LogDebug("[ROM *] Checking NAND");
-        if (TryBuild(_config.NandFolders, keys, collected, preferredVersionValue, ref main, ref update, ref alternateUpdate) is { } buildAfterNand) {
+        if (TryBuild(_config.NandFolders, keys, collected, preferredVersion, ref main, ref update, ref alternateUpdate) is { } buildAfterNand) {
             return buildAfterNand;
         }
 
