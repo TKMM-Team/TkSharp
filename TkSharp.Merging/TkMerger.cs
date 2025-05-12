@@ -224,9 +224,14 @@ public sealed class TkMerger
     internal static void MergeCustomTarget(ITkMerger merger, ArraySegment<byte> @base, ReadOnlySpan<Stream> targets, TkChangelogEntry changelog, Stream output)
     {
         using RentedBuffers<byte> targetsBuffer = RentedBuffers<byte>.Allocate(targets); 
-        ArraySegment<byte>[] changelogs = TkChangelogBuilder.CreateChangelogsExternal(
+        ArraySegment<ArraySegment<byte>> changelogs = TkChangelogBuilder.CreateChangelogsExternal(
             changelog.Canonical, flags: default, @base, targetsBuffer, changelog.Attributes
         );
+
+        if (changelogs.Count == 0) {
+            output.Write(@base);
+            return;
+        }
 
         merger.Merge(changelog, changelogs, @base, output);
     }
