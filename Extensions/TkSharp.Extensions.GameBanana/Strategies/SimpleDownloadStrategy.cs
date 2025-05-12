@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net.Sockets;
 using TkSharp.Extensions.GameBanana.Models;
 
 namespace TkSharp.Extensions.GameBanana.Strategies;
@@ -11,18 +12,7 @@ public class SimpleDownloadStrategy(HttpClient client) : IDownloadStrategy
     {
         HttpResponseMessage? response = null;
         try {
-            try {
-                response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
-            }
-            catch (HttpRequestException ex) when (ex.InnerException is System.Net.Sockets.SocketException) {
-                throw new HttpRequestException(
-                    "Unable to connect to the server. Please check your internet connection and try again.", 
-                    ex);
-            }
-            catch (TaskCanceledException) {
-                throw new HttpRequestException(
-                    "The server took too long to respond. This might be due to a slow internet connection or server issues.");
-            }
+            response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
             
             if (!response.IsSuccessStatusCode) {
                 string errorMessage = response.StatusCode switch {
@@ -90,13 +80,24 @@ public class SimpleDownloadStrategy(HttpClient client) : IDownloadStrategy
 
             return result;
         }
-        catch (OperationCanceledException) {
-            throw new OperationCanceledException("Download was cancelled.");
+        catch (HttpRequestException ex) when (ex.InnerException is SocketException) {
+            throw new HttpRequestException(
+                "Unable to connect to the server. " +
+                "Please check your internet connection and try again.", ex);
+        }
+        catch (TaskCanceledException ex) {
+            throw new OperationCanceledException(
+                "Download was cancelled.", ex);
+        }
+        catch (OperationCanceledException ex) {
+            throw new HttpRequestException(
+                "The server took too long to respond." +
+                " This might be due to a slow internet connection or server issues.", ex);
         }
         catch (Exception ex) when (ex is not HttpRequestException) {
             throw new HttpRequestException(
-                "An unexpected error occurred while downloading. Please check your internet connection and try again.", 
-                ex);
+                "An unexpected error occurred while downloading. " +
+                "Please check your internet connection and try again.", ex);
         }
         finally {
             response?.Dispose();

@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
 using TkSharp.Extensions.GameBanana.Models;
 
 namespace TkSharp.Extensions.GameBanana.Strategies;
@@ -15,18 +16,7 @@ public class ThreadedDownloadStrategy(HttpClient client) : IDownloadStrategy
     {
         HttpResponseMessage? response = null;
         try {
-            try {
-                response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
-            }
-            catch (HttpRequestException ex) when (ex.InnerException is System.Net.Sockets.SocketException) {
-                throw new HttpRequestException(
-                    "Unable to establish connection to the server. Please check your internet connection and try again.", 
-                    ex);
-            }
-            catch (TaskCanceledException) {
-                throw new HttpRequestException(
-                    "The initial connection to the server timed out. This could be due to slow internet or server issues.");
-            }
+            response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
 
             if (!response.IsSuccessStatusCode) {
                 string errorMessage = response.StatusCode switch {
@@ -158,7 +148,7 @@ public class ThreadedDownloadStrategy(HttpClient client) : IDownloadStrategy
 
                                 success = segmentBytesRead == expectedBytes;
                             }
-                            catch (Exception ex) {
+                            catch {
                                 attempt++;
                                 if (attempt < maxRetry) {
                                     await Task.Delay(100 * attempt, ct);
@@ -181,7 +171,7 @@ public class ThreadedDownloadStrategy(HttpClient client) : IDownloadStrategy
                 await Task.WhenAll(downloadTasks);
             }
             catch (Exception) {
-                if (failures.Count > 0) {
+                if (!failures.IsEmpty) {
                     throw new HttpRequestException(
                         $"Download failed: {failures.Count} of {segments} segments failed to download.\n" +
                         $"Details:\n{string.Join("\n", failures.Values)}\n" +
@@ -192,13 +182,24 @@ public class ThreadedDownloadStrategy(HttpClient client) : IDownloadStrategy
 
             return result;
         }
-        catch (OperationCanceledException) {
-            throw new OperationCanceledException("Download was cancelled by the user.");
-        }
-        catch (Exception ex) when (ex is not HttpRequestException) {
+        catch (HttpRequestException ex) when (ex.InnerException is SocketException) {
             throw new HttpRequestException(
-                "An unexpected error occurred during the download. Please check your internet connection and try again.", 
-                ex);
+                "Unable to establish connection to the server. " +
+                "Please check your internet connection and try again.", ex);
+        }
+        catch (TaskCanceledException ex) {
+            throw new OperationCanceledException(
+                "Download was cancelled.", ex);
+        }
+        catch (OperationCanceledException ex) {
+            throw new HttpRequestException(
+                "The initial connection to the server timed out. " +
+                "This could be due to slow internet or server issues.", ex);
+        }
+        catch (Exception ex) {
+            throw new HttpRequestException(
+                "An unexpected error occurred during the download. " +
+                "Please check your internet connection and try again.", ex);
         }
         finally {
             response?.Dispose();
