@@ -20,8 +20,7 @@ public ref struct RentedBuffer<T> : IDisposable where T : unmanaged
     {
         int size = (int)stream.Length;
         RentedBuffer<byte> result = RentedBuffer<byte>.Allocate(size);
-        int read = stream.Read(result._buffer, 0, size);
-        Debug.Assert(read == size);
+        stream.ReadExactly(result._buffer, 0, size);
         return result;
     }
 

@@ -33,6 +33,13 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
             Sarc sarc = vanilla.IsEmpty ? new Sarc() : Sarc.FromBinary(vanilla.Segment);
             WritePackFile(sarc, relativePath, key, packFile);
         }
+
+        foreach (Either<PackFileEntry,PackFileDelayMergeEntry> either in _cache) {
+            either.Match(
+                entry => entry.Inputs.Iter(x => x.Dispose()),
+                entry => entry.Data.Dispose()
+            );
+        }
     }
 
     private void WritePackFile(Sarc sarc, string relativePath, PackFileEntryKey key,
@@ -60,14 +67,16 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
                     }
                     
                 UpdateSarc:
+                    foreach (Stream input in entry.Inputs) {
+                        input.Seek(0, SeekOrigin.Begin);
+                    }
+                    
                     ArraySegment<byte> buffer = output.GetSpan();
                     sarc[name] = buffer;
                     resourceSizeCollector.Collect(buffer.Count, name, buffer);
                 },
                 entry => {
-                    ArraySegment<byte> entryData = sarc[name];
-
-                    if (PackMerger.IsRemovedEntry(entryData)) {
+                    if (sarc.TryGetValue(name, out ArraySegment<byte> entryData) && PackMerger.IsRemovedEntry(entryData)) {
                         sarc.Remove(name);
                         return;
                     }
@@ -84,7 +93,7 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
                         entry.Data.Seek(0, SeekOrigin.Begin);
                     }
 
-                    resourceSizeCollector.Collect(entryData.Count, name, entryData);
+                    resourceSizeCollector.Collect(entryData.Count, name, sarc[name]);
                 }
             );   
         }

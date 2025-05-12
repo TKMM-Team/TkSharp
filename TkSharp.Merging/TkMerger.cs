@@ -233,8 +233,8 @@ public sealed class TkMerger
 
     private void CopyToOutput(Stream input, string relativePath, TkChangelogEntry changelog)
     {
-        if (changelog.ArchiveCanonicals.Count > 0) {
-            Debug.Fail("This should never be reached!");
+        if (changelog.ArchiveCanonicals.Count != 0) {
+            _packFileCollector.Collect(changelog, input);
             return;
         }
         
@@ -271,7 +271,7 @@ public sealed class TkMerger
     private void CopyMergedToOutput(in MemoryStream input, string relativePath, TkChangelogEntry changelog)
     {
         if (changelog.ArchiveCanonicals.Count != 0) {
-            Debug.Fail("This should never be reached!");
+            _packFileCollector.Collect(changelog, input);
             return;
         }
         
