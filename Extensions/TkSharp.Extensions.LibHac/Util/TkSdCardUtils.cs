@@ -109,19 +109,37 @@ internal static class TkSdCardUtils
                 continue;
             }
 
-            hasBaseGame |= TkGameRomUtils.IsFileValid(keys, file, out dumpHasUpdate, switchFsContainer);
-            hasUpdate |= dumpHasUpdate;
+            try {
+                hasBaseGame |= TkGameRomUtils.IsFileValid(keys, file, out dumpHasUpdate, switchFsContainer);
+                hasUpdate |= dumpHasUpdate;
+            }
+            catch (HorizonResultException ex) {
+                var truncatedEx = ex.ToString().Split(Environment.NewLine)[0];
+                TkLog.Instance.LogWarning("Failed to read file {file}: {truncatedEx}", file, truncatedEx);
+            }
+            catch (Exception ex) {
+                TkLog.Instance.LogWarning("An unexpected error occurred while reading split file: {ex}", ex);
+            }
         }
 
-        foreach (string file in Directory.EnumerateDirectories(dumpFolder, "*", SearchOption.AllDirectories)) {
-            string folderName = Path.GetFileName(file);
+        foreach (string folder in Directory.EnumerateDirectories(dumpFolder, "*", SearchOption.AllDirectories)) {
+            string folderName = Path.GetFileName(folder);
             if (!folderName.Contains("NSP", StringComparison.OrdinalIgnoreCase) && 
                 !folderName.Contains("XCI", StringComparison.OrdinalIgnoreCase)) {
                 continue;
             }
 
-            hasBaseGame |= TkGameRomUtils.IsSplitFileValid(keys, file, out dumpHasUpdate, switchFsContainer);
-            hasUpdate |= dumpHasUpdate;
+            try {
+                hasBaseGame |= TkGameRomUtils.IsSplitFileValid(keys, folder, out dumpHasUpdate, switchFsContainer);
+                hasUpdate |= dumpHasUpdate;
+            }
+            catch (HorizonResultException ex) {
+                var truncatedEx = ex.ToString().Split(Environment.NewLine)[0];
+                TkLog.Instance.LogWarning("Failed to read split file in {folder}: {truncatedEx}", folder, truncatedEx);
+            }
+            catch (Exception ex) {
+                TkLog.Instance.LogWarning("An unexpected error occurred while reading split file: {ex}", ex);
+            }
         }
         
         if (!result) result = hasBaseGame;
