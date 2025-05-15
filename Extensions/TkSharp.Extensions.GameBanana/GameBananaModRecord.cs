@@ -57,8 +57,13 @@ public partial class GameBananaModRecord : ObservableObject
 
             Thumbnail = TkThumbnail.CreateBitmap(ms);
         }
-        catch (Exception ex) {
-            TkLog.Instance.LogError(ex, "Failed to download GameBanana thumbnails");
+        catch (HttpRequestException ex) {
+            var truncatedEx = ex.ToString().Split(Environment.NewLine)[0];
+            TkLog.Instance.LogWarning("Failed to download GameBanana thumbnails: {Message}", truncatedEx);
         }
+        catch (Exception ex) {
+            TkLog.Instance.LogWarning("Failed to download GameBanana thumbnails: {Message}", ex);
+        }
+
     }
 }
