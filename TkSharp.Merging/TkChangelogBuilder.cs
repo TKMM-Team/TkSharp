@@ -155,7 +155,7 @@ public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom
         }
     }
 
-    public static ArraySegment<byte>[] CreateChangelogsExternal(string canonical, TkChangelogBuilderFlags flags, ArraySegment<byte> @base, RentedBuffers<byte> changelogs, TkFileAttributes attributes)
+    public static ArraySegment<ArraySegment<byte>> CreateChangelogsExternal(string canonical, TkChangelogBuilderFlags flags, ArraySegment<byte> @base, RentedBuffers<byte> changelogs, TkFileAttributes attributes)
     {
         TkPath path = new(canonical, 100, attributes, "romfs", "");
 
@@ -164,16 +164,22 @@ public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom
                 $"Target file {canonical} cannot be merged as a custom file because no changelog builder could be found.");
         }
 
+        int index = -1;
         var result = new ArraySegment<byte>[changelogs.Count];
 
-        for (int i = 0; i < changelogs.Count; i++) {
+        foreach (RentedBuffers<byte>.Entry entry in changelogs) {
             using MemoryStream output = new();
             TkPath pathIteratorStackInstance = new(canonical, 100, attributes, "romfs", "");
-            builder.Build(canonical, pathIteratorStackInstance, flags, changelogs[i].Segment, @base, (_, _, _) => output);
-            result[i] = output.GetSpan();
+            
+            // ReSharper disable once AccessToDisposedClosure
+            if (builder.Build(canonical, pathIteratorStackInstance, flags, entry.Segment, @base, (_, _, _) => output)) {
+                // Copy the buffer because output
+                // is disposed before this is used
+                result[++index] = output.ToArray();
+            }
         }
         
-        return result;
+        return new ArraySegment<ArraySegment<byte>>(result, 0, ++index);
     }
 
     private void AddChangelogMetadata(in TkPath path, ref string canonical, ChangelogEntryType type, int zsDictionaryId,
