@@ -109,15 +109,19 @@ internal static class TkSdCardUtils
                 continue;
             }
 
-            hasBaseGame = TkGameRomUtils.IsFileValid(keys, file, out dumpHasUpdate, switchFsContainer);
+            hasBaseGame |= TkGameRomUtils.IsFileValid(keys, file, out dumpHasUpdate, switchFsContainer);
+            hasUpdate |= dumpHasUpdate;
         }
 
-        foreach (string file in Directory.EnumerateDirectories(dumpFolder, "*.*", SearchOption.AllDirectories)) {
-            if (Path.GetExtension(file.AsSpan()) is not (".nsp" or ".xci")) {
+        foreach (string file in Directory.EnumerateDirectories(dumpFolder, "*", SearchOption.AllDirectories)) {
+            string folderName = Path.GetFileName(file);
+            if (!folderName.Contains("NSP", StringComparison.OrdinalIgnoreCase) && 
+                !folderName.Contains("XCI", StringComparison.OrdinalIgnoreCase)) {
                 continue;
             }
 
-            hasBaseGame = TkGameRomUtils.IsSplitFileValid(keys, file, out dumpHasUpdate, switchFsContainer);
+            hasBaseGame |= TkGameRomUtils.IsSplitFileValid(keys, file, out dumpHasUpdate, switchFsContainer);
+            hasUpdate |= dumpHasUpdate;
         }
         
         if (!result) result = hasBaseGame;
