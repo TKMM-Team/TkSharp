@@ -61,8 +61,6 @@ public sealed class TkResourceSizeCollector
             canonical,
             extension,
             data);
-        
-        size += size.AlignUp(0x20U);
 
         if (_result.OverflowTable.ContainsKey(canonical)) {
             lock (_result) {
