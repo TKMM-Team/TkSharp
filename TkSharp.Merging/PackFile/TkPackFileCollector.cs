@@ -93,7 +93,7 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
                         entry.Data.Seek(0, SeekOrigin.Begin);
                     }
 
-                    resourceSizeCollector.Collect(entryData.Count, name, sarc[name]);
+                    resourceSizeCollector.Collect(sarc[name].Count, name, sarc[name]);
                 }
             );   
         }
