@@ -54,6 +54,8 @@ public sealed class TkResourceSizeCollector
             return;
         }
 
+        fileSize += fileSize.AlignUp(0x20);
+        
         uint size = GetResourceSize(
             (uint)fileSize,
             canonical,
