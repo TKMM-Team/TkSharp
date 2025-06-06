@@ -25,7 +25,7 @@ public sealed class TkResourceSizeCollector
         _rom = rom;
 
         _relativePath = _rom.GameVersion >= 140
-            ? $"System/Resource/ResourceSizeTable.Product.{_rom.GameVersion}.NIN_NX_NVN.rsizetable.zs"
+            ? $"System/Resource/ResourceSizeTable.Product.{_rom.GameVersion}.Nin_NX_NVN.rsizetable.zs"
             : $"System/Resource/ResourceSizeTable.Product.{_rom.GameVersion}.rsizetable.zs";
         
         using RentedBuffer<byte> vanillaRstb = _rom.GetVanilla(_relativePath);
