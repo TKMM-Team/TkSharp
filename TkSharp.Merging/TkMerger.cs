@@ -435,9 +435,33 @@ public sealed class TkMerger
             return Path.Combine("romfs", $"{entry.Canonical}{targetVersion}");
         }
 
+        if (canon.Length > 8 && canon[..8] is "Sequence") {
+            ReadOnlySpan<char> sequenceName = Path.GetFileNameWithoutExtension(canon);
+            int targetVersion = _rom.SequenceVersions.TryGetValue(sequenceName, out string? version)
+                ? GetBestVersion(int.Parse(version.AsSpan()[^3..]), entry.Versions)
+                : entry.Versions[0];
+            return Path.Combine("romfs", $"{entry.Canonical}{targetVersion}");
+        }
+
         if (canon.Length > 6 && canon[..6] is "Effect") {
             ReadOnlySpan<char> effectName = Path.GetFileNameWithoutExtension(canon);
             int targetVersion = _rom.EffectVersions.TryGetValue(effectName, out string? version)
+                ? GetBestVersion(int.Parse(version.AsSpan()[^3..]), entry.Versions)
+                : entry.Versions[0];
+            return Path.Combine("romfs", $"{entry.Canonical}{targetVersion}");
+        }
+
+        if (canon.Length > 5 && canon[..5] is "Logic") {
+            ReadOnlySpan<char> logicName = Path.GetFileNameWithoutExtension(canon);
+            int targetVersion = _rom.LogicVersions.TryGetValue(logicName, out string? version)
+                ? GetBestVersion(int.Parse(version.AsSpan()[^3..]), entry.Versions)
+                : entry.Versions[0];
+            return Path.Combine("romfs", $"{entry.Canonical}{targetVersion}");
+        }
+
+        if (canon.Length > 2 && canon[..2] is "AI") {
+            ReadOnlySpan<char> aiName = Path.GetFileNameWithoutExtension(canon);
+            int targetVersion = _rom.AiVersions.TryGetValue(aiName, out string? version)
                 ? GetBestVersion(int.Parse(version.AsSpan()[^3..]), entry.Versions)
                 : entry.Versions[0];
             return Path.Combine("romfs", $"{entry.Canonical}{targetVersion}");

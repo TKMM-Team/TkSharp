@@ -20,6 +20,12 @@ public class NullTkRom : ITkRom
 
     public Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> EffectVersions => default;
 
+    public Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> AiVersions => default;
+
+    public Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> LogicVersions => default;
+
+    public Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> SequenceVersions => default;
+
     public string CanonicalToRelativePath(string canonical, TkFileAttributes attributes) => canonical;
 
     public RentedBuffer<byte> GetVanilla(string canonical, TkFileAttributes attributes) => new();

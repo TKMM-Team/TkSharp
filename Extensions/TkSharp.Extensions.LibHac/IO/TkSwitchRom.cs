@@ -27,6 +27,12 @@ internal sealed class TkSwitchRom : ITkRom
 
     public Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> EffectVersions { get; }
 
+    public Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> AiVersions { get; }
+
+    public Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> LogicVersions { get; }
+
+    public Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> SequenceVersions { get; }
+
     public TkSwitchRom(IFileSystem fs, IEnumerable<SwitchFs> disposables, TkChecksums checksums)
     {
         _fileSystem = fs;
@@ -56,6 +62,21 @@ internal sealed class TkSwitchRom : ITkRom
         using (Stream effectInfoFs = _fileSystem.OpenFileStream($"/{AddressTable["Effect/EffectFileInfo.Product.Nin_NX_NVN.byml"]}.zs"))
         using (RentedBuffer<byte> effectInfoBuffer = RentedBuffer<byte>.Allocate(effectInfoFs)) {
             EffectVersions = EffectInfoParser.ParseFileEntry(effectInfoBuffer.Span, Zstd);
+        }
+
+        using (Stream ainbFileEntryFs = _fileSystem.OpenFileStream($"/{AddressTable["AI/FileEntry/FileEntry.Product.byml"]}.zs"))
+        using (RentedBuffer<byte> ainbFileEntryBuffer = RentedBuffer<byte>.Allocate(ainbFileEntryFs)) {
+            AiVersions = StandardFileEntryParser.ParseStandardFileEntry(ainbFileEntryBuffer.Span, Zstd);
+        }
+
+        using (Stream logicFileEntryFs = _fileSystem.OpenFileStream($"/{AddressTable["Logic/FileEntry/FileEntry.Product.byml"]}.zs"))
+        using (RentedBuffer<byte> logicFileEntryBuffer = RentedBuffer<byte>.Allocate(logicFileEntryFs)) {
+            LogicVersions = StandardFileEntryParser.ParseStandardFileEntry(logicFileEntryBuffer.Span, Zstd);
+        }
+
+        using (Stream sequenceFileEntryFs = _fileSystem.OpenFileStream($"/{AddressTable["Sequence/FileEntry/FileEntry.Product.byml"]}.zs"))
+        using (RentedBuffer<byte> sequenceFileEntryBuffer = RentedBuffer<byte>.Allocate(sequenceFileEntryFs)) {
+            SequenceVersions = StandardFileEntryParser.ParseStandardFileEntry(sequenceFileEntryBuffer.Span, Zstd);
         }
     }
 
