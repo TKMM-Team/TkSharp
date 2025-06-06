@@ -15,6 +15,7 @@ public class TkPatch(string nsoBinaryId)
     private const string NSO_BINARY_ID_112 = "9a10ed9435c06733da597d8094d9000ab5d3ee60";
     private const string NSO_BINARY_ID_120 = "6f32c68dd3bc7d77aa714b80e92a096a737cda77";
     private const string NSO_BINARY_ID_121 = "9b4e43650501a4d4489b4bbfdb740f26af3cf850";
+    private const string NSO_BINARY_ID_140 = "6265f94d606242ce730ef721a8037dda8e4bfc63";
 
     private const uint IPS32_MAGIC_PREFIX = 0x33535049;
     private const byte IPS32_MAGIC_SUFFIX = 0x32;
@@ -27,6 +28,7 @@ public class TkPatch(string nsoBinaryId)
         [NSO_BINARY_ID_112] = 0x01ace2b8,
         [NSO_BINARY_ID_120] = 0x01ac0128,
         [NSO_BINARY_ID_121] = 0x01acb308,
+        [NSO_BINARY_ID_140] = 0x0212e60c,
     };
 
     public static TkPatch CreateWithDefaults(string nsoBinaryId, uint shopParamLimit = 512)
