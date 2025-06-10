@@ -377,15 +377,15 @@ public sealed class TkMerger
             );
         }
 
-        // This is a workaround for the file not found error that occurs when mods
-        // include files with the same canonical path but with different versions.
-        // It processes only the entry from the mod with the highest priority, but
-        // may have unintended side effects.
-        var lastEntry = group.Last();
-        string relativeFilePath = GetRelativeRomFsPath(lastEntry.Entry);
+        // TODO: Proper support for mixed version usage should
+        // be implemented, however by always using the path of
+        // the last entry, we can avoid explicitly handling it
+        (TkChangelogEntry Entry, TkChangelog Changelog) last = group.Last();
+        string relativeFilePath = GetRelativeRomFsPath(last.Entry);
+        
         return (
             Changelog: group.Key,
-            Target: lastEntry.Changelog.Source!.OpenRead(relativeFilePath)
+            Target: last.Changelog.Source!.OpenRead(relativeFilePath)
         );
     }
 
