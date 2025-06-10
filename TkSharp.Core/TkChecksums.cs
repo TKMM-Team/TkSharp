@@ -10,11 +10,17 @@ namespace TkSharp.Core;
 
 public sealed class TkChecksums
 {
+    private const uint MAGIC = 0x544C4350;
+    
     private readonly int _version;
     private readonly FrozenDictionary<ulong, Entry[]> _entries;
 
     public static TkChecksums FromStream(in Stream stream)
     {
+        if (stream.Read<int>() != MAGIC) {
+            throw new InvalidDataException("Invalid magic");
+        }
+        
         int version = stream.Read<int>();
         int entryCount = stream.Read<int>();
 
