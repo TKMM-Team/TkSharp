@@ -47,23 +47,17 @@ public interface ITkRom : IDisposable
             result = $"{EFFECT_FOLDER}/{effectFileName}.Product.Nin_NX_NVN.esetb.byml";
         }
 
-        // TODO: Implement AI, Logic, and Sequence versions
-        // not sure how to do these...
+        if (canon.Length > 9 && canon[..9] is $"{SEQUENCE_FOLDER}/" && SequenceVersions.TryGetValue(canon, out string? sequenceVersionFile)) {
+            result = sequenceVersionFile;
+        }
 
-        //if (canon[..2] is AI_FOLDER && canon[16..^7] is var aiName
-        //    && AIVersions.TryGetValue(aiName, out string? version)) {
-        //    result = $"{AI_FOLDER}/{aiName}.{version}{Path.GetExtension(canon)}";
-        //}
+        if (canon.Length > 6 && canon[..6] is $"{LOGIC_FOLDER}/" && LogicVersions.TryGetValue(canon, out string? logicVersionFile)) {
+            result = logicVersionFile;
+        }
 
-        //if (canon.Length > 26 && canon[..15] is LOGIC_FOLDER && canon[16..^7] is var logicName
-        //    && LogicVersions.TryGetValue(logicName, out string? version)) {
-        //    result = $"{LOGIC_FOLDER}/{logicName}.{version}{Path.GetExtension(canon)}";
-        //}
-
-        //if (canon.Length > 26 && canon[..15] is SEQUENCE_FOLDER && canon[16..^7] is var sequenceName
-        //    && SequenceVersions.TryGetValue(sequenceName, out string? version)) {
-        //    result = $"{SEQUENCE_FOLDER}/{sequenceName}.{version}.module.{Path.GetExtension(canon)}";
-        //}
+        if (canon.Length > 3 && canon[..3] is $"{AI_FOLDER}/" && AiVersions.TryGetValue(canon, out string? aiVersionFile)) {
+            result = aiVersionFile;
+        }
 
         if (attributes.HasFlag(TkFileAttributes.HasZsExtension)) {
             result += ".zs";
