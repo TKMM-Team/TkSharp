@@ -180,6 +180,10 @@ public class BymlArrayChangelogBuilderProvider : Singleton<BymlArrayChangelogBui
                 "game__ui__PouchSortTable" => BymlDirectIndexArrayChangelogBuilder.Instance,
                 _ => BymlArrayChangelogBuilder.Instance
             },
+            "RecipeArray" => info.Type switch {
+                "game__cooking__RecipeCardTable" => BymlDirectIndexArrayChangelogBuilder.Instance,
+                _ => BymlArrayChangelogBuilder.Instance
+            },
             _ => info.Type switch {
                 "game__component__ConditionParam" => BymlDirectIndexArrayChangelogBuilder.Instance,
                 _ => BymlArrayChangelogBuilder.Instance

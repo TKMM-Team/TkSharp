@@ -366,6 +366,12 @@ public sealed class TkMerger
 
     private MergeTarget GetInputs(IGrouping<TkChangelogEntry, (TkChangelogEntry Entry, TkChangelog Changelog)> group)
     {
+        // Ensure the key changelog contains
+        // every archive requesting this file
+        group.Key.ArchiveCanonicals.AddRange(
+            group.Where(entry => !ReferenceEquals(entry.Entry, group.Key)).SelectMany(x => x.Entry.ArchiveCanonicals)
+        );
+            
         if (GetMerger(group.Key.Canonical) is ITkMerger merger) {
             return (
                 Changelog: group.Key,
