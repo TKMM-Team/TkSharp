@@ -13,7 +13,7 @@ namespace TkSharp.Merging.ChangelogBuilders;
 public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilder>, ITkChangelogBuilder
 {
     public bool CanProcessWithoutVanilla => false;
-    
+
     public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
     {
         BymlMap changelog = [];
@@ -27,7 +27,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
             BymlArray vanillaEntries = vanilla[tableName].GetArray();
 
             if (tableName is "Bool64bitKey") {
-                if (LogUInt64Entries(ref bymlTrackingInfo, entries, vanillaEntries) is { Count: > 0 } u64LogResult) {
+                if (LogUInt64Entries(ref bymlTrackingInfo, path.FileVersion, entries, vanillaEntries) is { Count: > 0 } u64LogResult) {
                     changelog[tableName] = u64LogResult;
                 }
 
@@ -41,7 +41,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
 
             ulong tableNameHash = XxHash3.HashToUInt64(
                 tableName.AsSpan().Cast<char, byte>());
-            if (LogEntries(ref bymlTrackingInfo, tableNameHash, entries, vanillaEntries, arrayChangelogBuilderProvider) is { Count: > 0 } logResult) {
+            if (LogEntries(ref bymlTrackingInfo, path.FileVersion, tableNameHash, entries, vanillaEntries, arrayChangelogBuilderProvider) is { Count: > 0 } logResult) {
                 changelog[tableName] = logResult;
             }
         }
@@ -59,8 +59,8 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
         return true;
     }
 
-    private static BymlHashMap32 LogEntries(ref BymlTrackingInfo bymlTrackingInfo, ulong tableNameHash,
-        BymlArray src, BymlArray vanilla, IBymlArrayChangelogBuilderProvider changelogBuilderProvider)
+    private static BymlHashMap32 LogEntries(ref BymlTrackingInfo bymlTrackingInfo, int gameDataListFileVersion,
+        ulong tableNameHash, BymlArray src, BymlArray vanilla, IBymlArrayChangelogBuilderProvider changelogBuilderProvider)
     {
         BymlHashMap32 changelog = [];
 
@@ -71,7 +71,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
                 continue;
             }
 
-            if (!GameDataIndex.TryGetIndex(tableNameHash, hash, out int index)) {
+            if (!GameDataIndex.TryGetIndex(gameDataListFileVersion, tableNameHash, hash, out int index)) {
                 src.RemoveAt(i);
                 i--;
                 goto UpdateChangelog;
@@ -95,7 +95,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
         return changelog;
     }
 
-    private static BymlHashMap64 LogUInt64Entries(ref BymlTrackingInfo bymlTrackingInfo, BymlArray src, BymlArray vanilla)
+    private static BymlHashMap64 LogUInt64Entries(ref BymlTrackingInfo bymlTrackingInfo, int gameDataListFileVersion, BymlArray src, BymlArray vanilla)
     {
         BymlHashMap64 changelog = [];
 
@@ -106,7 +106,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
                 continue;
             }
 
-            if (!GameDataIndex.TryGetIndex(hash, out int index)) {
+            if (!GameDataIndex.TryGetIndex(gameDataListFileVersion, hash, out int index)) {
                 goto UpdateChangelog;
             }
 

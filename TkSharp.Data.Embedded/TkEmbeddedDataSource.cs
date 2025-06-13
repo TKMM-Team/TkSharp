@@ -27,6 +27,6 @@ public static class TkEmbeddedDataSource
 
     public static Stream GetChecksumsBin()
     {
-        return GetResource("Resources/Checksums.bin")!;
+        return GetResource("Resources/Checksums.bpclt")!;
     }
 }
