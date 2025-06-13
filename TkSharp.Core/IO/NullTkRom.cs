@@ -8,7 +8,7 @@ namespace TkSharp.Core.IO;
 /// </summary>
 public class NullTkRom : ITkRom
 {
-    public int GameVersion => 121;
+    public int GameVersion => 141;
 
     public string NsoBinaryId => string.Empty;
 
