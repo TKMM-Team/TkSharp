@@ -30,7 +30,7 @@ public class TkPatch(string nsoBinaryId)
         [NSO_BINARY_ID_120] = 0x01ac0128,
         [NSO_BINARY_ID_121] = 0x01acb308,
         [NSO_BINARY_ID_140] = 0x0212e60c,
-        [NSO_BINARY_ID_141] = 0x00000000, // TODO: Add shop param patch address for 1.4.1
+        [NSO_BINARY_ID_141] = 0x0211e2b8,
     };
 
     public static TkPatch CreateWithDefaults(string nsoBinaryId, uint shopParamLimit = 512)
