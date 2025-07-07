@@ -12,6 +12,6 @@ public sealed class ModelCodecResourceCalculator : ITkResourceSizeCalculator
     {
         int flags = data[0x8..0xC].Read<int>();
         int size = (flags >> 5) << (flags & 0xF);
-        return (uint)(size * 2.3);
+        return (uint)(size * 2.55);
     }
 }
