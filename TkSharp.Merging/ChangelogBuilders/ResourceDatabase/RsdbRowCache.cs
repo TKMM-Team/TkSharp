@@ -15,7 +15,7 @@ namespace TkSharp.Merging.ChangelogBuilders.ResourceDatabase;
 public static class RsdbRowCache
 {
     private static readonly OverflowMap _overflow;
-    
+
     public static bool TryGetVanilla(ulong dbNameHash, ulong rowId, int dbFileVersion, [MaybeNullWhen(false)] out Byml vanilla)
     {
         vanilla = GetVanilla(dbNameHash, rowId, dbFileVersion);
@@ -24,7 +24,8 @@ public static class RsdbRowCache
 
     public static Byml? GetVanilla(ulong dbNameHash, ulong rowId, int dbFileVersion)
     {
-        if (!_overflow[dbNameHash].TryGetValue(rowId, out OverflowMapEntry[]? result)) {
+        if (!_overflow.TryGetValue(dbNameHash, out OverflowMapEntries? rows) ||
+            !rows.TryGetValue(rowId, out OverflowMapEntry[]? result)) {
             return null;
         }
 
@@ -47,9 +48,9 @@ public static class RsdbRowCache
         using Stream stream = typeof(RsdbRowCache).Assembly
             .GetManifestResourceStream("TkSharp.Merging.Resources.RsdbCache.bpcc")!;
 
-        MutableOverflowMap overflow = [];
-
         int count = stream.Read<int>();
+        MutableOverflowMap overflow = new(count);
+
         for (int i = 0; i < count; i++) {
             ulong hash = stream.Read<ulong>();
             int entryCount = stream.Read<int>();
