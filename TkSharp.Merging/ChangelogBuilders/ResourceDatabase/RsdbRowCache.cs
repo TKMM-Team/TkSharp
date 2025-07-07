@@ -45,7 +45,7 @@ public static class RsdbRowCache
     static RsdbRowCache()
     {
         using Stream stream = typeof(RsdbRowCache).Assembly
-            .GetManifestResourceStream("TkSharp.Merging.Resources.RsdbRowCache.bpcc")!;
+            .GetManifestResourceStream("TkSharp.Merging.Resources.RsdbCache.bpcc")!;
 
         MutableOverflowMap overflow = [];
 
