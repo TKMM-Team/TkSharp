@@ -16,7 +16,7 @@ public sealed class TkPackFileLookup(Stream pkcache, Stream? precompiled = null)
     
     private ITkRom? _rom;
     private Stream? _precompiled = precompiled;
-    private readonly FrozenDictionary<ulong, string> _lookup = CreateLookup(pkcache);
+    private readonly FrozenDictionary<ulong, (string, TkFileAttributes)> _lookup = CreateLookup(pkcache);
 
     public TkPackFileLookup Init(ITkRom rom)
     {
@@ -41,8 +41,8 @@ public sealed class TkPackFileLookup(Stream pkcache, Stream? precompiled = null)
             throw new InvalidOperationException("Pack file lookup is not initialized.");
         }
         
-        if (GetPackFileName(canonical, out RentedBuffer<byte> buffer) is string packFileName) {
-            RentedBuffer<byte> sarcBuffer = _rom.GetVanilla(packFileName);
+        if (GetPackFileName(canonical, out RentedBuffer<byte> buffer) is (string packFileCanonical, var attributes)) {
+            RentedBuffer<byte> sarcBuffer = _rom.GetVanilla(packFileCanonical, attributes);
             RevrsReader reader = new(sarcBuffer.Span);
             ImmutableSarc sarc = new(ref reader);
             ImmutableSarcEntry entry = sarc[canonical];
@@ -59,7 +59,7 @@ public sealed class TkPackFileLookup(Stream pkcache, Stream? precompiled = null)
     /// <param name="canonical"></param>
     /// <param name="buffer"></param>
     /// <returns></returns>
-    private string? GetPackFileName(string canonical, out RentedBuffer<byte> buffer)
+    private (string, TkFileAttributes)? GetPackFileName(string canonical, out RentedBuffer<byte> buffer)
     {
         if (_precompiled != null) {
             SarcTools.JumpToEntry(_precompiled, canonical, out int size);
@@ -72,7 +72,7 @@ public sealed class TkPackFileLookup(Stream pkcache, Stream? precompiled = null)
         return _lookup.GetValueOrDefault(GetKey(canonical));
     }
     
-    private static unsafe FrozenDictionary<ulong, string> CreateLookup(Stream pkcache)
+    private static unsafe FrozenDictionary<ulong, (string, TkFileAttributes)> CreateLookup(Stream pkcache)
     {
         const uint magic = 0x48434B50;
         
@@ -85,29 +85,30 @@ public sealed class TkPackFileLookup(Stream pkcache, Stream? precompiled = null)
         
         RevrsReader reader = RevrsReader.Native(buffer.Span);
         if (reader.Read<uint>() != magic) {
-            throw new InvalidDataException($"Invalid pkcache magic");
+            throw new InvalidDataException("Invalid pkcache magic");
         }
 
         int count = reader.Read<int>();
         int stringTableOffset = reader.Read<int>();
         int stringCount = reader.Read<int>();
         
-        using SpanOwner<string> valuesOwner = SpanOwner<string>.Allocate(stringCount);
-        Span<string> values = valuesOwner.Span;
+        using SpanOwner<(string, TkFileAttributes)> valuesOwner = SpanOwner<(string, TkFileAttributes)>.Allocate(stringCount);
+        Span<(string, TkFileAttributes)> values = valuesOwner.Span;
 
         reader.Seek(stringTableOffset);
         fixed (byte* ptr = &reader.Data[reader.Position]) {
             byte* pos = ptr;
-            for (int i = 0; i < stringCount; i++) {
-                string str = values[i] = Utf8StringMarshaller.ConvertToManaged(pos)
+            for (int i = 0; i < stringCount; i++, pos++) {
+                string str = Utf8StringMarshaller.ConvertToManaged(pos)
                     ?? throw new InvalidDataException($"Invalid string in string table at: {i}");
                 pos += str.Length + 1;
+                values[i] = (str, (TkFileAttributes)(*pos));
             }
         }
         
         reader.Seek(0x10);
 
-        Dictionary<ulong, string> result = [];
+        Dictionary<ulong, (string, TkFileAttributes)> result = [];
 
         for (int i = 0; i < count; i++) {
             ushort sectionKey = reader.Read<ushort>();

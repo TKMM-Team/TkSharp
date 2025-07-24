@@ -10,6 +10,11 @@ namespace TkSharp.Merging;
 public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom tk,
     ITkSystemSource? systemSource, TkChangelogBuilderFlags flags = default)
 {
+    private static ITkRomProvider? _romProvider;
+
+    public static ITkRomProvider RomProvider
+        => _romProvider ?? throw new Exception("The changelog builder has not been statically initialized");
+    
     private readonly ITkModSource _source = source;
     private readonly ITkModWriter _writer = writer;
     private readonly ITkRom _tk = tk;
@@ -20,6 +25,11 @@ public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom
         GameVersion = tk.GameVersion,
         Source = systemSource
     };
+
+    public static void Init(ITkRomProvider romProvider)
+    {
+        _romProvider = romProvider;
+    }
 
     public async ValueTask<TkChangelog> BuildParallel(CancellationToken ct = default)
     {
@@ -234,7 +244,7 @@ public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom
             } => RsdbRowChangelogBuilder.RowId,
             { Extension: ".msbt" } => MsbtChangelogBuilder.Instance,
             { Extension: ".bfarc" or ".bkres" or ".blarc" or ".genvb" or ".sarc" or ".ta" } => SarcChangelogBuilder.Instance,
-            { Extension: ".pack" } => PackChangelogBuilder.Instance,
+            { Extension: ".pack" } => new PackChangelogBuilder(RomProvider.GetRom()),
             { Extension: ".bgyml" } => BymlChangelogBuilder.Instance,
             { Extension: ".byml" } when path.Canonical[..4] is not "RSDB" && path.Canonical[..8] is not "GameData" => BymlChangelogBuilder.Instance,
             _ => null

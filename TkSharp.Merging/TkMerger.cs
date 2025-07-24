@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using CommunityToolkit.HighPerformance.Buffers;
 using LanguageExt;
 using Microsoft.Extensions.Logging;
@@ -95,7 +94,7 @@ public sealed class TkMerger
 
         switch (target.Case) {
             case (ITkMerger merger, Stream[] { Length: > 1 } streams): {
-                if (changelog.ArchiveCanonicals.Count > 0) {
+                if (changelog.RuntimeArchiveCanonicals.Count > 0) {
                     _packFileCollector.Collect(changelog, merger, streams);
                     return;
                 }
@@ -111,7 +110,7 @@ public sealed class TkMerger
                 break;
             }
             case (ITkMerger merger, Stream[] { Length: 1 } streams): {
-                if (changelog.ArchiveCanonicals.Count > 0) {
+                if (changelog.RuntimeArchiveCanonicals.Count > 0) {
                     _packFileCollector.Collect(changelog, merger, streams);
                     return;
                 } 
@@ -238,7 +237,7 @@ public sealed class TkMerger
 
     private void CopyToOutput(Stream input, string relativePath, TkChangelogEntry changelog)
     {
-        if (changelog.ArchiveCanonicals.Count != 0) {
+        if (changelog.RuntimeArchiveCanonicals.Count != 0) {
             _packFileCollector.Collect(changelog, input);
             return;
         }
@@ -275,7 +274,7 @@ public sealed class TkMerger
 
     private void CopyMergedToOutput(in MemoryStream input, string relativePath, TkChangelogEntry changelog)
     {
-        if (changelog.ArchiveCanonicals.Count != 0) {
+        if (changelog.RuntimeArchiveCanonicals.Count != 0) {
             _packFileCollector.Collect(changelog, input);
             return;
         }
@@ -368,9 +367,7 @@ public sealed class TkMerger
     {
         // Ensure the key changelog contains
         // every archive requesting this file
-        group.Key.ArchiveCanonicals.AddRange(
-            group.Where(entry => !ReferenceEquals(entry.Entry, group.Key)).SelectMany(x => x.Entry.ArchiveCanonicals)
-        );
+        group.Key.RuntimeArchiveCanonicals = group.SelectMany(x => x.Entry.ArchiveCanonicals).ToList();
             
         if (GetMerger(group.Key.Canonical) is ITkMerger merger) {
             return (
@@ -383,10 +380,15 @@ public sealed class TkMerger
             );
         }
 
-        string relativeFilePath = GetRelativeRomFsPath(group.Key);
+        // TODO: Proper support for mixed version usage should
+        // be implemented, however by always using the path of
+        // the last entry, we can avoid explicitly handling it
+        (TkChangelogEntry Entry, TkChangelog Changelog) last = group.Last();
+        string relativeFilePath = GetRelativeRomFsPath(last.Entry);
+        
         return (
             Changelog: group.Key,
-            Target: group.Last().Changelog.Source!.OpenRead(relativeFilePath)
+            Target: last.Changelog.Source!.OpenRead(relativeFilePath)
         );
     }
 
@@ -441,9 +443,33 @@ public sealed class TkMerger
             return Path.Combine("romfs", $"{entry.Canonical}{targetVersion}");
         }
 
+        if (canon.Length > 8 && canon[..8] is "Sequence") {
+            ReadOnlySpan<char> sequenceName = Path.GetFileNameWithoutExtension(canon);
+            int targetVersion = _rom.SequenceVersions.TryGetValue(sequenceName, out string? version)
+                ? GetBestVersion(int.Parse(version.AsSpan()[^3..]), entry.Versions)
+                : entry.Versions[0];
+            return Path.Combine("romfs", $"{entry.Canonical}{targetVersion}");
+        }
+
         if (canon.Length > 6 && canon[..6] is "Effect") {
             ReadOnlySpan<char> effectName = Path.GetFileNameWithoutExtension(canon);
             int targetVersion = _rom.EffectVersions.TryGetValue(effectName, out string? version)
+                ? GetBestVersion(int.Parse(version.AsSpan()[^3..]), entry.Versions)
+                : entry.Versions[0];
+            return Path.Combine("romfs", $"{entry.Canonical}{targetVersion}");
+        }
+
+        if (canon.Length > 5 && canon[..5] is "Logic") {
+            ReadOnlySpan<char> logicName = Path.GetFileNameWithoutExtension(canon);
+            int targetVersion = _rom.LogicVersions.TryGetValue(logicName, out string? version)
+                ? GetBestVersion(int.Parse(version.AsSpan()[^3..]), entry.Versions)
+                : entry.Versions[0];
+            return Path.Combine("romfs", $"{entry.Canonical}{targetVersion}");
+        }
+
+        if (canon.Length > 2 && canon[..2] is "AI") {
+            ReadOnlySpan<char> aiName = Path.GetFileNameWithoutExtension(canon);
+            int targetVersion = _rom.AiVersions.TryGetValue(aiName, out string? version)
                 ? GetBestVersion(int.Parse(version.AsSpan()[^3..]), entry.Versions)
                 : entry.Versions[0];
             return Path.Combine("romfs", $"{entry.Canonical}{targetVersion}");

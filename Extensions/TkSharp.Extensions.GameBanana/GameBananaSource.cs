@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using TkSharp.Extensions.GameBanana.Helpers;
 
 namespace TkSharp.Extensions.GameBanana;
 
@@ -52,6 +53,10 @@ public sealed partial class GameBananaSource(int gameId) : ObservableObject, IGa
 
     private static Task DownloadThumbnails(GameBananaFeed feed, CancellationToken ct)
     {
+        if (!InternetHelper.HasInternet) {
+            return Task.CompletedTask;
+        }
+        
         return Task.Run(() => Parallel.ForEachAsync(
             feed.Records, ct, static (record, ct) => record.DownloadThumbnail(ct)
         ), ct);

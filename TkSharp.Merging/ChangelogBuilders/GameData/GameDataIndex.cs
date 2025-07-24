@@ -6,58 +6,100 @@ namespace TkSharp.Merging.ChangelogBuilders.GameData;
 
 public class GameDataIndex
 {
-    private static readonly FrozenDictionary<ulong, FrozenDictionary<uint, int>> _lookup;
-    private static readonly FrozenDictionary<ulong, int> _lookupUInt64;
+    private const uint MAGIC = 0x544C4350;
+    private const uint STANDARD_TABLES_MAGIC = 0x4454535F;
+    private const uint U64_BIT_TABLES_MAGIC = 0x54423436;
+    private const uint TBL_MAGIC = 0x4C42545F;
+
+    private static readonly int[] _versions;
+    private static readonly FrozenDictionary<int, Table> _tables;
 
     static GameDataIndex()
     {
         using Stream stream = typeof(GameDataIndex).Assembly
-            .GetManifestResourceStream("TkSharp.Merging.Resources.GameDataIndex.bin")!;
+            .GetManifestResourceStream("TkSharp.Merging.Resources.GameDataIndex.bpclt")!;
 
-        Dictionary<ulong, FrozenDictionary<uint, int>> lookup = [];
-
-        int count = stream.Read<int>();
-        for (int i = 0; i < count; i++) {
-            ulong tableNameHash = stream.Read<ulong>();
-            int entryCount = stream.Read<int>();
-            lookup.Add(tableNameHash,
-                ReadEntries(stream, entryCount)
-            );
+        if (stream.Read<int>() != MAGIC) {
+            throw new InvalidDataException("Invalid GameDataIndex magic");
         }
 
-        _lookup = lookup.ToFrozenDictionary();
+        int versionCount = stream.Read<int>();
+
+        _versions = new int[versionCount];
+        Dictionary<int, Table> tables = new(versionCount);
+
+        for (int vi = 0; vi < versionCount; vi++) {
+            int version = _versions[vi] = stream.Read<int>();
+
+            if (stream.Read<uint>() != STANDARD_TABLES_MAGIC) {
+                throw new InvalidDataException("Standard tables header not found.");
+            }
+
+            int tableCount = stream.Read<int>();
+            Dictionary<ulong, FrozenDictionary<uint, int>> standardLookups = new(tableCount);
+
+            for (int i = 0; i < tableCount; i++) {
+                FrozenDictionary<uint, int> lookupTable = ReadTable<uint>(stream, out ulong lookupTableHash);
+                standardLookups[lookupTableHash] = lookupTable;
+            }
+
+            if (stream.Read<uint>() != U64_BIT_TABLES_MAGIC) {
+                throw new InvalidDataException("64-bit table header not found.");
+            }
+
+            tables[version] = new Table(standardLookups.ToFrozenDictionary(), ReadTable<ulong>(stream, out _));
+        }
+
+        _tables = tables.ToFrozenDictionary();
+        Array.Sort(_versions);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryGetIndex(int version, ulong tableNameHash, uint hash, out int index)
+    {
+        return _tables[GetBestVersion(version)].Lookup[tableNameHash].TryGetValue(hash, out index);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryGetIndex(int version, ulong hash, out int index)
+    {
+        return _tables[GetBestVersion(version)].LookupUInt64.TryGetValue(hash, out index);
+    }
+
+    private static int GetBestVersion(int version)
+    {
+        int match = _versions[0];
         
-        int u64EntryCount = stream.Read<int>();
-        _lookupUInt64 = ReadEntriesUInt64(stream, u64EntryCount);
-    }
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryGetIndex(ulong tableNameHash, uint hash, out int index)
-    {
-        return _lookup[tableNameHash].TryGetValue(hash, out index);
-    }
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryGetIndex(ulong hash, out int index)
-    {
-        return _lookupUInt64.TryGetValue(hash, out index);
-    }
-    
-    private static FrozenDictionary<uint, int> ReadEntries(Stream stream, int count)
-    {
-        Dictionary<uint, int> entries = [];
-        for (int i = 0; i < count; i++) {
-            entries.Add(stream.Read<uint>(), stream.Read<int>());
+        foreach (int ver in _versions) {
+            if (version < ver) {
+                return match;
+            }
+            
+            match = ver;
         }
 
-        return entries.ToFrozenDictionary();
+        return match;
     }
-    
-    private static FrozenDictionary<ulong, int> ReadEntriesUInt64(Stream stream, int count)
+
+    private class Table(FrozenDictionary<ulong, FrozenDictionary<uint, int>> lookup, FrozenDictionary<ulong, int> lookupUInt64)
     {
-        Dictionary<ulong, int> entries = [];
-        for (int i = 0; i < count; i++) {
-            entries.Add(stream.Read<ulong>(), stream.Read<int>());
+        public readonly FrozenDictionary<ulong, FrozenDictionary<uint, int>> Lookup = lookup;
+
+        public readonly FrozenDictionary<ulong, int> LookupUInt64 = lookupUInt64;
+    }
+
+    private static FrozenDictionary<T, int> ReadTable<T>(in Stream stream, out ulong lookupTableHash) where T : unmanaged
+    {
+        if (stream.Read<int>() != TBL_MAGIC) {
+            throw new InvalidDataException("Table header not found.");
+        }
+
+        lookupTableHash = stream.Read<ulong>();
+        int entryCount = stream.Read<int>();
+
+        Dictionary<T, int> entries = new(entryCount);
+        for (int e = 0; e < entryCount; e++) {
+            entries[stream.Read<T>()] = stream.Read<int>();
         }
 
         return entries.ToFrozenDictionary();

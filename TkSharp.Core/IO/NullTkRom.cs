@@ -8,7 +8,7 @@ namespace TkSharp.Core.IO;
 /// </summary>
 public class NullTkRom : ITkRom
 {
-    public int GameVersion => 121;
+    public int GameVersion => 142;
 
     public string NsoBinaryId => string.Empty;
 
@@ -19,6 +19,12 @@ public class NullTkRom : ITkRom
     public Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> EventFlowVersions => default;
 
     public Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> EffectVersions => default;
+
+    public Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> AiVersions => default;
+
+    public Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> LogicVersions => default;
+
+    public Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> SequenceVersions => default;
 
     public string CanonicalToRelativePath(string canonical, TkFileAttributes attributes) => canonical;
 

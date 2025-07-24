@@ -71,6 +71,39 @@ public sealed class ExtractedTkRom : ITkRom
             using RentedBuffer<byte> effectInfoBuffer = RentedBuffer<byte>.Allocate(effectInfoFs);
             EffectVersions = EffectInfoParser.ParseFileEntry(effectInfoBuffer.Span, Zstd);
         }
+
+        {
+            string ainbFileEntryPath = Path.Combine(gamePath, $"{AddressTable["AI/FileEntry/FileEntry.Product.byml"]}.zs");
+            if (!File.Exists(ainbFileEntryPath)) {
+                throw new GameRomException("AI file entry file not found.");
+            }
+            
+            using Stream ainbFileEntryFs = File.OpenRead(ainbFileEntryPath);
+            using RentedBuffer<byte> ainbFileEntryBuffer = RentedBuffer<byte>.Allocate(ainbFileEntryFs);
+            AiVersions = StandardFileEntryParser.ParseStandardFileEntry(ainbFileEntryBuffer.Span, Zstd);
+        }
+
+        {
+            string logicFileEntryPath = Path.Combine(gamePath, $"{AddressTable["Logic/FileEntry/FileEntry.Product.byml"]}.zs");
+            if (!File.Exists(logicFileEntryPath)) {
+                throw new GameRomException("Logic file entry file not found.");
+            }
+            
+            using Stream logicFileEntryFs = File.OpenRead(logicFileEntryPath);
+            using RentedBuffer<byte> logicFileEntryBuffer = RentedBuffer<byte>.Allocate(logicFileEntryFs);
+            LogicVersions = StandardFileEntryParser.ParseStandardFileEntry(logicFileEntryBuffer.Span, Zstd);
+        }
+
+        {
+            string sequenceFileEntryPath = Path.Combine(gamePath, $"{AddressTable["Sequence/FileEntry/FileEntry.Product.byml"]}.zs");
+            if (!File.Exists(sequenceFileEntryPath)) {
+                throw new GameRomException("Sequence file entry file not found.");
+            }
+            
+            using Stream sequenceFileEntryFs = File.OpenRead(sequenceFileEntryPath);
+            using RentedBuffer<byte> sequenceFileEntryBuffer = RentedBuffer<byte>.Allocate(sequenceFileEntryFs);
+            SequenceVersions = StandardFileEntryParser.ParseStandardFileEntry(sequenceFileEntryBuffer.Span, Zstd);
+        }
     }
     
     public int GameVersion { get; }
@@ -84,6 +117,12 @@ public sealed class ExtractedTkRom : ITkRom
     public Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> EventFlowVersions { get; }
 
     public Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> EffectVersions { get; }
+
+    public Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> AiVersions { get; }
+
+    public Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> LogicVersions { get; }
+
+    public Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> SequenceVersions { get; }
 
     public RentedBuffer<byte> GetVanilla(string relativeFilePath)
     {

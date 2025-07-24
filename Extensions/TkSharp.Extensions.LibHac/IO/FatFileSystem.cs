@@ -22,7 +22,7 @@ public sealed class FatFileSystem : LocalFileSystem
         return Result.Success;
     }
 
-    protected override Result DoGetFileAttributes(out NxFileAttributes attributes, in Path path)
+    protected override Result DoGetFileAttributes(out NxFileAttributes attributes, ref readonly Path path)
     {
         Result result = base.DoGetFileAttributes(out attributes, in path);
         ReadOnlySpan<byte> fileName = path.GetString();
@@ -38,11 +38,11 @@ public sealed class FatFileSystem : LocalFileSystem
         if (fileName[extSeparatorIndex..(extSeparatorIndex + 4)].SequenceEqual(".nca"u8)) {
             attributes |= NxFileAttributes.Archive;
         }
-
+    
         return result;
     }
 
-    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, in Path path, OpenDirectoryMode mode)
+    protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, ref readonly Path path, OpenDirectoryMode mode)
     {
         Result result = base.DoOpenDirectory(ref outDirectory, in path, mode);
 
