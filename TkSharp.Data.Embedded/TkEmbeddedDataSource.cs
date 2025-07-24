@@ -34,4 +34,9 @@ public static class TkEmbeddedDataSource
     {
         return GetResource("Resources/PackFileLookup.pkcache.zs")!;
     }
+
+    public static Stream GetPackFileLookup()
+    {
+        return GetResource("Resources/PackFileLookup.pkcache.zs")!;
+    }
 }
