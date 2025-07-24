@@ -87,18 +87,19 @@ public sealed class TkMerger
 
     public void MergeTarget(TkChangelogEntry changelog, Either<(ITkMerger, Stream[]), Stream> target)
     {
-        string relativeFilePath = _rom.CanonicalToRelativePath(changelog.Canonical, changelog.Attributes);
+        string relativeFilePath = changelog.RuntimeArchiveCanonicals.Count > 0
+            ? _rom.CanonicalToRelativePath(changelog.Canonical, TkFileAttributes.None)
+            : _rom.CanonicalToRelativePath(changelog.Canonical, changelog.Attributes);
+        
         using MemoryStream output = new();
 
         var result = MergeResult.Default;
 
         switch (target.Case) {
             case (ITkMerger merger, Stream[] { Length: > 1 } streams): {
-                if (changelog.RuntimeArchiveCanonicals.Count > 0) {
-                    _packFileCollector.Collect(changelog, merger, streams);
-                    return;
-                }
-                
+                // TODO: It would be more efficient to avoid
+                // GetVanilla on nested files. Checking loaded
+                // pack files first would be optimal. 
                 using RentedBuffer<byte> vanilla = _rom.GetVanilla(relativeFilePath);
                 if (vanilla.IsEmpty) {
                     MergeCustomTarget(merger, streams[0], streams.AsSpan(1..), changelog, output);
@@ -110,11 +111,6 @@ public sealed class TkMerger
                 break;
             }
             case (ITkMerger merger, Stream[] { Length: 1 } streams): {
-                if (changelog.RuntimeArchiveCanonicals.Count > 0) {
-                    _packFileCollector.Collect(changelog, merger, streams);
-                    return;
-                } 
-                
                 using RentedBuffer<byte> vanilla = _rom.GetVanilla(relativeFilePath);
                 Stream single = streams[0];
                 if (vanilla.IsEmpty) {
