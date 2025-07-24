@@ -61,10 +61,10 @@ public ref struct RentedBuffer<T> : IDisposable where T : unmanaged
         Segment = new ArraySegment<T>(_buffer, 0, size);
     }
 
-    public void Slice(int startOffset, int size)
+    public void Slice(int startOffset, int endOffset)
     {
-        _size = size;
-        Segment = new ArraySegment<T>(_buffer, startOffset, size);
+        _size = endOffset - startOffset;
+        Segment = new ArraySegment<T>(_buffer, startOffset, _size);
     }
 
     public void Dispose()
