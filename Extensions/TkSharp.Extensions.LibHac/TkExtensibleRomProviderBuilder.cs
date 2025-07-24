@@ -1,6 +1,7 @@
 using System.Diagnostics.Contracts;
 using LibHac.Common.Keys;
 using TkSharp.Core;
+using TkSharp.Core.IO.Caching;
 using TkSharp.Extensions.LibHac.Util;
 
 namespace TkSharp.Extensions.LibHac;
@@ -8,26 +9,23 @@ namespace TkSharp.Extensions.LibHac;
 public class TkExtensibleRomProviderBuilder
 {
     private readonly TkChecksums _checksums;
+    private readonly TkPackFileLookup _packFileLookup;
     private TkExtensibleRomConfig _root = new();
 
-    private TkExtensibleRomProviderBuilder(TkChecksums checksums)
+    private TkExtensibleRomProviderBuilder(TkChecksums checksums, TkPackFileLookup packFileLookup)
     {
         _checksums = checksums;
+        _packFileLookup = packFileLookup;
     }
     
-    public static TkExtensibleRomProviderBuilder Create(Stream checksums)
+    public static TkExtensibleRomProviderBuilder Create(TkChecksums checksums, TkPackFileLookup packFileLookup)
     {
-        return new TkExtensibleRomProviderBuilder(TkChecksums.FromStream(checksums));
-    }
-    
-    public static TkExtensibleRomProviderBuilder Create(TkChecksums checksums)
-    {
-        return new TkExtensibleRomProviderBuilder(checksums);
+        return new TkExtensibleRomProviderBuilder(checksums, packFileLookup);
     }
     
     public TkExtensibleRomProvider Build()
     {
-        return new TkExtensibleRomProvider(_root, _checksums);
+        return new TkExtensibleRomProvider(_root, _checksums, _packFileLookup);
     }
 
     public TkExtensibleRomProviderBuilder WithPreferredVersion(string? preferredVersion)

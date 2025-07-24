@@ -15,7 +15,7 @@ public class PackChangelogBuilder : Singleton<PackChangelogBuilder>, ITkChangelo
         Sarc sarc = Sarc.FromBinary(srcBuffer);
         
         if (vanillaBuffer.Count == 0) {
-            ExtractCustom(sarc, canonical, path, flags, openWrite);
+            ExtractCustom(sarc, canonical, path, openWrite);
             return true;
         }
         
@@ -75,7 +75,7 @@ public class PackChangelogBuilder : Singleton<PackChangelogBuilder>, ITkChangelo
         return true;
     }
 
-    private static void ExtractCustom(Sarc sarc, string canonical, in TkPath path, in TkChangelogBuilderFlags flags, OpenWriteChangelog openWrite)
+    private static void ExtractCustom(Sarc sarc, string canonical, in TkPath path, OpenWriteChangelog openWrite)
     {
         foreach ((string name, ArraySegment<byte> data) in sarc) {
             var nested = new TkPath(

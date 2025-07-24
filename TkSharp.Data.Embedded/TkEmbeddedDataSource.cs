@@ -29,4 +29,9 @@ public static class TkEmbeddedDataSource
     {
         return GetResource("Resources/Checksums.bpclt")!;
     }
+
+    public static Stream GetPackFileLookup()
+    {
+        return GetResource("Resources/PackFileLookup.pkcache.zs")!;
+    }
 }

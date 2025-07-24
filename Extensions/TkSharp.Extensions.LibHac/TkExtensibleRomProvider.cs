@@ -8,6 +8,7 @@ using TkSharp.Core;
 using TkSharp.Core.Common;
 using TkSharp.Core.Exceptions;
 using TkSharp.Core.IO;
+using TkSharp.Core.IO.Caching;
 using TkSharp.Extensions.LibHac.IO;
 using TkSharp.Extensions.LibHac.Models;
 using TkSharp.Extensions.LibHac.Util;
@@ -18,11 +19,13 @@ public class TkExtensibleRomProvider : ITkRomProvider
 {
     private readonly TkExtensibleRomConfig _config;
     private readonly TkChecksums _checksums;
+    private readonly TkPackFileLookup _packFileLookup;
 
-    internal TkExtensibleRomProvider(TkExtensibleRomConfig config, TkChecksums checksums)
+    internal TkExtensibleRomProvider(TkExtensibleRomConfig config, TkChecksums checksums, TkPackFileLookup packFileLookup)
     {
         _config = config;
         _checksums = checksums;
+        _packFileLookup = packFileLookup;
     }
 
     public ITkRom GetRom()
@@ -58,7 +61,7 @@ public class TkExtensibleRomProvider : ITkRomProvider
                 return null;
             }
             
-            defaultValue = () => new ExtractedTkRom(extractedGameDumpPath, _checksums);
+            defaultValue = () => new ExtractedTkRom(extractedGameDumpPath, _checksums, _packFileLookup);
 
             if (version == preferredVersionValue) {
                 return defaultValue();
@@ -110,7 +113,7 @@ public class TkExtensibleRomProvider : ITkRomProvider
                 IFileSystem fs = main.MainNca.Nca
                     .OpenFileSystemWithPatch((update ?? alternateUpdate)!.MainNca.Nca,
                         NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
-                return new TkSwitchRom(fs, collected.AsFsList(), _checksums);
+                return new TkSwitchRom(fs, collected.AsFsList(), _checksums, _packFileLookup);
             }
             catch (Exception ex) {
                 TkLog.Instance.LogError(ex, "[ROM *] Configuration Error");
@@ -194,7 +197,7 @@ public class TkExtensibleRomProvider : ITkRomProvider
             TkLog.Instance.LogDebug("[ROM *] Configuration Valid");
             IFileSystem fs = main.MainNca.Nca
                 .OpenFileSystemWithPatch(update.MainNca.Nca, NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
-            return new TkSwitchRom(fs, collected.AsFsList(), _checksums);
+            return new TkSwitchRom(fs, collected.AsFsList(), _checksums, _packFileLookup);
         }
         catch (Exception ex) {
             TkLog.Instance.LogError(ex, "[ROM *] Configuration Error");

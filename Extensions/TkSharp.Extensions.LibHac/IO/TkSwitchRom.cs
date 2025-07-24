@@ -4,6 +4,7 @@ using LibHac.Fs.Fsa;
 using LibHac.Tools.Fs;
 using TkSharp.Core;
 using TkSharp.Core.IO.Buffers;
+using TkSharp.Core.IO.Caching;
 using TkSharp.Core.IO.Parsers;
 using TkSharp.Extensions.LibHac.Extensions;
 
@@ -13,6 +14,7 @@ internal sealed class TkSwitchRom : ITkRom
 {
     private readonly IFileSystem _fileSystem;
     private readonly TkChecksums _checksums;
+    private readonly TkPackFileLookup _packFileLookup;
     private readonly IEnumerable<SwitchFs> _disposables;
 
     public int GameVersion { get; }
@@ -33,11 +35,12 @@ internal sealed class TkSwitchRom : ITkRom
 
     public Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> SequenceVersions { get; }
 
-    public TkSwitchRom(IFileSystem fs, IEnumerable<SwitchFs> disposables, TkChecksums checksums)
+    public TkSwitchRom(IFileSystem fs, IEnumerable<SwitchFs> disposables, TkChecksums checksums, TkPackFileLookup packFileLookup)
     {
         _fileSystem = fs;
         _disposables = disposables;
         _checksums = checksums;
+        _packFileLookup = packFileLookup.Init(this);
 
         using (Stream regionLangMaskFs = _fileSystem.OpenFileStream("/System/RegionLangMask.txt"))
         using (RentedBuffer<byte> regionLangMask = RentedBuffer<byte>.Allocate(regionLangMaskFs)) {
@@ -123,5 +126,6 @@ internal sealed class TkSwitchRom : ITkRom
         }
         
         _fileSystem.Dispose();
+        _packFileLookup.Dispose();
     }
 }

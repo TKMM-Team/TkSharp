@@ -1,7 +1,6 @@
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using TkSharp.Core;
-using TkSharp.Core.Extensions;
 using TkSharp.Core.IO.Buffers;
 using TkSharp.Core.Models;
 using TkSharp.Merging.ChangelogBuilders;
