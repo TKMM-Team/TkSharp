@@ -1,5 +1,6 @@
 using TkSharp.Core.Exceptions;
 using TkSharp.Core.IO.Buffers;
+using TkSharp.Core.IO.Caching;
 using TkSharp.Core.IO.Parsers;
 
 namespace TkSharp.Core.IO;
@@ -8,11 +9,13 @@ public sealed class ExtractedTkRom : ITkRom
 {
     private readonly string _gamePath;
     private readonly TkChecksums _checksums;
+    private readonly TkPackFileLookup _packFileLookup;
 
-    public ExtractedTkRom(string gamePath, TkChecksums checksums)
+    public ExtractedTkRom(string gamePath, TkChecksums checksums, TkPackFileLookup packFileLookup)
     {
         _gamePath = gamePath;
         _checksums = checksums;
+        _packFileLookup = packFileLookup.Init(this);
 
         {
             string regionLangMaskPath = Path.Combine(gamePath, "System", "RegionLangMask.txt");
@@ -86,7 +89,9 @@ public sealed class ExtractedTkRom : ITkRom
     {
         string absolute = Path.Combine(_gamePath, relativeFilePath);
         if (!File.Exists(absolute)) {
-            return default;
+            // Nested files have the relative and canonical
+            // file paths, so this is a valid call
+            return _packFileLookup.GetNested(relativeFilePath);
         }
         
         using Stream fs = File.OpenRead(absolute);

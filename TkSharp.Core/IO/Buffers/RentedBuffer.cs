@@ -1,5 +1,4 @@
 using System.Buffers;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace TkSharp.Core.IO.Buffers;
@@ -60,6 +59,12 @@ public ref struct RentedBuffer<T> : IDisposable where T : unmanaged
     {
         _size = size;
         Segment = new ArraySegment<T>(_buffer, 0, size);
+    }
+
+    public void Slice(int startOffset, int size)
+    {
+        _size = size;
+        Segment = new ArraySegment<T>(_buffer, startOffset, size);
     }
 
     public void Dispose()
