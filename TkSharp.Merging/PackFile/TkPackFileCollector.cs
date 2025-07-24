@@ -105,7 +105,7 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
 
     public void Collect(TkChangelogEntry changelog, Stream input)
     {
-        foreach (string archiveCanonical in changelog.ArchiveCanonicals) {
+        foreach (string archiveCanonical in changelog.RuntimeArchiveCanonicals) {
             _cache.Add(new PackFileEntry(
                 new PackFileEntryKey(archiveCanonical, changelog.Attributes, changelog.ZsDictionaryId),
                 changelog, input)
@@ -115,7 +115,7 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
 
     public void Collect(TkChangelogEntry changelog, ITkMerger merger, Stream[] streams)
     {
-        foreach (string archiveCanonical in changelog.ArchiveCanonicals) {
+        foreach (string archiveCanonical in changelog.RuntimeArchiveCanonicals) {
             _cache.Add(new PackFileDelayMergeEntry(
                 new PackFileEntryKey(archiveCanonical, changelog.Attributes, changelog.ZsDictionaryId),
                 changelog, merger, streams)

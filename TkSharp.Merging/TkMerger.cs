@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using CommunityToolkit.HighPerformance.Buffers;
 using LanguageExt;
 using Microsoft.Extensions.Logging;
@@ -95,7 +94,7 @@ public sealed class TkMerger
 
         switch (target.Case) {
             case (ITkMerger merger, Stream[] { Length: > 1 } streams): {
-                if (changelog.ArchiveCanonicals.Count > 0) {
+                if (changelog.RuntimeArchiveCanonicals.Count > 0) {
                     _packFileCollector.Collect(changelog, merger, streams);
                     return;
                 }
@@ -111,7 +110,7 @@ public sealed class TkMerger
                 break;
             }
             case (ITkMerger merger, Stream[] { Length: 1 } streams): {
-                if (changelog.ArchiveCanonicals.Count > 0) {
+                if (changelog.RuntimeArchiveCanonicals.Count > 0) {
                     _packFileCollector.Collect(changelog, merger, streams);
                     return;
                 } 
@@ -238,7 +237,7 @@ public sealed class TkMerger
 
     private void CopyToOutput(Stream input, string relativePath, TkChangelogEntry changelog)
     {
-        if (changelog.ArchiveCanonicals.Count != 0) {
+        if (changelog.RuntimeArchiveCanonicals.Count != 0) {
             _packFileCollector.Collect(changelog, input);
             return;
         }
@@ -275,7 +274,7 @@ public sealed class TkMerger
 
     private void CopyMergedToOutput(in MemoryStream input, string relativePath, TkChangelogEntry changelog)
     {
-        if (changelog.ArchiveCanonicals.Count != 0) {
+        if (changelog.RuntimeArchiveCanonicals.Count != 0) {
             _packFileCollector.Collect(changelog, input);
             return;
         }
@@ -368,9 +367,7 @@ public sealed class TkMerger
     {
         // Ensure the key changelog contains
         // every archive requesting this file
-        group.Key.ArchiveCanonicals.AddRange(
-            group.Where(entry => !ReferenceEquals(entry.Entry, group.Key)).SelectMany(x => x.Entry.ArchiveCanonicals)
-        );
+        group.Key.RuntimeArchiveCanonicals = group.SelectMany(x => x.Entry.ArchiveCanonicals).ToList();
             
         if (GetMerger(group.Key.Canonical) is ITkMerger merger) {
             return (
