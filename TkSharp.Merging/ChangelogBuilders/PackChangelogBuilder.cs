@@ -1,11 +1,16 @@
+using CommunityToolkit.HighPerformance;
 using SarcLibrary;
 using TkSharp.Core;
+using TkSharp.Core.IO.Buffers;
 
 namespace TkSharp.Merging.ChangelogBuilders;
 
-public class PackChangelogBuilder : Singleton<PackChangelogBuilder>, ITkChangelogBuilder
+public class PackChangelogBuilder(ITkRom tk) : ITkChangelogBuilder
 {
+    private const ulong PLACEHOLDER_FILE_MARK = 5927946882928102228;
     private static readonly byte[] _deletedFileMark = "TKSCRMVD"u8.ToArray();
+    
+    private readonly ITkRom _tk = tk;
     
     public bool CanProcessWithoutVanilla => true;
 
@@ -15,7 +20,7 @@ public class PackChangelogBuilder : Singleton<PackChangelogBuilder>, ITkChangelo
         Sarc sarc = Sarc.FromBinary(srcBuffer);
         
         if (vanillaBuffer.Count == 0) {
-            ExtractCustom(sarc, canonical, path, openWrite);
+            ExtractCustom(sarc, canonical, path, flags, openWrite);
             return true;
         }
         
@@ -46,11 +51,7 @@ public class PackChangelogBuilder : Singleton<PackChangelogBuilder>, ITkChangelo
             }
 
             builder.Build(name, nested, flags, data, vanillaData,
-                (tkPath, canon, _) => {
-                    changelog[name] = [];
-                    return openWrite(tkPath, canon, archiveCanonical: canonical);
-                }
-            );
+                (tkPath, canon, _) => openWrite(tkPath, canon, archiveCanonical: canonical));
 
             continue;
 
@@ -75,7 +76,7 @@ public class PackChangelogBuilder : Singleton<PackChangelogBuilder>, ITkChangelo
         return true;
     }
 
-    private static void ExtractCustom(Sarc sarc, string canonical, in TkPath path, OpenWriteChangelog openWrite)
+    private void ExtractCustom(Sarc sarc, string canonical, in TkPath path, in TkChangelogBuilderFlags flags, OpenWriteChangelog openWrite)
     {
         foreach ((string name, ArraySegment<byte> data) in sarc) {
             var nested = new TkPath(
@@ -85,9 +86,35 @@ public class PackChangelogBuilder : Singleton<PackChangelogBuilder>, ITkChangelo
                 root: "romfs",
                 name
             );
+
+            using RentedBuffer<byte> vanilla = _tk.GetVanilla(name, TkFileAttributes.None);
+            if (vanilla.IsEmpty) {
+                goto WriteRaw;
+            }
+
+            if (data.SequenceEqual(vanilla.Segment)) {
+                WritePlaceholder(nested, name, canonical, openWrite);
+                continue;
+            }
             
+            if (TkChangelogBuilder.GetChangelogBuilder(nested) is not ITkChangelogBuilder builder) {
+                goto WriteRaw;
+            }
+
+            builder.Build(name, nested, flags, data, vanilla.Segment,
+                (tkPath, canon, _) => openWrite(tkPath, canon, archiveCanonical: canonical));
+            
+            continue;
+            
+        WriteRaw:
             using Stream inlineOut = openWrite(nested, name, archiveCanonical: canonical);
             inlineOut.Write(data);
         }
+    }
+
+    private static void WritePlaceholder(in TkPath path, string name, string archive, OpenWriteChangelog openWrite)
+    {
+        using Stream placeholderOut = openWrite(path, name, archiveCanonical: archive);
+        placeholderOut.Write(PLACEHOLDER_FILE_MARK);
     }
 }

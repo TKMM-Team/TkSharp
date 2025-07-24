@@ -91,7 +91,7 @@ internal sealed class TkSwitchRom : ITkRom
         _fileSystem.OpenFile(ref file, relativeFilePath.ToU8Span(), OpenMode.Read);
 
         if (!file.HasValue) {
-            return default;
+            return _packFileLookup.GetNested(relativeFilePath);
         }
 
         file.Get.GetSize(out long size);
