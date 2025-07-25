@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace TkSharp.Core.IO.Buffers;
 
-public ref struct RentedBuffer<T> : IDisposable where T : unmanaged
+public struct RentedBuffer<T> : IDisposable where T : unmanaged
 {
     private readonly T[] _buffer;
     private int _size;
@@ -25,12 +25,12 @@ public ref struct RentedBuffer<T> : IDisposable where T : unmanaged
 
     public Span<T> Span {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _buffer.AsSpan(.._size);
+        get => Segment.AsSpan();
     }
 
     public Memory<T> Memory {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _buffer.AsMemory(.._size);
+        get => Segment.AsMemory();
     }
 
     public ArraySegment<T> Segment {
@@ -67,7 +67,7 @@ public ref struct RentedBuffer<T> : IDisposable where T : unmanaged
         Segment = new ArraySegment<T>(_buffer, startOffset, _size);
     }
 
-    public void Dispose()
+    public readonly void Dispose()
     {
         if (_buffer is not null) {
             ArrayPool<T>.Shared.Return(_buffer);

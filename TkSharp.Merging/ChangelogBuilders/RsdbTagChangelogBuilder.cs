@@ -90,4 +90,8 @@ public sealed class RsdbTagChangelogBuilder : Singleton<RsdbTagChangelogBuilder>
 
         return entryTags.Count == 0;
     }
+
+    public void Dispose()
+    {
+    }
 }

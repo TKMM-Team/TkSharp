@@ -8,7 +8,7 @@ public class TkChangelogEntry(string canonical, ChangelogEntryType type, TkFileA
 {
     public string Canonical { get; set; } = canonical;
 
-    public ChangelogEntryType Type { get; init; } = type;
+    public ChangelogEntryType Type { get; set; } = type;
 
     public TkFileAttributes Attributes { get; init; } = attributes;
 
@@ -43,5 +43,6 @@ public class TkChangelogEntry(string canonical, ChangelogEntryType type, TkFileA
 public enum ChangelogEntryType
 {
     Changelog,
-    Copy
+    Copy,
+    Placeholder
 }

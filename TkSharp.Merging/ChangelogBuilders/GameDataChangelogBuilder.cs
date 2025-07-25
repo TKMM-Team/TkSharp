@@ -120,4 +120,8 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
 
         return changelog;
     }
+
+    public void Dispose()
+    {
+    }
 }

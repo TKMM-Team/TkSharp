@@ -136,4 +136,8 @@ public sealed class RsdbRowChangelogBuilder<TKey>(string keyName) : ITkChangelog
     {
         return XxHash3.HashToUInt64(MemoryMarshal.Cast<char, byte>(path.Canonical));
     }
+
+    public void Dispose()
+    {
+    }
 }

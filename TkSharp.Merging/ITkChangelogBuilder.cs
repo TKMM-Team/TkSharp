@@ -1,10 +1,12 @@
 using TkSharp.Core;
+using TkSharp.Core.Models;
 
 namespace TkSharp.Merging;
  
-public delegate Stream OpenWriteChangelog(TkPath path, string canonical, string? archiveCanonical = null);
+public delegate Stream OpenWriteChangelog(TkPath path, string canonical,
+    string? archiveCanonical = null, ChangelogEntryType type = ChangelogEntryType.Changelog);
 
-public interface ITkChangelogBuilder
+public interface ITkChangelogBuilder : IDisposable
 {
     /// <summary>
     /// True if this changelog builder can process

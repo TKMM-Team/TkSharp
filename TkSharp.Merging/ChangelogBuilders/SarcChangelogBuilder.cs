@@ -41,8 +41,9 @@ public sealed class SarcChangelogBuilder : Singleton<SarcChangelogBuilder>, ITkC
             }
 
             builder.Build(name, nested, flags, data, vanillaData,
-                (_, canon, _) => changelog.OpenWrite(canon)
+                (_, canon, _, _) => changelog.OpenWrite(canon)
             );
+            builder.Dispose();
 
             continue;
 
@@ -63,5 +64,9 @@ public sealed class SarcChangelogBuilder : Singleton<SarcChangelogBuilder>, ITkC
         using Stream output = openWrite(path, canonical);
         changelog.Write(output, changelog.Endianness);
         return true;
+    }
+
+    public void Dispose()
+    {
     }
 }

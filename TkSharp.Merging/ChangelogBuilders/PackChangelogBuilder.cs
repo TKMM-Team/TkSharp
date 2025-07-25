@@ -2,12 +2,12 @@ using CommunityToolkit.HighPerformance;
 using SarcLibrary;
 using TkSharp.Core;
 using TkSharp.Core.IO.Buffers;
+using TkSharp.Core.Models;
 
 namespace TkSharp.Merging.ChangelogBuilders;
 
 public class PackChangelogBuilder(ITkRom tk) : ITkChangelogBuilder
 {
-    private const ulong PLACEHOLDER_FILE_MARK = 5927946882928102228;
     private static readonly byte[] _deletedFileMark = "TKSCRMVD"u8.ToArray();
     
     private readonly ITkRom _tk = tk;
@@ -51,7 +51,8 @@ public class PackChangelogBuilder(ITkRom tk) : ITkChangelogBuilder
             }
 
             builder.Build(name, nested, flags, data, vanillaData,
-                (tkPath, canon, _) => openWrite(tkPath, canon, archiveCanonical: canonical));
+                (tkPath, canon, _, _) => openWrite(tkPath, canon, archiveCanonical: canonical));
+            builder.Dispose();
 
             continue;
 
@@ -102,7 +103,8 @@ public class PackChangelogBuilder(ITkRom tk) : ITkChangelogBuilder
             }
 
             builder.Build(name, nested, flags, data, vanilla.Segment,
-                (tkPath, canon, _) => openWrite(tkPath, canon, archiveCanonical: canonical));
+                (tkPath, canon, _, _) => openWrite(tkPath, canon, archiveCanonical: canonical));
+            builder.Dispose();
             
             continue;
             
@@ -114,7 +116,13 @@ public class PackChangelogBuilder(ITkRom tk) : ITkChangelogBuilder
 
     private static void WritePlaceholder(in TkPath path, string name, string archive, OpenWriteChangelog openWrite)
     {
-        using Stream placeholderOut = openWrite(path, name, archiveCanonical: archive);
-        placeholderOut.Write(PLACEHOLDER_FILE_MARK);
+        openWrite(path, name, archiveCanonical: archive, ChangelogEntryType.Placeholder)
+            .Dispose();
+    }
+    
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+        _tk.Dispose();
     }
 }

@@ -46,4 +46,8 @@ public sealed class MsbtChangelogBuilder : Singleton<MsbtChangelogBuilder>, ITkC
         changelog.WriteBinary(output);
         return true;
     }
+
+    public void Dispose()
+    {
+    }
 }

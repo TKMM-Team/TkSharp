@@ -7,14 +7,18 @@ using TkSharp.Merging.ChangelogBuilders;
 
 namespace TkSharp.Merging;
 
-public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom tk,
-    ITkSystemSource? systemSource, TkChangelogBuilderFlags flags = default)
+public class TkChangelogBuilder(
+    ITkModSource source,
+    ITkModWriter writer,
+    ITkRom tk,
+    ITkSystemSource? systemSource,
+    TkChangelogBuilderFlags flags = default)
 {
     private static ITkRomProvider? _romProvider;
 
     public static ITkRomProvider RomProvider
         => _romProvider ?? throw new Exception("The changelog builder has not been statically initialized");
-    
+
     private readonly ITkModSource _source = source;
     private readonly ITkModWriter _writer = writer;
     private readonly ITkRom _tk = tk;
@@ -33,8 +37,7 @@ public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom
 
     public async ValueTask<TkChangelog> BuildParallel(CancellationToken ct = default)
     {
-        await Task.WhenAll(_source.Files.Select(
-                file => Task.Run(() => BuildTarget(file.FilePath, file.Entry), ct)
+        await Task.WhenAll(_source.Files.Select(file => Task.Run(() => BuildTarget(file.FilePath, file.Entry), ct)
             ))
             .ConfigureAwait(false);
 
@@ -150,13 +153,15 @@ public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom
         }
 
         TkFileAttributes parentAttributes = path.Attributes;
-        bool isVanilla = !builder.Build(canonical, path, flags, decompressed.IsEmpty ? raw.Segment : decompressed.Segment, vanilla.Segment, (path, canon, archiveCanon) => {
-            AddChangelogMetadata(path, ref canon, ChangelogEntryType.Changelog, zsDictionaryId, path.FileVersion,
-                // Force the parent attributes onto the entry for all parent archives
-                archiveCanon, archiveCanon is not null ? parentAttributes : null);
-            string outputFile = Path.Combine(path.Root.ToString(), canon);
-            return _writer.OpenWrite(outputFile);
-        });
+        bool isVanilla = !builder.Build(canonical, path, flags, decompressed.IsEmpty ? raw.Segment : decompressed.Segment, vanilla.Segment,
+            (path, canon, archiveCanon, type) => {
+                AddChangelogMetadata(path, ref canon, type, zsDictionaryId, path.FileVersion,
+                    // Force the parent attributes onto the entry for all parent archives
+                    archiveCanon, archiveCanon is not null ? parentAttributes : null);
+                string outputFile = Path.Combine(path.Root.ToString(), canon);
+                return _writer.OpenWrite(outputFile);
+            });
+        builder.Dispose();
 
         if (isVanilla) {
             TkLog.Instance.LogTrace(
@@ -179,15 +184,17 @@ public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom
         foreach (RentedBuffers<byte>.Entry entry in changelogs) {
             using MemoryStream output = new();
             TkPath pathIteratorStackInstance = new(canonical, 100, attributes, "romfs", "");
-            
+
             // ReSharper disable once AccessToDisposedClosure
-            if (builder.Build(canonical, pathIteratorStackInstance, flags, entry.Segment, @base, (_, _, _) => output)) {
+            if (builder.Build(canonical, pathIteratorStackInstance, flags, entry.Segment, @base, (_, _, _, _) => output)) {
                 // Copy the buffer because output
                 // is disposed before this is used
                 result[++index] = output.ToArray();
             }
+            
+            builder.Dispose();
         }
-        
+
         return new ArraySegment<ArraySegment<byte>>(result, 0, ++index);
     }
 
@@ -214,6 +221,13 @@ public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom
         if (archiveCanonical is not null) {
             entry.ArchiveCanonicals.Add(archiveCanonical);
         }
+        
+        // Make sure that the last occurence type is used
+        // 
+        // This should never be different, but mod devs
+        // often make the mistake of having a placeholder
+        // and changelog of the same file.
+        entry.Type = type;
     }
 
     internal static ITkChangelogBuilder? GetChangelogBuilder(in TkPath path)
@@ -250,7 +264,7 @@ public class TkChangelogBuilder(ITkModSource source, ITkModWriter writer, ITkRom
             _ => null
         };
     }
-    
+
     private void InsertEntries()
     {
         _changelog.ChangelogFiles.AddRange(_entries.Values);

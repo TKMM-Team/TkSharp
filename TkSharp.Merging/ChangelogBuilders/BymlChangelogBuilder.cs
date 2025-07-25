@@ -107,4 +107,8 @@ public sealed class BymlChangelogBuilder : Singleton<BymlChangelogBuilder>, ITkC
         info.Depth--;
         return src.Count == 0;
     }
+
+    public void Dispose()
+    {
+    }
 }

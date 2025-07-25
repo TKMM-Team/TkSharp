@@ -33,7 +33,8 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
         }
 
         foreach (PackFileEntry entry in _cache) {
-            entry.Data.Dispose();
+            entry.Data?.Dispose();
+            entry.RentedData.Dispose();
         }
     }
 
@@ -55,8 +56,13 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
             }
 
             using (Stream sarcEntry = sarc.OpenWrite(name)) {
-                entry.Data.CopyTo(sarcEntry);
-                entry.Data.Seek(0, SeekOrigin.Begin);
+                if (entry.Data is not null) {
+                    entry.Data.CopyTo(sarcEntry);
+                    entry.Data.Seek(0, SeekOrigin.Begin);
+                }
+                else {
+                    sarcEntry.Write(entry.RentedData.Span);
+                }
             }
 
             resourceSizeCollector.Collect(sarc[name].Count, name, sarc[name]);
@@ -77,16 +83,27 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
         }
     }
 
+    public void Collect(TkChangelogEntry changelog, RentedBuffer<byte> input)
+    {
+        foreach (string archiveCanonical in changelog.RuntimeArchiveCanonicals) {
+            _cache.Add(new PackFileEntry(
+                new PackFileEntryKey(archiveCanonical, changelog.Attributes, changelog.ZsDictionaryId),
+                changelog, null, input)
+            );
+        }
+    }
+
     public void RegisterPackFile(string canonical, Sarc sarc)
     {
         _trackedArchives[canonical] = sarc;
     }
 
-    private readonly struct PackFileEntry(PackFileEntryKey key, TkChangelogEntry changelog, Stream data)
+    private readonly struct PackFileEntry(PackFileEntryKey key, TkChangelogEntry changelog, Stream? data = null, RentedBuffer<byte> rented = default)
     {
         public readonly PackFileEntryKey Key = key;
         public readonly TkChangelogEntry Changelog = changelog;
-        public readonly Stream Data = data;
+        public readonly Stream? Data = data;
+        public readonly RentedBuffer<byte> RentedData = rented;
     }
 
     private readonly struct PackFileEntryKey(string archiveCanonical, TkFileAttributes attributes, int zsDictionaryId) : IEquatable<PackFileEntryKey>

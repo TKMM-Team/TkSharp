@@ -58,8 +58,10 @@ public sealed class TkMerger
 
         await Task.WhenAll(tasks);
 
-        _packFileCollector.Write();
-        _resourceSizeCollector.Write();
+        await Task.Run(() => {
+            _packFileCollector.Write();
+            _resourceSizeCollector.Write();
+        }, ct);
     }
 
     public void Merge(IEnumerable<TkChangelog> changelogs)
@@ -90,9 +92,21 @@ public sealed class TkMerger
         string relativeFilePath = changelog.RuntimeArchiveCanonicals.Count > 0
             ? _rom.CanonicalToRelativePath(changelog.Canonical, TkFileAttributes.None)
             : _rom.CanonicalToRelativePath(changelog.Canonical, changelog.Attributes);
-        
-        using MemoryStream output = new();
 
+        if (target.Case is (ITkMerger _, Stream[] { Length: 0 }) or null) {
+            if (_rom.GetVanilla(relativeFilePath) is { IsEmpty: false } vanilla) {
+                CopyVanillaPlaceholderToOutput(vanilla, changelog);
+                return;
+            }
+
+            TkLog.Instance.LogWarning(
+                "Failed to copy placeholder file {FileName} because the vanilla file could not be found.",
+                relativeFilePath
+            );
+            return;
+        }
+
+        using MemoryStream output = new();
         var result = MergeResult.Default;
 
         switch (target.Case) {
@@ -125,13 +139,13 @@ public sealed class TkMerger
             }
             case Stream copy:
                 CopyToOutput(copy, relativeFilePath, changelog);
-                return;
+                return;       
         }
 
         if (result is MergeResult.DelayWrite) {
             return;
         }
-        
+
         CopyMergedToOutput(output, relativeFilePath, changelog);
     }
 
@@ -218,7 +232,7 @@ public sealed class TkMerger
 
     internal static void MergeCustomTarget(ITkMerger merger, ArraySegment<byte> @base, ReadOnlySpan<Stream> targets, TkChangelogEntry changelog, Stream output)
     {
-        using RentedBuffers<byte> targetsBuffer = RentedBuffers<byte>.Allocate(targets); 
+        using RentedBuffers<byte> targetsBuffer = RentedBuffers<byte>.Allocate(targets);
         ArraySegment<ArraySegment<byte>> changelogs = TkChangelogBuilder.CreateChangelogsExternal(
             changelog.Canonical, flags: default, @base, targetsBuffer, changelog.Attributes
         );
@@ -237,7 +251,7 @@ public sealed class TkMerger
             _packFileCollector.Collect(changelog, input);
             return;
         }
-        
+
         using Stream output = _output.OpenWrite(Path.Combine("romfs", relativePath));
 
         if (!TkResourceSizeCollector.RequiresDataForCalculation(relativePath)) {
@@ -268,16 +282,26 @@ public sealed class TkMerger
         input.Dispose();
     }
 
+    private void CopyVanillaPlaceholderToOutput(RentedBuffer<byte> input, TkChangelogEntry changelog)
+    {
+        if (changelog.RuntimeArchiveCanonicals.Count == 0) {
+            throw new InvalidOperationException(
+                "This should never have happened! Copying vanilla files into a mod is useless.");
+        }
+
+        _packFileCollector.Collect(changelog, input);
+    }
+
     private void CopyMergedToOutput(in MemoryStream input, string relativePath, TkChangelogEntry changelog)
     {
         if (changelog.RuntimeArchiveCanonicals.Count != 0) {
             _packFileCollector.Collect(changelog, input);
             return;
         }
-        
+
         CopyMergedToSimpleOutput(input, relativePath, changelog.Attributes, changelog.ZsDictionaryId);
     }
-    
+
     internal void CopyMergedToSimpleOutput(in MemoryStream input, string relativePath,
         TkFileAttributes entryFileAttributes, int zsDictionaryId)
     {
@@ -348,9 +372,8 @@ public sealed class TkMerger
     private IEnumerable<MergeTarget> GetTargets(TkChangelog[] changelogs)
     {
         return changelogs
-            .SelectMany(
-                changelog => changelog.ChangelogFiles
-                    .Select(entry => (Entry: entry, Changelog: changelog))
+            .SelectMany(changelog => changelog.ChangelogFiles
+                .Select(entry => (Entry: entry, Changelog: changelog))
             )
             .GroupBy(
                 tuple => tuple.Entry,
@@ -364,12 +387,13 @@ public sealed class TkMerger
         // Ensure the key changelog contains
         // every archive requesting this file
         group.Key.RuntimeArchiveCanonicals = group.SelectMany(x => x.Entry.ArchiveCanonicals).ToList();
-            
+
         if (GetMerger(group.Key.Canonical) is ITkMerger merger) {
             return (
                 Changelog: group.Key,
                 Target: (Merger: merger,
                     Streams: group
+                        .Where(changelog => changelog.Entry.Type != ChangelogEntryType.Placeholder)
                         .Select(changelog => changelog.Changelog.Source!.OpenRead(GetRelativeRomFsPath(changelog.Entry)))
                         .ToArray()
                 )
@@ -381,10 +405,13 @@ public sealed class TkMerger
         // the last entry, we can avoid explicitly handling it
         (TkChangelogEntry Entry, TkChangelog Changelog) last = group.Last();
         string relativeFilePath = GetRelativeRomFsPath(last.Entry);
-        
+
         return (
             Changelog: group.Key,
-            Target: last.Changelog.Source!.OpenRead(relativeFilePath)
+            Target: group.Key.Type switch {
+                ChangelogEntryType.Placeholder => Either<(ITkMerger Merger, Stream[] Streams), Stream>.Bottom,
+                _ => last.Changelog.Source!.OpenRead(relativeFilePath)
+            }
         );
     }
 
