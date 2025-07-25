@@ -1,17 +1,21 @@
 using System.Collections.ObjectModel;
 using System.Text.Json;
+using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using TkSharp.Core;
 using TkSharp.Core.Models;
 
 namespace TkSharp.Packaging;
 
-public static class TkProjectManager
+public partial class TkProjectManager
 {
     private static readonly string _storeFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), ".tk-studio", "recent.json");
 
+    public static TkProjectManager Shared { get; } = new();
+    
     public static ObservableCollection<TkProject> RecentProjects { get; } = [];
 
+    // ReSharper disable once CollectionNeverQueried.Global
     public static readonly OptionGroupType[] OptionGroupTypes = Enum.GetValues<OptionGroupType>();
 
     public static int MaxRecentProjects { get; set; } = 15;
@@ -29,6 +33,13 @@ public static class TkProjectManager
         LoadProjectMetadataFromFolder(project);
         InsertRecentProject(project);
         return project;
+    }
+
+    [RelayCommand]
+    // ReSharper disable once UnusedMember.Global
+    public static void RemoveFromRecent(TkProject project)
+    {
+        RecentProjects.Remove(project);
     }
 
     public static void Load()
