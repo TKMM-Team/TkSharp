@@ -14,14 +14,22 @@ public class TkChangelogBuilder(
     ITkSystemSource? systemSource,
     TkChangelogBuilderFlags flags = default)
 {
+    private static ITkRom? _sessionRom;
     private static ITkRomProvider? _romProvider;
 
-    public static ITkRomProvider RomProvider
-        => _romProvider ?? throw new Exception("The changelog builder has not been statically initialized");
+    // This is a bit sketchy and should probably be fixed
+    // in a better way.
+    // 
+    // TL;DR static/unchecked calls to TkChangelogBuilder
+    // need access to ITkRom, so this field is assigned whenever
+    // a new TkChangelogBuilder is constructed (or creates a new one if needed)
+    public static ITkRom SessionRom
+        => _sessionRom ?? _romProvider?.GetRom()
+            ?? throw new Exception("The changelog builder has not been statically initialized");
 
     private readonly ITkModSource _source = source;
     private readonly ITkModWriter _writer = writer;
-    private readonly ITkRom _tk = tk;
+    private readonly ITkRom _tk = InitSession(tk);
     private readonly Dictionary<string, TkChangelogEntry> _entries = [];
 
     private readonly TkChangelog _changelog = new() {
@@ -30,9 +38,14 @@ public class TkChangelogBuilder(
         Source = systemSource
     };
 
-    public static void Init(ITkRomProvider romProvider)
+    public static void Init(ITkRomProvider tkRomProvider)
     {
-        _romProvider = romProvider;
+        _romProvider = tkRomProvider;
+    }
+
+    private static ITkRom InitSession(ITkRom tk)
+    {
+        return _sessionRom = tk;
     }
 
     public async ValueTask<TkChangelog> BuildParallel(CancellationToken ct = default)
@@ -221,7 +234,7 @@ public class TkChangelogBuilder(
         if (archiveCanonical is not null) {
             entry.ArchiveCanonicals.Add(archiveCanonical);
         }
-        
+
         // Make sure that the last occurence type is used
         // 
         // This should never be different, but mod devs
@@ -232,6 +245,12 @@ public class TkChangelogBuilder(
 
     internal static ITkChangelogBuilder? GetChangelogBuilder(in TkPath path)
     {
+        if (path.Extension is ".pack") {
+            // If _sessionRom is null, then SessionRom will
+            // return a new instance just for this call.
+            return new PackChangelogBuilder(SessionRom, disposeTkRom: _sessionRom is null);
+        }
+        
         return path switch {
             { Canonical: "GameData/GameDataList.Product.byml" } => GameDataChangelogBuilder.Instance,
             { Canonical: "RSDB/Tag.Product.rstbl.byml" } => RsdbTagChangelogBuilder.Instance,
@@ -258,7 +277,6 @@ public class TkChangelogBuilder(
             } => RsdbRowChangelogBuilder.RowId,
             { Extension: ".msbt" } => MsbtChangelogBuilder.Instance,
             { Extension: ".bfarc" or ".bkres" or ".blarc" or ".genvb" or ".sarc" or ".ta" } => SarcChangelogBuilder.Instance,
-            { Extension: ".pack" } => new PackChangelogBuilder(RomProvider.GetRom()),
             { Extension: ".bgyml" } => BymlChangelogBuilder.Instance,
             { Extension: ".byml" } when path.Canonical[..4] is not "RSDB" && path.Canonical[..8] is not "GameData" => BymlChangelogBuilder.Instance,
             _ => null

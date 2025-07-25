@@ -1,4 +1,3 @@
-using CommunityToolkit.HighPerformance;
 using SarcLibrary;
 using TkSharp.Core;
 using TkSharp.Core.IO.Buffers;
@@ -6,12 +5,13 @@ using TkSharp.Core.Models;
 
 namespace TkSharp.Merging.ChangelogBuilders;
 
-public class PackChangelogBuilder(ITkRom tk) : ITkChangelogBuilder
+public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBuilder
 {
     private static readonly byte[] _deletedFileMark = "TKSCRMVD"u8.ToArray();
     
     private readonly ITkRom _tk = tk;
-    
+    private readonly bool _disposeTkRom = disposeTkRom;
+
     public bool CanProcessWithoutVanilla => true;
 
     public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags,
@@ -123,6 +123,8 @@ public class PackChangelogBuilder(ITkRom tk) : ITkChangelogBuilder
     public void Dispose()
     {
         GC.SuppressFinalize(this);
-        _tk.Dispose();
+        if (_disposeTkRom) {
+            _tk.Dispose();
+        }
     }
 }
