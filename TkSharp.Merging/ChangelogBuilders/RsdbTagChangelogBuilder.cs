@@ -34,10 +34,6 @@ public sealed class RsdbTagChangelogBuilder : Singleton<RsdbTagChangelogBuilder>
             bool isKeyVanilla = vanilla.HasEntry(paths, ref i, out int vanillaEntryIndex, out (Byml Prefix, Byml Name, Byml Suffix) entry);
             var entryTags = GetEntryTags<List<string>>(entryIndex, tags, bitTable);
 
-            if (entry.Name.GetString() == "BombFruit") {
-                Debugger.Break();
-            }
-
             if (!isKeyVanilla) {
                 changelog.AddRange(paths[(i - 2)..(i + 1)]);
                 changelog.Add(new BymlArray(entryTags.Select(str => (Byml)str)));

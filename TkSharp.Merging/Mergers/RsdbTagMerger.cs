@@ -74,6 +74,13 @@ public sealed class RsdbTagMerger : Singleton<RsdbTagMerger>, ITkMerger
                 table.Entries[key] = entryTags = [];
             }
 
+            Byml entry = entries[++i];
+
+            if (entry.Value is BymlArray basic) {
+                entryTags.AddRange(basic.Select(x => x.GetString()));
+                continue;
+            }
+
             foreach ((_, BymlChangeType type, Byml target, _, _) in entries[++i].GetArrayChangelog()) {
                 if (target.Value is not string tag) {
                     continue;
