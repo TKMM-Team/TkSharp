@@ -2,6 +2,7 @@
 
 using System.Buffers;
 using System.Collections.Frozen;
+using System.Collections.Immutable;
 using BymlLibrary;
 using BymlLibrary.Nodes.Containers;
 
@@ -11,7 +12,7 @@ public sealed class RsdbTagIndex : IDisposable
 {
     public readonly FrozenDictionary<(string, string, string), int> Entries;
     public readonly FrozenSet<string> Tags;
-    public readonly FrozenSet<string>[] EntryTags;
+    public readonly ImmutableSortedSet<string>[] EntryTags;
 
     public RsdbTagIndex(Span<byte> src) : this(Byml.FromBinary(src).GetMap())
     {
@@ -26,7 +27,7 @@ public sealed class RsdbTagIndex : IDisposable
         byte[] bitTable = table[RsdbTagTable.BIT_TABLE].GetBinary();
 
         Dictionary<(string, string, string), int> entries = new(entryCount);
-        EntryTags = ArrayPool<FrozenSet<string>>.Shared.Rent(entryCount);
+        EntryTags = ArrayPool<ImmutableSortedSet<string>>.Shared.Rent(entryCount);
 
         for (int i = 0; i < paths.Count; i++) {
             int entryIndex = i / 3;
@@ -68,13 +69,14 @@ public sealed class RsdbTagIndex : IDisposable
         return tag.Type == BymlNodeType.String && Tags.Contains(tag.GetString());
     }
 
-    private static FrozenSet<string> GetEntryTags(int entryIndex, BymlArray tags, Span<byte> bitTable)
+    private static ImmutableSortedSet<string> GetEntryTags(int entryIndex, BymlArray tags, Span<byte> bitTable)
     {
-        return RsdbTagTable.GetEntryTags<HashSet<string>>(entryIndex, tags, bitTable).ToFrozenSet();
+        return RsdbTagTable.GetEntryTags<List<string>>(entryIndex, tags, bitTable)
+            .ToImmutableSortedSet(StringComparer.Ordinal);
     }
 
     public void Dispose()
     {
-        ArrayPool<FrozenSet<string>>.Shared.Return(EntryTags);
+        ArrayPool<ImmutableSortedSet<string>>.Shared.Return(EntryTags);
     }
 }

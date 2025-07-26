@@ -74,12 +74,13 @@ public sealed class RsdbTagMerger : Singleton<RsdbTagMerger>, ITkMerger
                 table.Entries[key] = entryTags = [];
             }
 
-            foreach ((int index, BymlChangeType type, Byml target, _, _) in entries[++i].GetArrayChangelog()) {
-                if (type is BymlChangeType.Remove) {
-                    entryTags[index] = null;
+            foreach ((_, BymlChangeType type, Byml target, _, _) in entries[++i].GetArrayChangelog()) {
+                if (target.Value is not string tag) {
+                    continue;
                 }
                 
-                if (target.Value is not string tag) {
+                if (type is BymlChangeType.Remove) {
+                    entryTags.Remove(tag);
                     continue;
                 }
                 
