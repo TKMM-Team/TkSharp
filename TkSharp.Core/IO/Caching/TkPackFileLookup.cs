@@ -29,25 +29,33 @@ public sealed class TkPackFileLookup(Stream pkcache, Stream? precompiled = null)
         _precompiled = precompiled;
         return this;
     }
-    
+
     /// <summary>
     /// Returns the pack file data or an empty buffer if the file does not exist
     /// </summary>
     /// <param name="canonical"></param>
+    /// <param name="isFoundMissing">true if the entry was recorded to exist, but cannot be found in the game dump</param>
     /// <returns></returns>
-    public RentedBuffer<byte> GetNested(string canonical)
+    public RentedBuffer<byte> GetNested(string canonical, out bool isFoundMissing)
     {
         if (_rom is null) {
             throw new InvalidOperationException("Pack file lookup is not initialized.");
         }
+
+        isFoundMissing = false;
         
         if (GetPackFileName(canonical, out RentedBuffer<byte> buffer) is (string packFileCanonical, var attributes)) {
             RentedBuffer<byte> sarcBuffer = _rom.GetVanilla(packFileCanonical, attributes);
             RevrsReader reader = new(sarcBuffer.Span);
             ImmutableSarc sarc = new(ref reader);
-            ImmutableSarcEntry entry = sarc[canonical];
-            sarcBuffer.Slice(entry.DataStartOffset, entry.DataEndOffset);
-            return sarcBuffer;
+            if (sarc.TryGet(canonical, out ImmutableSarcEntry entry)) {
+                sarcBuffer.Slice(entry.DataStartOffset, entry.DataEndOffset);
+                return sarcBuffer;
+            }
+
+            sarcBuffer.Dispose();
+            isFoundMissing = true;
+            return default;
         }
 
         return buffer;

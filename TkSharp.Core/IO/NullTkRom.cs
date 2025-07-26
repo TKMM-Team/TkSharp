@@ -30,12 +30,16 @@ public class NullTkRom : ITkRom
 
     public RentedBuffer<byte> GetVanilla(string canonical, TkFileAttributes attributes) => new();
 
-    public RentedBuffer<byte> GetVanilla(string relativeFilePath) => new();
+    public RentedBuffer<byte> GetVanilla(string relativeFilePath, out bool isFoundMissing)
+    {
+        isFoundMissing = false;
+        return default;
+    }
 
     public bool IsVanilla(ReadOnlySpan<char> canonical, Span<byte> src, int fileVersion) => false;
 
     public void Dispose()
     {
-        // Nothing to dispose
+        GC.SuppressFinalize(this);
     }
 } 

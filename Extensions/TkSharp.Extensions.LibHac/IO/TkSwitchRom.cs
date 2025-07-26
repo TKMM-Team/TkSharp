@@ -83,15 +83,16 @@ internal sealed class TkSwitchRom : ITkRom
         }
     }
 
-    public RentedBuffer<byte> GetVanilla(string relativeFilePath)
+    public RentedBuffer<byte> GetVanilla(string relativeFilePath, out bool isFoundMissing)
     {
+        isFoundMissing = false;
         relativeFilePath = $"/{relativeFilePath}";
 
         UniqueRef<IFile> file = new();
         _fileSystem.OpenFile(ref file, relativeFilePath.ToU8Span(), OpenMode.Read);
 
         if (!file.HasValue) {
-            return _packFileLookup.GetNested(relativeFilePath);
+            return _packFileLookup.GetNested(relativeFilePath, out isFoundMissing);
         }
 
         file.Get.GetSize(out long size);

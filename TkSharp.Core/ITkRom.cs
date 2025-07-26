@@ -78,13 +78,16 @@ public interface ITkRom : IDisposable
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     RentedBuffer<byte> GetVanilla(string canonical, TkFileAttributes attributes)
-    {
-        return GetVanilla(
-            CanonicalToRelativePath(canonical, attributes)
-        );
-    }
+        => GetVanilla(CanonicalToRelativePath(canonical, attributes), out _);
 
-    RentedBuffer<byte> GetVanilla(string relativeFilePath);
+    RentedBuffer<byte> GetVanilla(string relativeFilePath)
+        => GetVanilla(relativeFilePath, out _);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    RentedBuffer<byte> GetVanilla(string canonical, TkFileAttributes attributes, out bool isFoundMissing)
+        => GetVanilla(CanonicalToRelativePath(canonical, attributes), out isFoundMissing);
+
+    RentedBuffer<byte> GetVanilla(string relativeFilePath, out bool isFoundMissing);
 
     bool IsVanilla(ReadOnlySpan<char> canonical, Span<byte> src, int fileVersion);
 }

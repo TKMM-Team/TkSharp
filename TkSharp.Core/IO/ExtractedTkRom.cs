@@ -124,13 +124,14 @@ public sealed class ExtractedTkRom : ITkRom
 
     public Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> SequenceVersions { get; }
 
-    public RentedBuffer<byte> GetVanilla(string relativeFilePath)
+    public RentedBuffer<byte> GetVanilla(string relativeFilePath, out bool isFoundMissing)
     {
+        isFoundMissing = false;
         string absolute = Path.Combine(_gamePath, relativeFilePath);
         if (!File.Exists(absolute)) {
             // Nested files have the relative and canonical
             // file paths, so this is a valid call
-            return _packFileLookup.GetNested(relativeFilePath);
+            return _packFileLookup.GetNested(relativeFilePath, out isFoundMissing);
         }
         
         using Stream fs = File.OpenRead(absolute);

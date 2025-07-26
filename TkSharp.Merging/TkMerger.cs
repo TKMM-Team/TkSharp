@@ -94,14 +94,14 @@ public sealed class TkMerger
             : _rom.CanonicalToRelativePath(changelog.Canonical, changelog.Attributes);
 
         if (target.Case is (ITkMerger _, Stream[] { Length: 0 }) or null) {
-            if (_rom.GetVanilla(relativeFilePath) is { IsEmpty: false } vanilla) {
+            if (_rom.GetVanilla(relativeFilePath, out bool isFoundMissing) is { IsEmpty: false } vanilla) {
                 CopyVanillaPlaceholderToOutput(vanilla, changelog);
                 return;
             }
 
             TkLog.Instance.LogWarning(
-                "Failed to copy placeholder file {FileName} because the vanilla file could not be found.",
-                relativeFilePath
+                "Failed to copy placeholder file {FileName} because the vanilla file could not be found. {IsFoundMissing}",
+                relativeFilePath, isFoundMissing
             );
             return;
         }
@@ -114,7 +114,15 @@ public sealed class TkMerger
                 // TODO: It would be more efficient to avoid
                 // GetVanilla on nested files. Checking loaded
                 // pack files first would be optimal. 
-                using RentedBuffer<byte> vanilla = _rom.GetVanilla(relativeFilePath);
+                using RentedBuffer<byte> vanilla = _rom.GetVanilla(relativeFilePath, out bool isFoundMissing);
+                
+                if (isFoundMissing) {
+                    TkLog.Instance.LogWarning(
+                        "The changelog for '{Canonical}' could not be merged because the vanilla file could not be found",
+                        changelog.Canonical);
+                    return;
+                }
+                
                 if (vanilla.IsEmpty) {
                     MergeCustomTarget(merger, streams[0], streams.AsSpan(1..), changelog, output);
                     break;
@@ -123,15 +131,24 @@ public sealed class TkMerger
                 using RentedBuffers<byte> inputs = RentedBuffers<byte>.Allocate(streams, disposeStreams: true);
                 result = merger.Merge(changelog, inputs, vanilla.Segment, output);
                 break;
+
             }
             case (ITkMerger merger, Stream[] { Length: 1 } streams): {
-                using RentedBuffer<byte> vanilla = _rom.GetVanilla(relativeFilePath);
+                using RentedBuffer<byte> vanilla = _rom.GetVanilla(relativeFilePath, out bool isFoundMissing);
                 Stream single = streams[0];
+                
+                if (isFoundMissing) {
+                    TkLog.Instance.LogWarning(
+                        "The changelog for '{Canonical}' could not be merged because the vanilla file could not be found",
+                        changelog.Canonical);
+                    return;
+                }
+                
                 if (vanilla.IsEmpty) {
                     CopyToOutput(single, relativeFilePath, changelog);
                     return;
                 }
-
+                
                 using RentedBuffer<byte> input = RentedBuffer<byte>.Allocate(single);
                 result = merger.MergeSingle(changelog, input.Segment, vanilla.Segment, output);
                 single.Dispose();
