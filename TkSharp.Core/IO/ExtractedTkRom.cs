@@ -15,7 +15,7 @@ public sealed class ExtractedTkRom : ITkRom
     {
         _gamePath = gamePath;
         _checksums = checksums;
-        _packFileLookup = packFileLookup.Init(this);
+        _packFileLookup = packFileLookup;
 
         {
             string regionLangMaskPath = Path.Combine(gamePath, "System", "RegionLangMask.txt");
@@ -131,7 +131,7 @@ public sealed class ExtractedTkRom : ITkRom
         if (!File.Exists(absolute)) {
             // Nested files have the relative and canonical
             // file paths, so this is a valid call
-            return _packFileLookup.GetNested(relativeFilePath, out isFoundMissing);
+            return _packFileLookup.GetNested(relativeFilePath, this, out isFoundMissing);
         }
         
         using Stream fs = File.OpenRead(absolute);
@@ -143,7 +143,7 @@ public sealed class ExtractedTkRom : ITkRom
         }
 
         try {
-            RentedBuffer<byte> decompressed = RentedBuffer<byte>.Allocate(TkZstd.GetDecompressedSize(rawBuffer)); 
+            RentedBuffer<byte> decompressed = RentedBuffer<byte>.Allocate(TkZstd.GetDecompressedSize(rawBuffer));
             Zstd.Decompress(rawBuffer, decompressed.Span);
             return decompressed;
         }
@@ -159,5 +159,6 @@ public sealed class ExtractedTkRom : ITkRom
 
     public void Dispose()
     {
+        Zstd.Dispose();
     }
 }

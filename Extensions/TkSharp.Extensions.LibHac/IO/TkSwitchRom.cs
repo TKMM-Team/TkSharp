@@ -40,7 +40,7 @@ internal sealed class TkSwitchRom : ITkRom
         _fileSystem = fs;
         _disposables = disposables;
         _checksums = checksums;
-        _packFileLookup = packFileLookup.Init(this);
+        _packFileLookup = packFileLookup;
 
         using (Stream regionLangMaskFs = _fileSystem.OpenFileStream("/System/RegionLangMask.txt"))
         using (RentedBuffer<byte> regionLangMask = RentedBuffer<byte>.Allocate(regionLangMaskFs)) {
@@ -92,7 +92,7 @@ internal sealed class TkSwitchRom : ITkRom
         _fileSystem.OpenFile(ref file, relativeFilePath.ToU8Span(), OpenMode.Read);
 
         if (!file.HasValue) {
-            return _packFileLookup.GetNested(relativeFilePath, out isFoundMissing);
+            return _packFileLookup.GetNested(relativeFilePath, this, out isFoundMissing);
         }
 
         file.Get.GetSize(out long size);
@@ -128,5 +128,7 @@ internal sealed class TkSwitchRom : ITkRom
         
         _fileSystem.Dispose();
         _packFileLookup.Dispose();
+        
+        Zstd.Dispose();
     }
 }

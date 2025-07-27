@@ -96,6 +96,7 @@ public sealed class TkMerger
         if (target.Case is (ITkMerger _, Stream[] { Length: 0 }) or null) {
             if (_rom.GetVanilla(relativeFilePath, out bool isFoundMissing) is { IsEmpty: false } vanilla) {
                 CopyVanillaPlaceholderToOutput(vanilla, changelog);
+                vanilla.Dispose();
                 return;
             }
 
@@ -249,7 +250,7 @@ public sealed class TkMerger
 
     internal static void MergeCustomTarget(ITkMerger merger, ArraySegment<byte> @base, ReadOnlySpan<Stream> targets, TkChangelogEntry changelog, Stream output)
     {
-        using RentedBuffers<byte> targetsBuffer = RentedBuffers<byte>.Allocate(targets);
+        using RentedBuffers<byte> targetsBuffer = RentedBuffers<byte>.Allocate(targets, disposeStreams: true);
         ArraySegment<ArraySegment<byte>> changelogs = TkChangelogBuilder.CreateChangelogsExternal(
             changelog.Canonical, flags: default, @base, targetsBuffer, changelog.Attributes
         );
@@ -306,7 +307,7 @@ public sealed class TkMerger
                 "This should never have happened! Copying vanilla files into a mod is useless.");
         }
 
-        _packFileCollector.Collect(changelog, input);
+        _packFileCollector.Collect(changelog, input.Span.ToArray());
     }
 
     private void CopyMergedToOutput(in MemoryStream input, string relativePath, TkChangelogEntry changelog)
@@ -368,7 +369,7 @@ public sealed class TkMerger
             changelogs
                 .SelectMals(_locale)
                 .Select(entry => entry.Changelog.Source!.OpenRead($"romfs/{entry.MalsFile}"))
-                .ToArray());
+                .ToArray(), disposeStreams: true);
 
         if (combinedBuffers.Count == 0) {
             return;

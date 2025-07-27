@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace TkSharp.Core.IO.Buffers;
 
-public struct RentedBuffer<T> : IDisposable where T : unmanaged
+public ref struct RentedBuffer<T> : IDisposable where T : unmanaged
 {
     private readonly T[] _buffer;
     private int _size;

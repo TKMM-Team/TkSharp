@@ -14,15 +14,8 @@ public sealed class TkPackFileLookup(Stream pkcache, Stream? precompiled = null)
 {
     private static readonly Decompressor _zstd = new();
     
-    private ITkRom? _rom;
     private Stream? _precompiled = precompiled;
     private readonly FrozenDictionary<ulong, (string, TkFileAttributes)> _lookup = CreateLookup(pkcache);
-
-    public TkPackFileLookup Init(ITkRom rom)
-    {
-        _rom = rom;
-        return this;
-    }
 
     public TkPackFileLookup UsePrecompiledCache(Stream precompiled)
     {
@@ -34,18 +27,15 @@ public sealed class TkPackFileLookup(Stream pkcache, Stream? precompiled = null)
     /// Returns the pack file data or an empty buffer if the file does not exist
     /// </summary>
     /// <param name="canonical"></param>
+    /// <param name="rom"></param>
     /// <param name="isFoundMissing">true if the entry was recorded to exist, but cannot be found in the game dump</param>
     /// <returns></returns>
-    public RentedBuffer<byte> GetNested(string canonical, out bool isFoundMissing)
+    public RentedBuffer<byte> GetNested(string canonical, ITkRom rom, out bool isFoundMissing)
     {
-        if (_rom is null) {
-            throw new InvalidOperationException("Pack file lookup is not initialized.");
-        }
-
         isFoundMissing = false;
         
         if (GetPackFileName(canonical, out RentedBuffer<byte> buffer) is (string packFileCanonical, var attributes)) {
-            RentedBuffer<byte> sarcBuffer = _rom.GetVanilla(packFileCanonical, attributes);
+            RentedBuffer<byte> sarcBuffer = rom.GetVanilla(packFileCanonical, attributes);
             RevrsReader reader = new(sarcBuffer.Span);
             ImmutableSarc sarc = new(ref reader);
             if (sarc.TryGet(canonical, out ImmutableSarcEntry entry)) {

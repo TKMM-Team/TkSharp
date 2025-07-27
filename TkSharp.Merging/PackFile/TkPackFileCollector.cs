@@ -34,7 +34,6 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
 
         foreach (PackFileEntry entry in _cache) {
             entry.Data?.Dispose();
-            entry.RentedData.Dispose();
         }
     }
 
@@ -61,7 +60,7 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
                     entry.Data.Seek(0, SeekOrigin.Begin);
                 }
                 else {
-                    sarcEntry.Write(entry.RentedData.Span);
+                    sarcEntry.Write(entry.Buffer);
                 }
             }
 
@@ -83,7 +82,7 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
         }
     }
 
-    public void Collect(TkChangelogEntry changelog, RentedBuffer<byte> input)
+    public void Collect(TkChangelogEntry changelog, byte[] input)
     {
         foreach (string archiveCanonical in changelog.RuntimeArchiveCanonicals) {
             _cache.Add(new PackFileEntry(
@@ -98,12 +97,12 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
         _trackedArchives[canonical] = sarc;
     }
 
-    private readonly struct PackFileEntry(PackFileEntryKey key, TkChangelogEntry changelog, Stream? data = null, RentedBuffer<byte> rented = default)
+    private readonly struct PackFileEntry(PackFileEntryKey key, TkChangelogEntry changelog, Stream? data = null, byte[]? buffer = null)
     {
         public readonly PackFileEntryKey Key = key;
         public readonly TkChangelogEntry Changelog = changelog;
         public readonly Stream? Data = data;
-        public readonly RentedBuffer<byte> RentedData = rented;
+        public readonly byte[]? Buffer = buffer;
     }
 
     private readonly struct PackFileEntryKey(string archiveCanonical, TkFileAttributes attributes, int zsDictionaryId) : IEquatable<PackFileEntryKey>

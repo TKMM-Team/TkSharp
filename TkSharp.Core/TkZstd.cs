@@ -9,7 +9,7 @@ using ZstdSharp;
 
 namespace TkSharp.Core;
 
-public class TkZstd
+public class TkZstd : IDisposable
 {
     public const uint ZSTD_MAGIC = 0xFD2FB528;
     private const uint DICT_MAGIC = 0xEC30A437;
@@ -240,5 +240,20 @@ public class TkZstd
         _compressors[buffer[4..8].Read<int>()] = compressor;
 
         return true;
+    }
+
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+        
+        _defaultDecompressor.Dispose();
+        foreach ((_, Decompressor decompressor) in _decompressors) {
+            decompressor.Dispose();
+        }
+        
+        _defaultCompressor.Dispose();
+        foreach ((_, Compressor compressor) in _compressors) {
+            compressor.Dispose();
+        }
     }
 }

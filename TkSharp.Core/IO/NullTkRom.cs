@@ -41,5 +41,6 @@ public class NullTkRom : ITkRom
     public void Dispose()
     {
         GC.SuppressFinalize(this);
+        Zstd.Dispose();
     }
 } 
