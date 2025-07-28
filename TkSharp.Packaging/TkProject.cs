@@ -151,14 +151,41 @@ public partial class TkProject(string folderPath) : ObservableObject
 
     private void PackThumbnails(ITkModWriter writer)
     {
+        SetThumbnailIfNull(Mod, FolderPath);
+
         PackThumbnail(Mod, writer);
 
         foreach (TkModOptionGroup group in Mod.OptionGroups) {
+            if (TryGetPath(group, out var groupPath)) {
+                SetThumbnailIfNull(group, groupPath);
+            }
+
             PackThumbnail(group, writer);
 
             foreach (TkModOption option in group.Options) {
+                if (TryGetPath(option, out var optionPath)) {
+                    SetThumbnailIfNull(option, optionPath);
+                }
+
                 PackThumbnail(option, writer);
             }
+        }
+    }
+
+    private static void SetThumbnailIfNull(TkItem item, string folderPath)
+    {
+        if (item.Thumbnail?.ThumbnailPath != null) {
+            return;
+        }
+
+        var thumbnailPng = Path.Combine(folderPath, "thumbnail.png");
+        var thumbnailJpg = Path.Combine(folderPath, "thumbnail.jpg");
+        
+        if (File.Exists(thumbnailPng)) {
+            item.Thumbnail = new TkThumbnail { ThumbnailPath = thumbnailPng };
+        }
+        else if (File.Exists(thumbnailJpg)) {
+            item.Thumbnail = new TkThumbnail { ThumbnailPath = thumbnailJpg };
         }
     }
 
