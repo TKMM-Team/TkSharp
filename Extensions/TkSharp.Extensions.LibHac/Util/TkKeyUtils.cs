@@ -43,6 +43,13 @@ public static class TkKeyUtils
         
         KeySet keys = new();
 
+        if (File.Exists(legacyKeysFile) && File.Exists(titleKeysFile)) {
+            string combinedFile = Path.Combine(Path.GetTempPath(), "combined_title.keys");
+            File.WriteAllText(combinedFile, File.ReadAllText(legacyKeysFile) + Environment.NewLine + File.ReadAllText(titleKeysFile));
+            ExternalKeyReader.ReadKeyFile(keys, titleKeysFilename: combinedFile, prodKeysFilename: keysFile);
+            return keys;
+        }
+
         if (File.Exists(legacyKeysFile)) {
             ExternalKeyReader.ReadKeyFile(keys, titleKeysFilename: legacyKeysFile, prodKeysFilename: keysFile);
             return keys;
