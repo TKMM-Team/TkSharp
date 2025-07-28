@@ -174,7 +174,7 @@ public partial class TkProject(string folderPath) : ObservableObject
 
     private static void SetThumbnailIfNull(TkItem item, string folderPath)
     {
-        if (item.Thumbnail?.ThumbnailPath != null) {
+        if (item.Thumbnail?.ThumbnailPath != null && File.Exists(item.Thumbnail.ThumbnailPath)) {
             return;
         }
 
