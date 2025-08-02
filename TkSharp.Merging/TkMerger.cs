@@ -181,9 +181,14 @@ public sealed class TkMerger
 
             string outputFile = Path.Combine("cheats", $"{cheats.Key}.txt");
 
-            using Stream output = mergeOutput.OpenWrite(outputFile);
-            using StreamWriter writer = new(output);
-            merged.WriteText(writer);
+            try {
+                using Stream output = mergeOutput.OpenWrite(outputFile);
+                using StreamWriter writer = new(output);
+                merged.WriteText(writer);
+            }
+            catch (Exception ex) {
+                TkLog.Instance.LogError(ex, "Could not write cheats file");
+            }
         }
     }
 
