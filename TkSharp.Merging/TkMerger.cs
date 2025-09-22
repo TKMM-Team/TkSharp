@@ -89,41 +89,18 @@ public sealed class TkMerger
 
     public void MergeTarget(TkChangelogEntry changelog, Either<(ITkMerger, Stream[]), Stream> target)
     {
-        string relativeFilePath = changelog.RuntimeArchiveCanonicals.Count > 0
-            ? _rom.CanonicalToRelativePath(changelog.Canonical, TkFileAttributes.None)
-            : _rom.CanonicalToRelativePath(changelog.Canonical, changelog.Attributes);
-
-        if (target.Case is (ITkMerger _, Stream[] { Length: 0 }) or null) {
-            if (_rom.GetVanilla(relativeFilePath, out bool isFoundMissing) is { IsEmpty: false } vanilla) {
-                CopyVanillaPlaceholderToOutput(vanilla, changelog);
-                vanilla.Dispose();
-                return;
-            }
-
-            TkLog.Instance.LogWarning(
-                "Failed to copy placeholder file {FileName} because the vanilla file could not be found. {IsFoundMissing}",
-                relativeFilePath, isFoundMissing
-            );
-            return;
-        }
-
+        string relativeFilePath = _rom.CanonicalToRelativePath(changelog.Canonical, changelog.Attributes);
         using MemoryStream output = new();
         var result = MergeResult.Default;
 
         switch (target.Case) {
             case (ITkMerger merger, Stream[] { Length: > 1 } streams): {
-                // TODO: It would be more efficient to avoid
-                // GetVanilla on nested files. Checking loaded
-                // pack files first would be optimal. 
-                using RentedBuffer<byte> vanilla = _rom.GetVanilla(relativeFilePath, out bool isFoundMissing);
-                
-                if (isFoundMissing) {
-                    TkLog.Instance.LogWarning(
-                        "The changelog for '{Canonical}' could not be merged because the vanilla file could not be found",
-                        changelog.Canonical);
+                if (changelog.RuntimeArchiveCanonicals.Count > 0) {
+                    _packFileCollector.Collect(changelog, merger, streams);
                     return;
                 }
                 
+                using RentedBuffer<byte> vanilla = _rom.GetVanilla(relativeFilePath);
                 if (vanilla.IsEmpty) {
                     MergeCustomTarget(merger, streams[0], streams.AsSpan(1..), changelog, output);
                     break;
@@ -135,15 +112,14 @@ public sealed class TkMerger
 
             }
             case (ITkMerger merger, Stream[] { Length: 1 } streams): {
-                using RentedBuffer<byte> vanilla = _rom.GetVanilla(relativeFilePath, out bool isFoundMissing);
+                if (changelog.RuntimeArchiveCanonicals.Count > 0) {
+                    _packFileCollector.Collect(changelog, merger, streams);
+                    return;
+                } 
+                
+                using RentedBuffer<byte> vanilla = _rom.GetVanilla(relativeFilePath);
                 Stream single = streams[0];
                 
-                if (isFoundMissing) {
-                    TkLog.Instance.LogWarning(
-                        "The changelog for '{Canonical}' could not be merged because the vanilla file could not be found",
-                        changelog.Canonical);
-                    return;
-                }
                 
                 if (vanilla.IsEmpty) {
                     CopyToOutput(single, relativeFilePath, changelog);
@@ -303,16 +279,6 @@ public sealed class TkMerger
         _resourceSizeCollector.Collect(data.Length, relativePath, data);
         output.Write(raw);
         input.Dispose();
-    }
-
-    private void CopyVanillaPlaceholderToOutput(RentedBuffer<byte> input, TkChangelogEntry changelog)
-    {
-        if (changelog.RuntimeArchiveCanonicals.Count == 0) {
-            throw new InvalidOperationException(
-                "This should never have happened! Copying vanilla files into a mod is useless.");
-        }
-
-        _packFileCollector.Collect(changelog, input.Span.ToArray());
     }
 
     private void CopyMergedToOutput(in MemoryStream input, string relativePath, TkChangelogEntry changelog)
