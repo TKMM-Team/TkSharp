@@ -82,6 +82,8 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
             if (inputs.Count == 0) {
                 continue;
             }
+            
+            inputs.Reverse();
 
             // If no merger for this type, last-wins copy
             if (merger is null) {
