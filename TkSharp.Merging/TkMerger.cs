@@ -89,7 +89,9 @@ public sealed class TkMerger
 
     public void MergeTarget(TkChangelogEntry changelog, Either<(ITkMerger, Stream[]), Stream> target)
     {
-        string relativeFilePath = _rom.CanonicalToRelativePath(changelog.Canonical, changelog.Attributes);
+        string relativeFilePath = changelog.RuntimeArchiveCanonicals.Count > 0
+            ? _rom.CanonicalToRelativePath(changelog.Canonical, TkFileAttributes.None)
+            : _rom.CanonicalToRelativePath(changelog.Canonical, changelog.Attributes);
         using MemoryStream output = new();
         var result = MergeResult.Default;
 
@@ -115,7 +117,7 @@ public sealed class TkMerger
                 if (changelog.RuntimeArchiveCanonicals.Count > 0) {
                     _packFileCollector.Collect(changelog, merger, streams);
                     return;
-                } 
+                }
                 
                 using RentedBuffer<byte> vanilla = _rom.GetVanilla(relativeFilePath);
                 Stream single = streams[0];
