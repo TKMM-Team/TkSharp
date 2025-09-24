@@ -77,7 +77,7 @@ public sealed class RsdbTagChangelogBuilder : Singleton<RsdbTagChangelogBuilder>
 
         for (; mi < diff.Length; mi++) {
             if (vi >= vanilla.Count) {
-                changelog.Add((index: 0, BymlChangeType.Add, node: mi));
+                changelog.Add((index: 0, BymlChangeType.Add, node: diff[mi]));
                 continue;
             }
 
