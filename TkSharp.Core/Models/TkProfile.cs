@@ -91,7 +91,9 @@ public sealed partial class TkProfile : TkItem
         }
         
         int currentIndex = Mods.IndexOf(target);
-        return Move(target, -currentIndex);
+        Mods.RemoveAt(currentIndex);
+        Mods.Insert(0, target);
+        return Selected = target;
     }
 
     public TkProfileMod? MoveToBottom() => Selected = MoveToBottom(Selected);
@@ -107,7 +109,9 @@ public sealed partial class TkProfile : TkItem
         }
         
         int currentIndex = Mods.IndexOf(target);
-        return Move(target, Mods.Count - 1 - currentIndex);
+        Mods.RemoveAt(currentIndex);
+        Mods.Add(target);
+        return Selected = target;
     }
 
     public void RebaseOptions(TkProfileMod? target = null)
