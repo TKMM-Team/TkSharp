@@ -370,22 +370,29 @@ public sealed class TkMerger
 
     private void MergeMals(TkChangelog[] changelogs)
     {
-        using RentedBuffers<byte> combinedBuffers = RentedBuffers<byte>.Allocate(
-            changelogs
-                .SelectMals(_locale)
-                .Select(entry => entry.Changelog.Source!.OpenRead($"romfs/{entry.MalsFile}"))
-                .ToArray(), disposeStreams: true);
+        var malsStreams = new List<Stream>();
+        
+        if (DefaultMalsProvider.CreateDefaultMalsStream(_locale) is { } defaultStream)
+        {
+            malsStreams.Add(defaultStream);
+        }
+        
+        malsStreams.AddRange(changelogs
+            .SelectMals(_locale)
+            .Select(entry => entry.Changelog.Source!.OpenRead($"romfs/{entry.MalsFile}")));
+
+        using var combinedBuffers = RentedBuffers<byte>.Allocate(malsStreams.ToArray(), disposeStreams: true);
 
         if (combinedBuffers.Count == 0) {
             return;
         }
 
-        string canonical = $"Mals/{_locale}.Product.sarc";
+        var canonical = $"Mals/{_locale}.Product.sarc";
         const TkFileAttributes attributes = TkFileAttributes.HasZsExtension | TkFileAttributes.IsProductFile;
         TkChangelogEntry fakeEntry = new(canonical, ChangelogEntryType.Changelog, attributes, zsDictionaryId: 1);
-        string relativeFilePath = _rom.CanonicalToRelativePath(canonical, attributes);
+        var relativeFilePath = _rom.CanonicalToRelativePath(canonical, attributes);
 
-        using RentedBuffer<byte> vanilla = _rom.GetVanilla(relativeFilePath);
+        using var vanilla = _rom.GetVanilla(relativeFilePath);
         using MemoryStream ms = new();
         _sarcMerger.Merge(fakeEntry, combinedBuffers, vanilla.Segment, ms);
 
@@ -528,4 +535,7 @@ public sealed class TkMerger
     {
         return provided.LastOrDefault(version => target >= version, provided[0]);
     }
+
+
+
 }
