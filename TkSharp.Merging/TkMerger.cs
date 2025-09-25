@@ -370,16 +370,10 @@ public sealed class TkMerger
 
     private void MergeMals(TkChangelog[] changelogs)
     {
-        var malsStreams = new List<Stream>();
-        
-        if (DefaultMalsProvider.CreateDefaultMalsStream(_locale) is { } defaultStream)
-        {
-            malsStreams.Add(defaultStream);
-        }
-        
-        malsStreams.AddRange(changelogs
+        var malsStreams = changelogs
             .SelectMals(_locale)
-            .Select(entry => entry.Changelog.Source!.OpenRead($"romfs/{entry.MalsFile}")));
+            .Select(entry => entry.Changelog.Source!.OpenRead($"romfs/{entry.MalsFile}"))
+            .ToList();
 
         using var combinedBuffers = RentedBuffers<byte>.Allocate(malsStreams.ToArray(), disposeStreams: true);
 
@@ -535,7 +529,4 @@ public sealed class TkMerger
     {
         return provided.LastOrDefault(version => target >= version, provided[0]);
     }
-
-
-
 }
