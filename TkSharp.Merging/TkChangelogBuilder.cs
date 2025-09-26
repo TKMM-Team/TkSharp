@@ -33,7 +33,7 @@ public class TkChangelogBuilder(
     private readonly Dictionary<string, TkChangelogEntry> _entries = [];
 
     private readonly TkChangelog _changelog = new() {
-        BuilderVersion = 100,
+        BuilderVersion = 200,
         GameVersion = tk.GameVersion,
         Source = systemSource
     };
