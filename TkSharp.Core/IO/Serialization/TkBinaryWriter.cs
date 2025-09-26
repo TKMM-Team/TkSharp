@@ -8,7 +8,7 @@ namespace TkSharp.Core.IO.Serialization;
 public static class TkBinaryWriter
 {
     public const uint TKPK_MAGIC = 0x504D4B54;
-    public const uint TKPK_VERSION = 0x10;
+    public const uint TKPK_VERSION = 0x20;
     
     public static void WriteTkMod(in Stream output, in TkMod mod, TkLookupContext? context = null)
     {
