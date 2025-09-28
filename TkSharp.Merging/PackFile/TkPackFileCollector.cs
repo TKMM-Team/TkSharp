@@ -47,7 +47,7 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
                 continue;
             }
                     
-            if (entry.Data is MemoryStream msData) {
+            if (entry.IsStreamedData() && entry.Data is MemoryStream msData) {
                 ArraySegment<byte> buffer = msData.GetSpan();
                 sarc[name] = buffer;
                 resourceSizeCollector.Collect(buffer.Count, name, buffer);
