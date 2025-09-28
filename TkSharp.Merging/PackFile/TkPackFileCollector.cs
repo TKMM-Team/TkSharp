@@ -32,8 +32,8 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
             WritePackFile(sarc, relativePath, key, packFile);
         }
 
-        foreach (PackFileEntry entry in _cache) {
-            entry.Data?.Dispose();
+        foreach (PackFileEntry entry in _cache.Where(x => x.IsStreamedData())) {
+            entry.Data.Dispose();
         }
     }
 
