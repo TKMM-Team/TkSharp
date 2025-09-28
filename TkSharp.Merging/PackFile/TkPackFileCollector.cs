@@ -55,7 +55,7 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
             }
 
             using (Stream sarcEntry = sarc.OpenWrite(name)) {
-                if (entry.Data is not null) {
+                if (entry.IsStreamedData()) {
                     entry.Data.CopyTo(sarcEntry);
                     entry.Data.Seek(0, SeekOrigin.Begin);
                 }
@@ -101,8 +101,41 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
     {
         public readonly PackFileEntryKey Key = key;
         public readonly TkChangelogEntry Changelog = changelog;
-        public readonly Stream? Data = data;
-        public readonly byte[]? Buffer = buffer;
+        private readonly Stream? _data = data;
+        private readonly byte[]? _buffer = buffer;
+
+        public Stream Data {
+            get {
+                if (_data is null) {
+                    throw new InvalidOperationException("The 'Data' side of the option type must not be null.");
+                }
+
+                if (_buffer is not null) {
+                    throw new InvalidOperationException("The 'Buffer' side of the option type should be null.");
+                }
+
+                return _data;
+            }
+        }
+
+        public byte[] Buffer {
+            get {
+                if (_buffer is null) {
+                    throw new InvalidOperationException("The 'Buffer' side of the option type must not be null.");
+                }
+
+                if (_data is not null) {
+                    throw new InvalidOperationException("The 'Data' side of the option type should be null.");
+                }
+
+                return _buffer;
+            }
+        }
+
+        public bool IsStreamedData()
+        {
+            return _data is not null;
+        }
     }
 
     private readonly struct PackFileEntryKey(string archiveCanonical, TkFileAttributes attributes, int zsDictionaryId) : IEquatable<PackFileEntryKey>
