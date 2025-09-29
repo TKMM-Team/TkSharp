@@ -427,15 +427,20 @@ public sealed class TkMerger
         // TODO: Proper support for mixed version usage should
         // be implemented, however by always using the path of
         // the last entry, we can avoid explicitly handling it
-        (TkChangelogEntry Entry, TkChangelog Changelog) last = group.Last();
-        string relativeFilePath = GetRelativeRomFsPath(last.Entry);
+        (TkChangelogEntry Entry, TkChangelog Changelog) last
+            = group.LastOrDefault(x => x.Entry.Type != ChangelogEntryType.Placeholder);
+        
+        if (last.Entry is null || last.Changelog is null) {
+            return (
+                Changelog: group.Key,
+                Target: Either<(ITkMerger Merger, Stream[] Streams), Stream>.Bottom
+            );
+        }
 
+        string relativeFilePath = GetRelativeRomFsPath(last.Entry);
         return (
             Changelog: group.Key,
-            Target: group.Key.Type switch {
-                ChangelogEntryType.Placeholder => Either<(ITkMerger Merger, Stream[] Streams), Stream>.Bottom,
-                _ => last.Changelog.Source!.OpenRead(relativeFilePath)
-            }
+            Target: last.Changelog.Source!.OpenRead(relativeFilePath)
         );
     }
 
