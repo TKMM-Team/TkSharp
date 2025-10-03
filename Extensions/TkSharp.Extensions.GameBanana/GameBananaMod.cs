@@ -31,6 +31,9 @@ public sealed class GameBananaMod
     [JsonPropertyName("_sText")]
     public string Text { get; set; } = string.Empty;
 
+    [JsonPropertyName("_sDescription")]
+    public string Description { get; set; } = string.Empty;
+
     [JsonPropertyName("_aSubmitter")]
     public GameBananaSubmitter Submitter { get; set; } = new();
 
@@ -39,6 +42,24 @@ public sealed class GameBananaMod
 
     [JsonPropertyName("_aCredits")]
     public List<GameBananaCreditGroup> Credits { get; set; } = [];
+
+    [JsonPropertyName("_nLikeCount")]
+    public int LikeCount { get; set; }
+
+    [JsonPropertyName("_nViewCount")]
+    public int ViewCount { get; set; }
+
+    [JsonPropertyName("_nDownloadCount")]
+    public int DownloadCount { get; set; }
+
+    [JsonPropertyName("_tsDateAdded")]
+    public long DateAdded { get; set; }
+
+    [JsonPropertyName("_tsDateUpdated")]
+    public long DateUpdated { get; set; }
+
+    [JsonPropertyName("_tsDateModified")]
+    public long DateModified { get; set; }
 
     public override string ToString()
     {

@@ -9,4 +9,7 @@ public class GameBananaSubmitter
 
     [JsonPropertyName("_sProfileUrl")]
     public string Url { get; set; } = string.Empty;
+
+    [JsonPropertyName("_sAvatarUrl")]
+    public string AvatarUrl { get; set; } = string.Empty;
 }
