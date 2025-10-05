@@ -32,7 +32,7 @@ public sealed class TkPackReader(ITkSystemProvider systemProvider) : ITkModReade
 
         if (stream.Read<uint>() != TKPK_VERSION) {
             throw new InvalidDataException(
-                "Unexpected TotK mod pack version. Expected 1.0.0");
+                "Unexpected TotK mod pack version. Expected 2.0.0");
         }
 
         TkMod result = TkBinaryReader.ReadTkMod(context, stream, _systemProvider);
