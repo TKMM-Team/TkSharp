@@ -13,4 +13,6 @@ public class BymlMergeTrackingEntry
     public HashSet<int> Removals { get; } = [];
 
     public Dictionary<object, int> KeyedRemovals { get; } = [];
+    
+    public HashSet<object> MapRemovals { get; } = [];
 }

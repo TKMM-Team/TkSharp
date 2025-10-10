@@ -87,13 +87,15 @@ public sealed class BymlMerger : Singleton<BymlMerger>, ITkMerger
     {
         tracking.Depth++;
         
+        BymlMergeTrackingEntry trackingEntry = tracking.GetOrCreateMapEntry(@base);
+        
         foreach ((T key, Byml entry) in changelog) {
             if (entry.Value is BymlChangeType.Remove) {
-                @base.Remove(key);
+                trackingEntry.MapRemovals.Add(key!);
                 continue;
             }
 
-            if (!@base.TryGetValue(key, out Byml? baseEntry)) {
+            if (!@base.TryGetValue(key, out var baseEntry)) {
                 @base[key] = entry;
                 continue;
             }

@@ -10,6 +10,7 @@ namespace TkSharp.Merging.Mergers.BinaryYaml;
 public class BymlMergeTracking(string canonical) : Dictionary<BymlArray, BymlMergeTrackingEntry>
 {
     private readonly string _canonical = canonical;
+    private readonly Dictionary<object, BymlMergeTrackingEntry> _mapTracking = new();
 
     public int Depth { get; set; }
 
@@ -24,6 +25,20 @@ public class BymlMergeTracking(string canonical) : Dictionary<BymlArray, BymlMer
 
         foreach ((BymlArray @base, BymlMergeTrackingEntry entry) in this) {
             ApplyEntry(@base, entry, ref info);
+        }
+
+        foreach (var (map, entry) in _mapTracking) {
+            switch (map) {
+                case IDictionary<string, Byml> stringMap:
+                    ApplyMapEntry(stringMap, entry, ref info);
+                    break;
+                case IDictionary<uint, Byml> uintMap:
+                    ApplyMapEntry(uintMap, entry, ref info);
+                    break;
+                case IDictionary<ulong, Byml> ulongMap:
+                    ApplyMapEntry(ulongMap, entry, ref info);
+                    break;
+            }
         }
     }
 
@@ -61,6 +76,25 @@ public class BymlMergeTracking(string canonical) : Dictionary<BymlArray, BymlMer
             @base.RemoveAt(i);
             i--;
         }
+    }
+
+    private static void ApplyMapEntry<T>(IDictionary<T, Byml> @base, BymlMergeTrackingEntry entry, ref BymlTrackingInfo info)
+    {
+        info.Depth = entry.Depth;
+
+        foreach (var key in entry.MapRemovals) {
+            if (key is T typedKey) {
+                @base.Remove(typedKey);
+            }
+        }
+    }
+
+    public BymlMergeTrackingEntry GetOrCreateMapEntry(object map)
+    {
+        if (!_mapTracking.TryGetValue(map, out var entry)) {
+            _mapTracking[map] = entry = new BymlMergeTrackingEntry { Depth = Depth };
+        }
+        return entry;
     }
 
     private void ProcessAdditions(ref int newEntryOffset, BymlArray @base, BymlMergeTrackingEntry entry, int insertIndex,
