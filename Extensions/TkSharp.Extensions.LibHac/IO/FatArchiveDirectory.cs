@@ -10,11 +10,11 @@ public class FatArchiveDirectory(IDirectory baseDirectory) : IDirectory
 
     protected override Result DoRead(out long entriesRead, Span<DirectoryEntry> entryBuffer)
     {
-        Result result = _baseDirectory.Read(out entriesRead, entryBuffer);
+        var result = _baseDirectory.Read(out entriesRead, entryBuffer);
 
         for (int i = 0; i < entriesRead; i++) {
-            ref DirectoryEntry entry = ref entryBuffer[i];
-            ReadOnlySpan<byte> fileName = entry.Name.AsReadOnlySpan();
+            ref var entry = ref entryBuffer[i];
+            var fileName = entry.Name.AsReadOnlySpan();
             if (entry.Type is DirectoryEntryType.File || fileName.LastIndexOf((byte)'.') is not (var extSeparatorIndex and > -1)) {
                 continue;
             }

@@ -33,7 +33,7 @@ public class TkZstd : IDisposable
             _compressionLevel = value;
             _defaultCompressor.Level = _compressionLevel;
 
-            foreach ((int _, Compressor compressor) in _compressors) {
+            foreach ((int _, var compressor) in _compressors) {
                 compressor.Level = value;
             }
         }
@@ -47,15 +47,15 @@ public class TkZstd : IDisposable
     
     public RentedBuffer<byte> Decompress(in Stream stream, out int zsDictionaryId)
     {
-        RentedBuffer<byte> src = RentedBuffer<byte>.Allocate(stream);
-        Span<byte> srcSpan = src.Span;
+        var src = RentedBuffer<byte>.Allocate(stream);
+        var srcSpan = src.Span;
         if (srcSpan.Length < 4 || srcSpan.Read<uint>() != ZSTD_MAGIC) {
             zsDictionaryId = -1;
             return src;
         }
 
         try {
-            RentedBuffer<byte> dst = RentedBuffer<byte>.Allocate(
+            var dst = RentedBuffer<byte>.Allocate(
                 GetDecompressedSize(src.Span));
             Decompress(src.Span, dst.Span, out zsDictionaryId);
             return dst;
@@ -82,7 +82,7 @@ public class TkZstd : IDisposable
 
         zsDictionaryId = GetDictionaryId(data);
         lock (_decompressors) {
-            if (_decompressors.TryGetValue(zsDictionaryId, out Decompressor? decompressor)) {
+            if (_decompressors.TryGetValue(zsDictionaryId, out var decompressor)) {
                 decompressor.Unwrap(data, dst);
                 return;
             }
@@ -96,7 +96,7 @@ public class TkZstd : IDisposable
     public RentedBuffer<byte> Compress(ReadOnlySpan<byte> data, int zsDictionaryId = -1)
     {
         int bounds = Compressor.GetCompressBound(data.Length);
-        RentedBuffer<byte> result = RentedBuffer<byte>.Allocate(bounds);
+        var result = RentedBuffer<byte>.Allocate(bounds);
         int size = Compress(data, result.Span, zsDictionaryId);
         result.Resize(size);
         return result;
@@ -105,7 +105,7 @@ public class TkZstd : IDisposable
     public int Compress(ReadOnlySpan<byte> data, Span<byte> dst, int zsDictionaryId = -1)
     {
         lock (_compressors) {
-            return _compressors.TryGetValue(zsDictionaryId, out Compressor? compressor) switch {
+            return _compressors.TryGetValue(zsDictionaryId, out var compressor) switch {
                 true => compressor.Wrap(data, dst),
                 false => _defaultCompressor.Wrap(data, dst)
             };
@@ -186,7 +186,7 @@ public class TkZstd : IDisposable
     public void LoadDictionaries(in Stream stream)
     {
         int size = Convert.ToInt32(stream.Length);
-        using SpanOwner<byte> buffer = SpanOwner<byte>.Allocate(size);
+        using var buffer = SpanOwner<byte>.Allocate(size);
         int read = stream.Read(buffer.Span);
         Debug.Assert(size == read);
         LoadDictionaries(buffer.Span);
@@ -199,7 +199,7 @@ public class TkZstd : IDisposable
         if (IsCompressed(data)) {
             int decompressedSize = GetDecompressedSize(data);
             decompressedBuffer = ArrayPool<byte>.Shared.Rent(decompressedSize);
-            Span<byte> decompressed = decompressedBuffer.AsSpan()[..decompressedSize];
+            var decompressed = decompressedBuffer.AsSpan()[..decompressedSize];
             Decompress(data, decompressed, out _);
             data = decompressed;
         }
@@ -214,7 +214,7 @@ public class TkZstd : IDisposable
 
         RevrsReader reader = new(data);
         ImmutableSarc sarc = new(ref reader);
-        foreach ((string _, Span<byte> sarcFileData) in sarc) {
+        foreach ((string _, var sarcFileData) in sarc) {
             TryLoadDictionary(sarcFileData);
         }
 
@@ -247,12 +247,12 @@ public class TkZstd : IDisposable
         GC.SuppressFinalize(this);
         
         _defaultDecompressor.Dispose();
-        foreach ((_, Decompressor decompressor) in _decompressors) {
+        foreach (var (_, decompressor) in _decompressors) {
             decompressor.Dispose();
         }
         
         _defaultCompressor.Dispose();
-        foreach ((_, Compressor compressor) in _compressors) {
+        foreach (var (_, compressor) in _compressors) {
             compressor.Dispose();
         }
     }

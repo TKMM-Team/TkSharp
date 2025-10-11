@@ -14,14 +14,14 @@ public sealed class GameDataMerger : Singleton<GameDataMerger>, ITkMerger
     
     public MergeResult Merge(TkChangelogEntry entry, RentedBuffers<byte> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
-        Byml merged = Byml.FromBinary(vanillaData, out Endianness endianness, out ushort version);
-        BymlMap root = merged.GetMap();
-        BymlMap baseData = root["Data"].GetMap();
+        var merged = Byml.FromBinary(vanillaData, out var endianness, out ushort version);
+        var root = merged.GetMap();
+        var baseData = root["Data"].GetMap();
         BymlMergeTracking tracking = new(entry.Canonical);
         GameDataMergeTracking gameDataTracking = new(entry.Canonical);
 
-        foreach (RentedBuffers<byte>.Entry input in inputs) {
-            BymlMap changelog = Byml.FromBinary(input.Span)
+        foreach (var input in inputs) {
+            var changelog = Byml.FromBinary(input.Span)
                 .GetMap();
             MergeEntry(baseData, changelog, gameDataTracking, tracking);
         }
@@ -37,14 +37,14 @@ public sealed class GameDataMerger : Singleton<GameDataMerger>, ITkMerger
 
     public MergeResult Merge(TkChangelogEntry entry, IEnumerable<ArraySegment<byte>> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
-        Byml merged = Byml.FromBinary(vanillaData, out Endianness endianness, out ushort version);
-        BymlMap root = merged.GetMap();
-        BymlMap baseData = root["Data"].GetMap();
+        var merged = Byml.FromBinary(vanillaData, out var endianness, out ushort version);
+        var root = merged.GetMap();
+        var baseData = root["Data"].GetMap();
         BymlMergeTracking tracking = new(entry.Canonical);
         GameDataMergeTracking gameDataTracking = new(entry.Canonical);
 
-        foreach (ArraySegment<byte> input in inputs) {
-            BymlMap changelog = Byml.FromBinary(input)
+        foreach (var input in inputs) {
+            var changelog = Byml.FromBinary(input)
                 .GetMap();
             MergeEntry(baseData, changelog, gameDataTracking, tracking);
         }
@@ -60,13 +60,13 @@ public sealed class GameDataMerger : Singleton<GameDataMerger>, ITkMerger
 
     public MergeResult MergeSingle(TkChangelogEntry entry, ArraySegment<byte> input, ArraySegment<byte> @base, Stream output)
     {
-        Byml merged = Byml.FromBinary(@base, out Endianness endianness, out ushort version);
-        BymlMap root = merged.GetMap();
-        BymlMap baseData = root["Data"].GetMap();
+        var merged = Byml.FromBinary(@base, out var endianness, out ushort version);
+        var root = merged.GetMap();
+        var baseData = root["Data"].GetMap();
         BymlMergeTracking tracking = new(entry.Canonical);
         GameDataMergeTracking gameDataTracking = new(entry.Canonical);
 
-        BymlMap changelog = Byml.FromBinary(input)
+        var changelog = Byml.FromBinary(input)
             .GetMap();
         MergeEntry(baseData, changelog, gameDataTracking, tracking);
 
@@ -81,8 +81,8 @@ public sealed class GameDataMerger : Singleton<GameDataMerger>, ITkMerger
 
     private static void MergeEntry(BymlMap merged, BymlMap changelog, GameDataMergeTracking gameDataTracking, BymlMergeTracking tracking)
     {
-        foreach ((string key, Byml entry) in changelog) {
-            BymlArray @base = merged[key].GetArray();
+        foreach ((string key, var entry) in changelog) {
+            var @base = merged[key].GetArray();
             switch (entry.Value) {
                 case IDictionary<uint, Byml> hashMap32:
                     MergeHashMap32(@base, hashMap32, gameDataTracking, tracking, key == "Struct");
@@ -101,18 +101,18 @@ public sealed class GameDataMerger : Singleton<GameDataMerger>, ITkMerger
 
     private static void MergeHashMap32(BymlArray @base, IDictionary<uint, Byml> changelog, GameDataMergeTracking gameDataTracking, BymlMergeTracking tracking, bool isStructTable)
     {
-        foreach (Byml baseEntry in @base) {
+        foreach (var baseEntry in @base) {
             if (baseEntry.Value is not IDictionary<string, Byml> map ||
-                !map.TryGetValue("Hash", out Byml? hashEntry) || hashEntry.Value is not uint hash) {
+                !map.TryGetValue("Hash", out var hashEntry) || hashEntry.Value is not uint hash) {
                 // Invalid vanilla GDL entry
                 continue;
             }
 
-            if (!changelog.Remove(hash, out Byml? changelogEntry)) {
+            if (!changelog.Remove(hash, out var changelogEntry)) {
                 continue;
             }
 
-            if (gameDataTracking.TryGetValue(hash, out GameDataMergeTrackingEntry? entry)) {
+            if (gameDataTracking.TryGetValue(hash, out var entry)) {
                 entry.Changes.Add(changelogEntry);
                 continue;
             }
@@ -120,7 +120,7 @@ public sealed class GameDataMerger : Singleton<GameDataMerger>, ITkMerger
             BymlMerger.Merge(baseEntry, changelogEntry, tracking);
         }
 
-        foreach ((uint hash, Byml entry) in changelog) {
+        foreach ((uint hash, var entry) in changelog) {
             @base.Add(entry);
             gameDataTracking[hash] = new GameDataMergeTrackingEntry(entry, isStructTable);
         }
@@ -128,18 +128,18 @@ public sealed class GameDataMerger : Singleton<GameDataMerger>, ITkMerger
 
     private static void MergeHashMap64(BymlArray @base, IDictionary<ulong, Byml> changelog, GameDataMergeTracking gameDataTracking, BymlMergeTracking tracking)
     {
-        foreach (Byml baseEntry in @base) {
+        foreach (var baseEntry in @base) {
             if (baseEntry.Value is not IDictionary<string, Byml> map ||
-                !map.TryGetValue("Hash", out Byml? hashEntry) || hashEntry.Value is not ulong hash) {
+                !map.TryGetValue("Hash", out var hashEntry) || hashEntry.Value is not ulong hash) {
                 // Invalid vanilla GDL entry
                 continue;
             }
 
-            if (!changelog.Remove(hash, out Byml? changelogEntry)) {
+            if (!changelog.Remove(hash, out var changelogEntry)) {
                 continue;
             }
             
-            if (gameDataTracking.TryGetValue(hash, out GameDataMergeTrackingEntry? entry)) {
+            if (gameDataTracking.TryGetValue(hash, out var entry)) {
                 entry.Changes.Add(changelogEntry);
                 continue;
             }
@@ -147,7 +147,7 @@ public sealed class GameDataMerger : Singleton<GameDataMerger>, ITkMerger
             BymlMerger.Merge(baseEntry, changelogEntry, tracking);
         }
 
-        foreach ((ulong hash, Byml entry) in changelog) {
+        foreach ((ulong hash, var entry) in changelog) {
             @base.Add(entry);
             gameDataTracking[hash] = new GameDataMergeTrackingEntry(entry, isStructTable: false);
         }

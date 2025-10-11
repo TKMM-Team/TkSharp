@@ -4,7 +4,7 @@ public static class StreamExtensions
 {
     public static ArraySegment<byte> GetSpan(this MemoryStream ms)
     {
-        if (!ms.TryGetBuffer(out ArraySegment<byte> buffer)) {
+        if (!ms.TryGetBuffer(out var buffer)) {
             buffer = ms.ToArray();
         }
 

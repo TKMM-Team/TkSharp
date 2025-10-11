@@ -43,7 +43,7 @@ public sealed class TkMerger
 
     public async ValueTask MergeAsync(IEnumerable<TkChangelog> changelogs, CancellationToken ct = default)
     {
-        TkChangelog[] tkChangelogs =
+        var tkChangelogs =
             changelogs as TkChangelog[] ?? changelogs.ToArray();
 
         Task[] tasks = [
@@ -66,7 +66,7 @@ public sealed class TkMerger
 
     public void Merge(IEnumerable<TkChangelog> changelogs)
     {
-        TkChangelog[] tkChangelogs =
+        var tkChangelogs =
             changelogs as TkChangelog[] ?? changelogs.ToArray();
 
         MergeIps(tkChangelogs);
@@ -79,7 +79,7 @@ public sealed class TkMerger
 
         MergeMals(tkChangelogs);
 
-        foreach ((TkChangelogEntry changelog, Either<(ITkMerger, Stream[]), Stream> target) in GetTargets(tkChangelogs)) {
+        foreach ((var changelog, Either<(ITkMerger, Stream[]), Stream> target) in GetTargets(tkChangelogs)) {
             MergeTarget(changelog, target);
         }
 
@@ -115,7 +115,7 @@ public sealed class TkMerger
                 // TODO: It would be more efficient to avoid
                 // GetVanilla on nested files. Checking loaded
                 // pack files first would be optimal. 
-                using RentedBuffer<byte> vanilla = _rom.GetVanilla(relativeFilePath, out bool isFoundMissing);
+                using var vanilla = _rom.GetVanilla(relativeFilePath, out bool isFoundMissing);
                 
                 if (isFoundMissing) {
                     TkLog.Instance.LogWarning(
@@ -129,14 +129,14 @@ public sealed class TkMerger
                     break;
                 }
 
-                using RentedBuffers<byte> inputs = RentedBuffers<byte>.Allocate(streams, disposeStreams: true);
+                using var inputs = RentedBuffers<byte>.Allocate(streams, disposeStreams: true);
                 result = merger.Merge(changelog, inputs, vanilla.Segment, output);
                 break;
 
             }
             case (ITkMerger merger, Stream[] { Length: 1 } streams): {
-                using RentedBuffer<byte> vanilla = _rom.GetVanilla(relativeFilePath, out bool isFoundMissing);
-                Stream single = streams[0];
+                using var vanilla = _rom.GetVanilla(relativeFilePath, out bool isFoundMissing);
+                var single = streams[0];
                 
                 if (isFoundMissing) {
                     TkLog.Instance.LogWarning(
@@ -150,7 +150,7 @@ public sealed class TkMerger
                     return;
                 }
                 
-                using RentedBuffer<byte> input = RentedBuffer<byte>.Allocate(single);
+                using var input = RentedBuffer<byte>.Allocate(single);
                 result = merger.MergeSingle(changelog, input.Segment, vanilla.Segment, output);
                 single.Dispose();
                 break;
@@ -169,11 +169,11 @@ public sealed class TkMerger
 
     public static void MergeCheats(ITkModWriter mergeOutput, IEnumerable<TkChangelog> changelogs)
     {
-        IEnumerable<IGrouping<string, TkCheat>> allCheats = changelogs
+        var allCheats = changelogs
             .SelectMany(entry => entry.CheatFiles)
             .GroupBy(patch => patch.Name);
 
-        foreach (IGrouping<string, TkCheat> cheats in allCheats) {
+        foreach (var cheats in allCheats) {
             TkCheat merged = new(cheats.Key);
             foreach ((string key, uint[][] bin) in cheats.SelectMany(x => x.Select(cheat => (cheat.Key, cheat.Value)))) {
                 merged[key] = bin;
@@ -182,7 +182,7 @@ public sealed class TkMerger
             string outputFile = Path.Combine("cheats", $"{cheats.Key}.txt");
 
             try {
-                using Stream output = mergeOutput.OpenWrite(outputFile);
+                using var output = mergeOutput.OpenWrite(outputFile);
                 using StreamWriter writer = new(output);
                 merged.WriteText(writer);
             }
@@ -196,7 +196,7 @@ public sealed class TkMerger
     {
         int index = 0;
 
-        foreach (TkChangelog changelog in changelogs.Reverse()) {
+        foreach (var changelog in changelogs.Reverse()) {
             if (changelog.Source is null) {
                 TkLog.Instance.LogError(
                     "Changelog '{Changelog}' has not been initialized. Try restarting to resolve the issue.",
@@ -205,7 +205,7 @@ public sealed class TkMerger
             }
 
             IEnumerable<(string, byte[])> subSkdFileContents = changelog.SubSdkFiles.Select(file => {
-                using Stream input = changelog.Source.OpenRead($"exefs/{file}");
+                using var input = changelog.Source.OpenRead($"exefs/{file}");
                 byte[] buffer = new byte[input.Length];
                 input.ReadExactly(buffer, 0, buffer.Length);
                 return (file, buffer);
@@ -217,7 +217,7 @@ public sealed class TkMerger
                     continue;
                 }
 
-                using Stream output = mergeOutput.OpenWrite($"exefs/subsdk{++index}");
+                using var output = mergeOutput.OpenWrite($"exefs/subsdk{++index}");
                 output.Write(data);
             }
         }
@@ -231,7 +231,7 @@ public sealed class TkMerger
 
     public static void MergeExeFs(ITkModWriter mergeOutput, IEnumerable<TkChangelog> changelogs)
     {
-        foreach (TkChangelog changelog in changelogs) {
+        foreach (var changelog in changelogs) {
             if (changelog.Source is null) {
                 TkLog.Instance.LogError(
                     "Changelog '{Changelog}' has not been initialized. Try restarting to resolve the issue.",
@@ -240,8 +240,8 @@ public sealed class TkMerger
             }
 
             foreach (string inputOutput in changelog.ExeFiles.Select(exeFile => $"exefs/{exeFile}")) {
-                using Stream input = changelog.Source.OpenRead(inputOutput);
-                using Stream output = mergeOutput.OpenWrite(inputOutput);
+                using var input = changelog.Source.OpenRead(inputOutput);
+                using var output = mergeOutput.OpenWrite(inputOutput);
                 input.CopyTo(output);
             }
         }
@@ -249,14 +249,14 @@ public sealed class TkMerger
 
     internal void MergeCustomTarget(ITkMerger merger, Stream @base, ReadOnlySpan<Stream> targets, TkChangelogEntry changelog, Stream output)
     {
-        using RentedBuffer<byte> fakeVanilla = _rom.Zstd.Decompress(@base);
+        using var fakeVanilla = _rom.Zstd.Decompress(@base);
         MergeCustomTarget(merger, fakeVanilla.Segment, targets, changelog, output);
     }
 
     internal static void MergeCustomTarget(ITkMerger merger, ArraySegment<byte> @base, ReadOnlySpan<Stream> targets, TkChangelogEntry changelog, Stream output)
     {
-        using RentedBuffers<byte> targetsBuffer = RentedBuffers<byte>.Allocate(targets, disposeStreams: true);
-        ArraySegment<ArraySegment<byte>> changelogs = TkChangelogBuilder.CreateChangelogsExternal(
+        using var targetsBuffer = RentedBuffers<byte>.Allocate(targets, disposeStreams: true);
+        var changelogs = TkChangelogBuilder.CreateChangelogsExternal(
             changelog.Canonical, flags: default, @base, targetsBuffer, changelog.Attributes
         );
 
@@ -275,7 +275,7 @@ public sealed class TkMerger
             return;
         }
 
-        using Stream output = _output.OpenWrite(Path.Combine("romfs", relativePath));
+        using var output = _output.OpenWrite(Path.Combine("romfs", relativePath));
 
         if (!TkResourceSizeCollector.RequiresDataForCalculation(relativePath)) {
             int size = TkZstd.IsCompressed(input)
@@ -287,8 +287,8 @@ public sealed class TkMerger
             return;
         }
 
-        using RentedBuffer<byte> buffer = RentedBuffer<byte>.Allocate(input);
-        Span<byte> raw = buffer.Span;
+        using var buffer = RentedBuffer<byte>.Allocate(input);
+        var raw = buffer.Span;
 
         if (!TkZstd.IsCompressed(raw)) {
             _resourceSizeCollector.Collect(raw.Length, relativePath, raw);
@@ -297,8 +297,8 @@ public sealed class TkMerger
             return;
         }
 
-        using SpanOwner<byte> decompressed = SpanOwner<byte>.Allocate(TkZstd.GetDecompressedSize(raw));
-        Span<byte> data = decompressed.Span;
+        using var decompressed = SpanOwner<byte>.Allocate(TkZstd.GetDecompressedSize(raw));
+        var data = decompressed.Span;
         _rom.Zstd.Decompress(raw, data);
         _resourceSizeCollector.Collect(data.Length, relativePath, data);
         output.Write(raw);
@@ -328,15 +328,15 @@ public sealed class TkMerger
     internal void CopyMergedToSimpleOutput(in MemoryStream input, string relativePath,
         TkFileAttributes entryFileAttributes, int zsDictionaryId)
     {
-        ArraySegment<byte> buffer = input.GetSpan();
+        var buffer = input.GetSpan();
         _resourceSizeCollector.Collect(buffer.Count, relativePath, buffer);
 
-        using Stream output = _output.OpenWrite(
+        using var output = _output.OpenWrite(
             Path.Combine("romfs", relativePath));
 
         if (entryFileAttributes.HasFlag(TkFileAttributes.HasZsExtension)) {
-            using SpanOwner<byte> compressed = SpanOwner<byte>.Allocate(buffer.Count);
-            Span<byte> result = compressed.Span;
+            using var compressed = SpanOwner<byte>.Allocate(buffer.Count);
+            var result = compressed.Span;
             int compressedSize = _rom.Zstd.Compress(buffer, result, zsDictionaryId);
             output.Write(result[..compressedSize]);
             return;
@@ -347,13 +347,13 @@ public sealed class TkMerger
 
     private void MergeIps(TkChangelog[] changelogs)
     {
-        IEnumerable<TkPatch> versionMatchedPatchFiles = changelogs
+        var versionMatchedPatchFiles = changelogs
             .SelectMany(entry => entry.PatchFiles
                 .Where(patch => patch.NsoBinaryId.Equals(_rom.NsoBinaryId, StringComparison.InvariantCultureIgnoreCase)));
 
         var merged = TkPatch.CreateWithDefaults(_rom.NsoBinaryId, shopParamLimit: 512);
 
-        foreach (TkPatch patch in versionMatchedPatchFiles) {
+        foreach (var patch in versionMatchedPatchFiles) {
             foreach ((uint key, uint value) in patch.Entries) {
                 merged.Entries[key] = value;
             }
@@ -364,7 +364,7 @@ public sealed class TkMerger
             ? Path.Combine(_ipsOutputFolderPath, ipsFileName)
             : Path.Combine("exefs", ipsFileName);
 
-        using Stream output = _output.OpenWrite(outputFile);
+        using var output = _output.OpenWrite(outputFile);
         merged.WriteIps(output);
     }
 
@@ -427,7 +427,7 @@ public sealed class TkMerger
         // TODO: Proper support for mixed version usage should
         // be implemented, however by always using the path of
         // the last entry, we can avoid explicitly handling it
-        (TkChangelogEntry Entry, TkChangelog Changelog) last
+        var last
             = group.LastOrDefault(x => x.Entry.Type != ChangelogEntryType.Placeholder);
         
         if (last.Entry is null || last.Changelog is null) {
@@ -488,7 +488,7 @@ public sealed class TkMerger
 
         // ReSharper disable once ConvertIfStatementToSwitchStatement
         if (canon.Length > 15 && canon[..15] is "Event/EventFlow") {
-            ReadOnlySpan<char> eventName = Path.GetFileNameWithoutExtension(canon);
+            var eventName = Path.GetFileNameWithoutExtension(canon);
             int targetVersion = _rom.EventFlowVersions.TryGetValue(eventName, out string? version)
                 ? GetBestVersion(int.Parse(version), entry.Versions)
                 : entry.Versions[0];
@@ -496,7 +496,7 @@ public sealed class TkMerger
         }
 
         if (canon.Length > 8 && canon[..8] is "Sequence") {
-            ReadOnlySpan<char> sequenceName = Path.GetFileNameWithoutExtension(canon);
+            var sequenceName = Path.GetFileNameWithoutExtension(canon);
             int targetVersion = _rom.SequenceVersions.TryGetValue(sequenceName, out string? version)
                 ? GetBestVersion(int.Parse(version.AsSpan()[^3..]), entry.Versions)
                 : entry.Versions[0];
@@ -504,7 +504,7 @@ public sealed class TkMerger
         }
 
         if (canon.Length > 6 && canon[..6] is "Effect") {
-            ReadOnlySpan<char> effectName = Path.GetFileNameWithoutExtension(canon);
+            var effectName = Path.GetFileNameWithoutExtension(canon);
             int targetVersion = _rom.EffectVersions.TryGetValue(effectName, out string? version)
                 ? GetBestVersion(int.Parse(version.AsSpan()[^3..]), entry.Versions)
                 : entry.Versions[0];
@@ -512,7 +512,7 @@ public sealed class TkMerger
         }
 
         if (canon.Length > 5 && canon[..5] is "Logic") {
-            ReadOnlySpan<char> logicName = Path.GetFileNameWithoutExtension(canon);
+            var logicName = Path.GetFileNameWithoutExtension(canon);
             int targetVersion = _rom.LogicVersions.TryGetValue(logicName, out string? version)
                 ? GetBestVersion(int.Parse(version.AsSpan()[^3..]), entry.Versions)
                 : entry.Versions[0];
@@ -520,7 +520,7 @@ public sealed class TkMerger
         }
 
         if (canon.Length > 2 && canon[..2] is "AI") {
-            ReadOnlySpan<char> aiName = Path.GetFileNameWithoutExtension(canon);
+            var aiName = Path.GetFileNameWithoutExtension(canon);
             int targetVersion = _rom.AiVersions.TryGetValue(aiName, out string? version)
                 ? GetBestVersion(int.Parse(version.AsSpan()[^3..]), entry.Versions)
                 : entry.Versions[0];

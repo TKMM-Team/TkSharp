@@ -18,7 +18,7 @@ public ref struct RentedBuffer<T> : IDisposable where T : unmanaged
     public static RentedBuffer<byte> Allocate(Stream stream)
     {
         int size = (int)stream.Length;
-        RentedBuffer<byte> result = RentedBuffer<byte>.Allocate(size);
+        var result = RentedBuffer<byte>.Allocate(size);
         stream.ReadExactly(result._buffer, 0, size);
         return result;
     }

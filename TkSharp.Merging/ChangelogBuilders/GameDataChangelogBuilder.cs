@@ -17,14 +17,14 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
     public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
     {
         BymlMap changelog = [];
-        BymlMap src = Byml.FromBinary(srcBuffer).GetMap()["Data"].GetMap();
-        BymlMap vanilla = Byml.FromBinary(vanillaBuffer, out Endianness endianness, out ushort version).GetMap()["Data"].GetMap();
+        var src = Byml.FromBinary(srcBuffer).GetMap()["Data"].GetMap();
+        var vanilla = Byml.FromBinary(vanillaBuffer, out var endianness, out ushort version).GetMap()["Data"].GetMap();
 
         BymlTrackingInfo bymlTrackingInfo = new(path.Canonical, 0);
 
-        foreach ((string tableName, Byml srcEntry) in src) {
-            BymlArray entries = srcEntry.GetArray();
-            BymlArray vanillaEntries = vanilla[tableName].GetArray();
+        foreach ((string tableName, var srcEntry) in src) {
+            var entries = srcEntry.GetArray();
+            var vanillaEntries = vanilla[tableName].GetArray();
 
             if (tableName is "Bool64bitKey") {
                 if (LogUInt64Entries(ref bymlTrackingInfo, path.FileVersion, entries, vanillaEntries) is { Count: > 0 } u64LogResult) {
@@ -54,7 +54,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
         ((Byml)changelog).WriteBinary(ms, endianness, version);
         ms.Seek(0, SeekOrigin.Begin);
 
-        using Stream output = openWrite(path, canonical);
+        using var output = openWrite(path, canonical);
         ms.CopyTo(output);
         return true;
     }
@@ -65,9 +65,9 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
         BymlHashMap32 changelog = [];
 
         for (int i = 0; i < src.Count; i++) {
-            Byml srcEntry = src[i];
-            BymlMap entry = srcEntry.GetMap();
-            if (!entry.TryGetValue("Hash", out Byml? hashEntry) || hashEntry.Value is not uint hash) {
+            var srcEntry = src[i];
+            var entry = srcEntry.GetMap();
+            if (!entry.TryGetValue("Hash", out var hashEntry) || hashEntry.Value is not uint hash) {
                 continue;
             }
 
@@ -99,10 +99,10 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
     {
         BymlHashMap64 changelog = [];
 
-        foreach (Byml srcEntry in src) {
-            Byml srcEntryVar = srcEntry;
-            BymlMap entry = srcEntryVar.GetMap();
-            if (!entry.TryGetValue("Hash", out Byml? hashEntry) || hashEntry.Value is not ulong hash) {
+        foreach (var srcEntry in src) {
+            var srcEntryVar = srcEntry;
+            var entry = srcEntryVar.GetMap();
+            if (!entry.TryGetValue("Hash", out var hashEntry) || hashEntry.Value is not ulong hash) {
                 continue;
             }
 

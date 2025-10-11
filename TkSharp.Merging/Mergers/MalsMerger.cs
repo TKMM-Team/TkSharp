@@ -30,7 +30,7 @@ public static class MalsMerger
                 "Invalid Mals locale, locale must be 4 characters.", nameof(locale));
         }
 
-        ReadOnlySpan<byte> localeAsBytes = locale.Cast<char, byte>();
+        var localeAsBytes = locale.Cast<char, byte>();
         int localeRegion = BitConverter.ToInt32(localeAsBytes[..4]);
         int localeLang = BitConverter.ToInt32(localeAsBytes[4..]);
 
@@ -43,7 +43,7 @@ public static class MalsMerger
                 continue;
             }
 
-            ReadOnlySpan<byte> targetLocale = target.AsSpan()[5..9]
+            var targetLocale = target.AsSpan()[5..9]
                 .Cast<char, byte>();
             
             int region = BitConverter.ToInt32(targetLocale[..4]);

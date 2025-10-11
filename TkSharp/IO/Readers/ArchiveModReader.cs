@@ -21,8 +21,8 @@ public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomPro
             return null;
         }
 
-        using IArchive archive = ArchiveFactory.Open(context.Stream);
-        (string? root, TkMod? embeddedMod, bool hasValidRoot) = await LocateRoot(archive, readerProvider);
+        using var archive = ArchiveFactory.Open(context.Stream);
+        (string? root, var embeddedMod, bool hasValidRoot) = await LocateRoot(archive, readerProvider);
         if (!hasValidRoot) {
             return null;
         }
@@ -34,13 +34,13 @@ public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomPro
         context.EnsureId();
 
         ArchiveModSource source = new(archive, root);
-        ITkModWriter writer = _systemProvider.GetSystemWriter(context);
+        var writer = _systemProvider.GetSystemWriter(context);
 
         TkChangelogBuilder builder = new(source, writer, _romProvider.GetRom(),
             _systemProvider.GetSystemSource(context.Id.ToString())
         );
 
-        TkChangelog changelog = await builder.BuildAsync(ct)
+        var changelog = await builder.BuildAsync(ct)
             .ConfigureAwait(false);
 
         return new TkMod {
@@ -60,11 +60,11 @@ public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomPro
     {
         (string? Root, TkMod? Embedded, bool Result) result = (null, null, false);
 
-        foreach (IArchiveEntry entry in archive.Entries) {
+        foreach (var entry in archive.Entries) {
             if (entry.Key is not null
                 && Path.GetExtension(entry.Key.AsSpan()) is ".tkcl"
                 && readerProvider.GetReader(entry.Key) is ITkModReader reader) {
-                await using Stream entryStream = entry.OpenEntryStream();
+                await using var entryStream = entry.OpenEntryStream();
                 result.Embedded = await reader.ReadMod(entry.Key, entryStream);
             }
 
@@ -73,9 +73,9 @@ public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomPro
             }
         }
 
-        foreach (IArchiveEntry entry in archive.Entries) {
-            ReadOnlySpan<char> key = entry.Key.AsSpan();
-            ReadOnlySpan<char> normalizedKey = key[^1] is '/' or '\\' ? key[..^1] : key;
+        foreach (var entry in archive.Entries) {
+            var key = entry.Key.AsSpan();
+            var normalizedKey = key[^1] is '/' or '\\' ? key[..^1] : key;
 
             if (normalizedKey.Length < 5) {
                 continue;

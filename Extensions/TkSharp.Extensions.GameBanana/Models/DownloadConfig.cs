@@ -24,7 +24,7 @@ public class DownloadConfig(bool useThreadedDownloads, int timeoutSeconds, int m
             return _default;
         }
 
-        using FileStream fs = File.OpenRead(_path);
+        using var fs = File.OpenRead(_path);
         return JsonSerializer.Deserialize<DownloadConfig>(fs) ?? _default;
     }
 
@@ -34,7 +34,7 @@ public class DownloadConfig(bool useThreadedDownloads, int timeoutSeconds, int m
             Directory.CreateDirectory(folder);
         }
 
-        using FileStream fs = File.Create(_path);
+        using var fs = File.Create(_path);
         JsonSerializer.Serialize(fs, this);
     }
 }

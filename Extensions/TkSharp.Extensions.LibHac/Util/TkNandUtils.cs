@@ -20,19 +20,19 @@ public static class TkNandUtils
             return false;
         }
 
-        List<IFileSystem> sources = Directory.EnumerateDirectories(systemContents).Select(static IFileSystem (folder) => {
-            LocalFileSystem.Create(out LocalFileSystem? localFileSystem, folder)
+        var sources = Directory.EnumerateDirectories(systemContents).Select(static IFileSystem (folder) => {
+            LocalFileSystem.Create(out var localFileSystem, folder)
                 .ThrowIfFailure();
             return localFileSystem;
         }).ToList();
         
         LayeredFileSystem fs = new(sources);
 
-        SwitchFs switchFs = SwitchFs.OpenNcaDirectory(keys, fs);
+        var switchFs = SwitchFs.OpenNcaDirectory(keys, fs);
         bool result = TkGameRomUtils.IsValid(switchFs, out hasUpdate);
 
         if (switchFsContainer is not null) {
-            foreach (IFileSystem disposable in sources) {
+            foreach (var disposable in sources) {
                 switchFsContainer.CleanupLater(disposable);
             }
             
@@ -40,7 +40,7 @@ public static class TkNandUtils
             return result;
         }
 
-        foreach (IFileSystem disposable in sources) {
+        foreach (var disposable in sources) {
             disposable.Dispose();
         }
         

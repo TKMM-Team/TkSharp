@@ -36,7 +36,7 @@ public interface ITkRom : IDisposable
             ? address
             : canonical;
 
-        ReadOnlySpan<char> canon = result.AsSpan();
+        var canon = result.AsSpan();
 
         if (canon.Length > 3 && canon[..3] is AI_FOLDER && AiVersions.TryGetValue(canon, out string? aiVersionFile)) {
             result = aiVersionFile;

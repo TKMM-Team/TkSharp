@@ -31,12 +31,12 @@ public sealed partial class TkProfileMod(TkMod mod) : ObservableObject
 
     public void EnsureOptionSelection()
     {
-        foreach (TkModOptionGroup group in Mod.OptionGroups) {
+        foreach (var group in Mod.OptionGroups) {
             if (group.Type is not (OptionGroupType.MultiRequired or OptionGroupType.SingleRequired)) {
                 continue;
             }
 
-            if (!SelectedOptions.TryGetValue(group, out HashSet<TkModOption>? selection)) {
+            if (!SelectedOptions.TryGetValue(group, out var selection)) {
                 SelectedOptions[group] = selection = [];
             }
 

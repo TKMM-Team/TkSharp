@@ -22,7 +22,7 @@ public partial class TkProjectManager
 
     public static TkProject NewProject(string sourceFolderPath)
     {
-        TkProject project = OpenProject(sourceFolderPath);
+        var project = OpenProject(sourceFolderPath);
         project.Save();
         return project;
     }
@@ -52,7 +52,7 @@ public partial class TkProjectManager
         List<string> recentProjectFolders = [];
 
         try {
-            using FileStream fs = File.OpenRead(_storeFilePath);
+            using var fs = File.OpenRead(_storeFilePath);
             recentProjectFolders = JsonSerializer.Deserialize<List<string>>(fs)
                                    ?? [];
         }
@@ -60,7 +60,7 @@ public partial class TkProjectManager
             TkLog.Instance.LogWarning(ex, "Failed to load recent projects");
         }
 
-        foreach (TkProject project in recentProjectFolders.Where(Directory.Exists).Select(projectFolder => new TkProject(projectFolder))) {
+        foreach (var project in recentProjectFolders.Where(Directory.Exists).Select(projectFolder => new TkProject(projectFolder))) {
             LoadProjectMetadataFromFolder(project);
             RecentProjects.Add(project);
         }
@@ -72,7 +72,7 @@ public partial class TkProjectManager
             Directory.CreateDirectory(folder);
         }
 
-        using FileStream fs = File.Create(_storeFilePath);
+        using var fs = File.Create(_storeFilePath);
         JsonSerializer.Serialize(fs, RecentProjects.Select(proj => proj.FolderPath));
     }
 
@@ -90,9 +90,9 @@ public partial class TkProjectManager
             return;
         }
 
-        using FileStream fs = projectFile.OpenRead();
-        TkProject tkProj = JsonSerializer.Deserialize<TkProject>(fs)
-                           ?? project;
+        using var fs = projectFile.OpenRead();
+        var tkProj = JsonSerializer.Deserialize<TkProject>(fs)
+                     ?? project;
         
         project.Mod = tkProj.Mod;
         project.Flags = tkProj.Flags;
@@ -120,7 +120,7 @@ public partial class TkProjectManager
         FileInfo metadataFile = new(metadataFilePath);
 
         if (metadataFile is { Exists: true, Length: > 0 }) {
-            using FileStream fs = File.OpenRead(metadataFilePath);
+            using var fs = File.OpenRead(metadataFilePath);
             group = JsonSerializer.Deserialize<TkModOptionGroup>(fs)
                     ?? new TkModOptionGroup();
             goto CollectOptions;
@@ -147,7 +147,7 @@ public partial class TkProjectManager
         FileInfo metadataFile = new(metadataFilePath);
 
         if (metadataFile is { Exists: true, Length: > 0 }) {
-            using FileStream fs = File.OpenRead(metadataFilePath);
+            using var fs = File.OpenRead(metadataFilePath);
             option = JsonSerializer.Deserialize<TkModOption>(fs) ?? new TkModOption();
             goto Result;
         }

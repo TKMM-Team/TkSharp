@@ -23,15 +23,15 @@ public sealed class RsdbTagChangelogBuilder : Singleton<RsdbTagChangelogBuilder>
     {
         using RsdbTagIndex vanilla = new(vanillaBuffer);
 
-        BymlMap src = Byml.FromBinary(srcBuffer, out Endianness endianness, out ushort version).GetMap();
-        BymlArray paths = src[PATH_LIST].GetArray();
-        BymlArray tags = src[TAG_LIST].GetArray();
+        var src = Byml.FromBinary(srcBuffer, out var endianness, out ushort version).GetMap();
+        var paths = src[PATH_LIST].GetArray();
+        var tags = src[TAG_LIST].GetArray();
         byte[] bitTable = src[BIT_TABLE].GetBinary();
 
         BymlArray changelog = [];
         for (int i = 0; i < paths.Count; i++) {
             int entryIndex = i / 3;
-            bool isKeyVanilla = vanilla.HasEntry(paths, ref i, out int vanillaEntryIndex, out (Byml Prefix, Byml Name, Byml Suffix) entry);
+            bool isKeyVanilla = vanilla.HasEntry(paths, ref i, out int vanillaEntryIndex, out var entry);
             var entryTags = GetEntryTags<List<string>>(entryIndex, tags, bitTable);
 
             if (!isKeyVanilla) {
@@ -40,7 +40,7 @@ public sealed class RsdbTagChangelogBuilder : Singleton<RsdbTagChangelogBuilder>
                 continue;
             }
 
-            ImmutableSortedSet<string> vanillaEntryTags = vanilla.EntryTags[vanillaEntryIndex];
+            var vanillaEntryTags = vanilla.EntryTags[vanillaEntryIndex];
             if (CreateChangelog(vanillaEntryTags, CollectionsMarshal.AsSpan(entryTags)) is { Count: > 0 } entryChangelog) {
                 changelog.AddRange(paths[(i - 2)..(i + 1)]);
                 changelog.Add(entryChangelog);
@@ -63,7 +63,7 @@ public sealed class RsdbTagChangelogBuilder : Singleton<RsdbTagChangelogBuilder>
         result.WriteBinary(ms, endianness, version);
         ms.Seek(0, SeekOrigin.Begin);
 
-        using Stream output = openWrite(path, canonical);
+        using var output = openWrite(path, canonical);
         ms.CopyTo(output);
         return true;
     }

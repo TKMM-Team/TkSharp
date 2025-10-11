@@ -16,11 +16,11 @@ public sealed class SarcMerger(TkMerger masterMerger, TkResourceSizeCollector re
 
     public MergeResult Merge(TkChangelogEntry entry, RentedBuffers<byte> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
-        Sarc merged = Sarc.FromBinary(vanillaData);
+        var merged = Sarc.FromBinary(vanillaData);
         var changelogs = new Sarc[inputs.Count];
 
         for (int i = 0; i < inputs.Count; i++) {
-            RentedBuffers<byte>.Entry input = inputs[i];
+            var input = inputs[i];
             changelogs[i] = Sarc.FromBinary(input.Segment);
         }
         
@@ -32,7 +32,7 @@ public sealed class SarcMerger(TkMerger masterMerger, TkResourceSizeCollector re
 
     public MergeResult Merge(TkChangelogEntry entry, IEnumerable<ArraySegment<byte>> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
-        Sarc merged = Sarc.FromBinary(vanillaData);
+        var merged = Sarc.FromBinary(vanillaData);
         MergeMany(merged, inputs.Select(Sarc.FromBinary));
         merged.Write(output);
         
@@ -41,8 +41,8 @@ public sealed class SarcMerger(TkMerger masterMerger, TkResourceSizeCollector re
 
     public MergeResult MergeSingle(TkChangelogEntry entry, ArraySegment<byte> input, ArraySegment<byte> @base, Stream output)
     {
-        Sarc merged = Sarc.FromBinary(@base);
-        Sarc changelog = Sarc.FromBinary(input);
+        var merged = Sarc.FromBinary(@base);
+        var changelog = Sarc.FromBinary(input);
         MergeSingle(entry.Canonical, merged, changelog);
         merged.Write(output);
         
@@ -62,10 +62,10 @@ public sealed class SarcMerger(TkMerger masterMerger, TkResourceSizeCollector re
             TkFileAttributes.None,
             zsDictionaryId: -1);
         
-        foreach ((string name, ArraySegment<byte>[] buffers) in groups) {
-            ArraySegment<byte> last = buffers[^1];
+        foreach ((string name, var buffers) in groups) {
+            var last = buffers[^1];
             
-            if (!merged.TryGetValue(name, out ArraySegment<byte> vanillaData)) {
+            if (!merged.TryGetValue(name, out var vanillaData)) {
                 merged[name] = last;
                 continue;
             }
@@ -109,8 +109,8 @@ public sealed class SarcMerger(TkMerger masterMerger, TkResourceSizeCollector re
             TkFileAttributes.None,
             zsDictionaryId: -1);
         
-        foreach ((string name, ArraySegment<byte> data) in changelog) {
-            if (!merged.TryGetValue(name, out ArraySegment<byte> vanillaData)) {
+        foreach ((string name, var data) in changelog) {
+            if (!merged.TryGetValue(name, out var vanillaData)) {
                 merged[name] = data;
                 continue;
             }

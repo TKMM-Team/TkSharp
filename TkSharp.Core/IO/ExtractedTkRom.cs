@@ -24,7 +24,7 @@ public sealed class ExtractedTkRom : ITkRom
             }
 
             using Stream regionLangMaskFs = File.OpenRead(regionLangMaskPath);
-            using RentedBuffer<byte> regionLangMask = RentedBuffer<byte>.Allocate(regionLangMaskFs);
+            using var regionLangMask = RentedBuffer<byte>.Allocate(regionLangMaskFs);
             GameVersion = RegionLangMaskParser.ParseVersion(regionLangMask.Span, out string nsoBinaryId);
             NsoBinaryId = nsoBinaryId;
         }
@@ -46,7 +46,7 @@ public sealed class ExtractedTkRom : ITkRom
             }
             
             using Stream addressTableFs = File.OpenRead(addressTablePath);
-            using RentedBuffer<byte> addressTableBuffer = RentedBuffer<byte>.Allocate(addressTableFs);
+            using var addressTableBuffer = RentedBuffer<byte>.Allocate(addressTableFs);
             AddressTable = AddressTableParser.ParseAddressTable(addressTableBuffer.Span, Zstd);
         }
 
@@ -57,7 +57,7 @@ public sealed class ExtractedTkRom : ITkRom
             }
             
             using Stream eventFlowFileEntryFs = File.OpenRead(eventFlowFileEntryPath);
-            using RentedBuffer<byte> eventFlowFileEntryBuffer = RentedBuffer<byte>.Allocate(eventFlowFileEntryFs);
+            using var eventFlowFileEntryBuffer = RentedBuffer<byte>.Allocate(eventFlowFileEntryFs);
             EventFlowVersions = EventFlowFileEntryParser.ParseFileEntry(eventFlowFileEntryBuffer.Span, Zstd);
         }
 
@@ -68,7 +68,7 @@ public sealed class ExtractedTkRom : ITkRom
             }
             
             using Stream effectInfoFs = File.OpenRead(effectInfoPath);
-            using RentedBuffer<byte> effectInfoBuffer = RentedBuffer<byte>.Allocate(effectInfoFs);
+            using var effectInfoBuffer = RentedBuffer<byte>.Allocate(effectInfoFs);
             EffectVersions = EffectInfoParser.ParseFileEntry(effectInfoBuffer.Span, Zstd);
         }
 
@@ -79,7 +79,7 @@ public sealed class ExtractedTkRom : ITkRom
             }
             
             using Stream ainbFileEntryFs = File.OpenRead(ainbFileEntryPath);
-            using RentedBuffer<byte> ainbFileEntryBuffer = RentedBuffer<byte>.Allocate(ainbFileEntryFs);
+            using var ainbFileEntryBuffer = RentedBuffer<byte>.Allocate(ainbFileEntryFs);
             AiVersions = StandardFileEntryParser.ParseStandardFileEntry(ainbFileEntryBuffer.Span, Zstd);
         }
 
@@ -90,7 +90,7 @@ public sealed class ExtractedTkRom : ITkRom
             }
             
             using Stream logicFileEntryFs = File.OpenRead(logicFileEntryPath);
-            using RentedBuffer<byte> logicFileEntryBuffer = RentedBuffer<byte>.Allocate(logicFileEntryFs);
+            using var logicFileEntryBuffer = RentedBuffer<byte>.Allocate(logicFileEntryFs);
             LogicVersions = StandardFileEntryParser.ParseStandardFileEntry(logicFileEntryBuffer.Span, Zstd);
         }
 
@@ -101,7 +101,7 @@ public sealed class ExtractedTkRom : ITkRom
             }
             
             using Stream sequenceFileEntryFs = File.OpenRead(sequenceFileEntryPath);
-            using RentedBuffer<byte> sequenceFileEntryBuffer = RentedBuffer<byte>.Allocate(sequenceFileEntryFs);
+            using var sequenceFileEntryBuffer = RentedBuffer<byte>.Allocate(sequenceFileEntryFs);
             SequenceVersions = StandardFileEntryParser.ParseStandardFileEntry(sequenceFileEntryBuffer.Span, Zstd);
         }
     }
@@ -135,15 +135,15 @@ public sealed class ExtractedTkRom : ITkRom
         }
         
         using Stream fs = File.OpenRead(absolute);
-        RentedBuffer<byte> raw = RentedBuffer<byte>.Allocate(fs);
-        Span<byte> rawBuffer = raw.Span;
+        var raw = RentedBuffer<byte>.Allocate(fs);
+        var rawBuffer = raw.Span;
 
         if (!TkZstd.IsCompressed(rawBuffer)) {
             return raw;
         }
 
         try {
-            RentedBuffer<byte> decompressed = RentedBuffer<byte>.Allocate(TkZstd.GetDecompressedSize(rawBuffer));
+            var decompressed = RentedBuffer<byte>.Allocate(TkZstd.GetDecompressedSize(rawBuffer));
             Zstd.Decompress(rawBuffer, decompressed.Span);
             return decompressed;
         }

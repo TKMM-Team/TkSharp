@@ -28,7 +28,7 @@ public sealed class TkResourceSizeCollector
             ? $"System/Resource/ResourceSizeTable.Product.{_rom.GameVersion}.Nin_NX_NVN.rsizetable.zs"
             : $"System/Resource/ResourceSizeTable.Product.{_rom.GameVersion}.rsizetable.zs";
         
-        using RentedBuffer<byte> vanillaRstb = _rom.GetVanilla(_relativePath);
+        using var vanillaRstb = _rom.GetVanilla(_relativePath);
         _result = Rstb.FromBinary(vanillaRstb.Span);
         _vanilla = Rstb.FromBinary(vanillaRstb.Span);
     }
@@ -38,20 +38,20 @@ public sealed class TkResourceSizeCollector
         using MemoryStream ms = new();
         _result.WriteBinary(ms);
 
-        ArraySegment<byte> buffer = ms.GetSpan();
+        var buffer = ms.GetSpan();
         
-        using SpanOwner<byte> compressed = SpanOwner<byte>.Allocate(buffer.Count);
-        Span<byte> compressedData = compressed.Span;
+        using var compressed = SpanOwner<byte>.Allocate(buffer.Count);
+        var compressedData = compressed.Span;
         int compressedSize = _rom.Zstd.Compress(buffer, compressedData);
 
-        using Stream output = _writer.OpenWrite(Path.Combine("romfs", _relativePath));
+        using var output = _writer.OpenWrite(Path.Combine("romfs", _relativePath));
         output.Write(compressedData[..compressedSize]);
     }
 
     public void Collect(int fileSize, string path, in Span<byte> data)
     {
         string canonical = GetResourceName(path);
-        ReadOnlySpan<char> extension = GetResourceExtension(path);
+        var extension = GetResourceExtension(path);
         
         if (canonical is "Pack/ZsDic.pack" || extension is ".rsizetable" or ".bwav" or ".webm") {
             return;

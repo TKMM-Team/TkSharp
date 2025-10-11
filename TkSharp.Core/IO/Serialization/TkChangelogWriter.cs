@@ -27,7 +27,7 @@ public static class TkChangelogWriter
     {
         output.Write(changelogs.Count);
 
-        foreach (TkChangelogEntry changelog in changelogs) {
+        foreach (var changelog in changelogs) {
             output.WriteString(changelog.Canonical);
             output.Write(changelog.Type);
             output.Write(changelog.Attributes);
@@ -41,7 +41,7 @@ public static class TkChangelogWriter
     {
         output.Write(patches.Count);
 
-        foreach (TkPatch patch in patches) {
+        foreach (var patch in patches) {
             output.WriteString(patch.NsoBinaryId);
 
             output.Write(patch.Entries.Count);
@@ -55,7 +55,7 @@ public static class TkChangelogWriter
     private static void WriteCheatFiles(in Stream output, List<TkCheat> cheats)
     {
         output.Write(cheats.Count);
-        foreach (TkCheat cheat in cheats) {
+        foreach (var cheat in cheats) {
             cheat.WriteBinary(output);
         }
     }

@@ -75,14 +75,14 @@ public class TkChangelogBuilder(
 
     private void BuildTarget(string file, object entry)
     {
-        TkPath path = TkPath.FromPath(file, _source.PathToRoot, out bool isInvalid);
+        var path = TkPath.FromPath(file, _source.PathToRoot, out bool isInvalid);
         if (isInvalid) {
             return;
         }
 
         string canonical = path.Canonical.ToString();
 
-        using Stream content = _source.OpenRead(entry);
+        using var content = _source.OpenRead(entry);
 
         switch (path) {
             case { Root: "exefs", Extension: ".ips" }:
@@ -120,7 +120,7 @@ public class TkChangelogBuilder(
     Copy:
         string outputFilePath = Path.Combine(path.Root.ToString(), canonical);
         // ReSharper disable once ConvertToUsingDeclaration
-        using (Stream output = _writer.OpenWrite(outputFilePath)) {
+        using (var output = _writer.OpenWrite(outputFilePath)) {
             content.CopyTo(output);
         }
 
@@ -132,12 +132,12 @@ public class TkChangelogBuilder(
             goto Copy;
         }
 
-        using RentedBuffer<byte> raw = RentedBuffer<byte>.Allocate(content);
+        using var raw = RentedBuffer<byte>.Allocate(content);
         _ = content.Read(raw.Span);
 
         bool isZsCompressed = TkZstd.IsCompressed(raw.Span);
 
-        using RentedBuffer<byte> decompressed = isZsCompressed
+        using var decompressed = isZsCompressed
             ? RentedBuffer<byte>.Allocate(TkZstd.GetDecompressedSize(raw.Span))
             : default;
 
@@ -152,7 +152,7 @@ public class TkChangelogBuilder(
             return;
         }
 
-        using RentedBuffer<byte> vanilla
+        using var vanilla
             = _tk.GetVanilla(canonical, path.Attributes);
 
         // Let the changelog builder handle
@@ -160,12 +160,12 @@ public class TkChangelogBuilder(
         if (vanilla.IsEmpty && !builder.CanProcessWithoutVanilla) {
             AddChangelogMetadata(path, ref canonical, ChangelogEntryType.Copy, zsDictionaryId, path.FileVersion);
             outputFilePath = Path.Combine(path.Root.ToString(), canonical);
-            using Stream output = _writer.OpenWrite(outputFilePath);
+            using var output = _writer.OpenWrite(outputFilePath);
             output.Write(raw.Span);
             return;
         }
 
-        TkFileAttributes parentAttributes = path.Attributes;
+        var parentAttributes = path.Attributes;
         bool isVanilla = !builder.Build(canonical, path, flags, decompressed.IsEmpty ? raw.Segment : decompressed.Segment, vanilla.Segment,
             (path, canon, archiveCanon, type) => {
                 AddChangelogMetadata(path, ref canon, type, zsDictionaryId, path.FileVersion,
@@ -194,7 +194,7 @@ public class TkChangelogBuilder(
         int index = -1;
         var result = new ArraySegment<byte>[changelogs.Count];
 
-        foreach (RentedBuffers<byte>.Entry entry in changelogs) {
+        foreach (var entry in changelogs) {
             using MemoryStream output = new();
             TkPath pathIteratorStackInstance = new(canonical, 100, attributes, "romfs", "");
 
@@ -219,7 +219,7 @@ public class TkChangelogBuilder(
             return;
         }
 
-        ref TkChangelogEntry? entry = ref CollectionsMarshal.GetValueRefOrAddDefault(_entries, canonical, out bool exists);
+        ref var entry = ref CollectionsMarshal.GetValueRefOrAddDefault(_entries, canonical, out bool exists);
         if (!exists || entry is null) {
             entry = new TkChangelogEntry(
                 canonical, type, archiveAttributes ?? path.Attributes, zsDictionaryId

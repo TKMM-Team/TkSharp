@@ -20,13 +20,13 @@ internal static class TkModManagerSerializer
 
         output.Write(manager.Mods.Count);
         for (int i = 0; i < manager.Mods.Count; i++) {
-            TkMod mod = manager.Mods[i];
+            var mod = manager.Mods[i];
             TkBinaryWriter.WriteTkMod(output, mod, lookup);
             lookup.Mods[mod] = i;
         }
         
         output.Write(manager.Profiles.Count);
-        foreach (TkProfile profile in manager.Profiles) {
+        foreach (var profile in manager.Profiles) {
             TkBinaryWriter.WriteTkProfile(output, profile, lookup);
         }
         

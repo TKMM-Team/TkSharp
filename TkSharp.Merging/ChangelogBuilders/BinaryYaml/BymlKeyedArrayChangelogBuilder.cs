@@ -18,12 +18,12 @@ public class BymlKeyedArrayChangelogBuilder(string key, string? secondaryKey = n
         BymlArrayChangelog changelog = [];
         int detectedAdditions = 0;
 
-        FrozenDictionary<BymlKey, int> vanillaIndexMap = vanilla.CreateIndexCache(_key);
+        var vanillaIndexMap = vanilla.CreateIndexCache(_key);
         using var vanillaRecordsFound = RentedBitArray.Create(vanilla.Count);
 
         for (int i = 0; i < src.Count; i++) {
-            Byml node = src[i];
-            if (!_key.TryGetKey(node, out BymlKey key)) {
+            var node = src[i];
+            if (!_key.TryGetKey(node, out var key)) {
                 TkLog.Instance.LogWarning(
                     "Entry '{Index}' in '{Type}' was missing a {Key} field.",
                     i, info.Type.ToString(), _key);

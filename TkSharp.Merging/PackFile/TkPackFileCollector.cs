@@ -18,21 +18,21 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
 
     public void Write()
     {
-        foreach (IGrouping<PackFileEntryKey, PackFileEntry> packFile in _cache.GroupBy(x => x.Key, x => x)) {
-            PackFileEntryKey key = packFile.Key;
+        foreach (var packFile in _cache.GroupBy(x => x.Key, x => x)) {
+            var key = packFile.Key;
             string relativePath = rom.CanonicalToRelativePath(key.ArchiveCanonical, key.Attributes);
 
-            if (_trackedArchives.TryGetValue(key.ArchiveCanonical, out Sarc? trackedSarc)) {
+            if (_trackedArchives.TryGetValue(key.ArchiveCanonical, out var trackedSarc)) {
                 WritePackFile(trackedSarc, relativePath, key, packFile);
                 continue;
             }
 
-            using RentedBuffer<byte> vanilla = rom.GetVanilla(relativePath);
-            Sarc sarc = vanilla.IsEmpty ? new Sarc() : Sarc.FromBinary(vanilla.Segment);
+            using var vanilla = rom.GetVanilla(relativePath);
+            var sarc = vanilla.IsEmpty ? new Sarc() : Sarc.FromBinary(vanilla.Segment);
             WritePackFile(sarc, relativePath, key, packFile);
         }
 
-        foreach (PackFileEntry entry in _cache.Where(x => x.IsStreamedData())) {
+        foreach (var entry in _cache.Where(x => x.IsStreamedData())) {
             entry.Data.Dispose();
         }
     }
@@ -40,15 +40,15 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
     private void WritePackFile(Sarc sarc, string relativePath, PackFileEntryKey key,
         IEnumerable<PackFileEntry> entries)
     {
-        foreach (PackFileEntry entry in entries) {
+        foreach (var entry in entries) {
             string name = entry.Changelog.Canonical;
-            if (sarc.TryGetValue(name, out ArraySegment<byte> entryData) && PackMerger.IsRemovedEntry(entryData)) {
+            if (sarc.TryGetValue(name, out var entryData) && PackMerger.IsRemovedEntry(entryData)) {
                 sarc.Remove(name);
                 continue;
             }
                     
             if (entry.IsStreamedData() && entry.Data is MemoryStream msData) {
-                ArraySegment<byte> buffer = msData.GetSpan();
+                var buffer = msData.GetSpan();
                 sarc[name] = buffer;
                 resourceSizeCollector.Collect(buffer.Count, name, buffer);
                 continue;

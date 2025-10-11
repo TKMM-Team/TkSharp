@@ -10,7 +10,7 @@ public static class RsdbRowIndex
 
     static RsdbRowIndex()
     {
-        using Stream stream = typeof(RsdbRowIndex).Assembly
+        using var stream = typeof(RsdbRowIndex).Assembly
             .GetManifestResourceStream("TkSharp.Merging.Resources.RsdbIndex.bpcc")!;
 
         Dictionary<ulong, FrozenDictionary<ulong, int>> lookup = [];

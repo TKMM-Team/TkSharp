@@ -12,13 +12,13 @@ public sealed class SarcChangelogBuilder : Singleton<SarcChangelogBuilder>, ITkC
     public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags,
         ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
     {
-        Sarc vanilla = Sarc.FromBinary(vanillaBuffer);
+        var vanilla = Sarc.FromBinary(vanillaBuffer);
 
         Sarc changelog = [];
-        Sarc sarc = Sarc.FromBinary(srcBuffer);
+        var sarc = Sarc.FromBinary(srcBuffer);
 
-        foreach ((string name, ArraySegment<byte> data) in sarc) {
-            if (!vanilla.TryGetValue(name, out ArraySegment<byte> vanillaData)) {
+        foreach ((string name, var data) in sarc) {
+            if (!vanilla.TryGetValue(name, out var vanillaData)) {
                 // Custom file, use entire content
                 goto MoveContent;
             }
@@ -61,7 +61,7 @@ public sealed class SarcChangelogBuilder : Singleton<SarcChangelogBuilder>, ITkC
             return false;
         }
 
-        using Stream output = openWrite(path, canonical);
+        using var output = openWrite(path, canonical);
         changelog.Write(output, changelog.Endianness);
         return true;
     }

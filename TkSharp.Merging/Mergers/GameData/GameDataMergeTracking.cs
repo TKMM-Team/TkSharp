@@ -14,7 +14,7 @@ public class GameDataMergeTracking(string canonical) : Dictionary<ulong, GameDat
     {
         BymlTrackingInfo info = new();
         
-        foreach (GameDataMergeTrackingEntry entry in Values) {
+        foreach (var entry in Values) {
             ApplyEntry(entry, ref info);
         }
     }
@@ -25,8 +25,8 @@ public class GameDataMergeTracking(string canonical) : Dictionary<ulong, GameDat
             return;
         }
         
-        Byml baseEntry = entry.BaseEntry;
-        Span<Byml> entries = CollectionsMarshal.AsSpan(entry.Changes);
+        var baseEntry = entry.BaseEntry;
+        var entries = CollectionsMarshal.AsSpan(entry.Changes);
         
         for (int i = 0; i < entry.Changes.Count; i++) {
             BymlChangelogBuilder.LogChangesInline(ref info, ref entries[i], baseEntry);
@@ -37,7 +37,7 @@ public class GameDataMergeTracking(string canonical) : Dictionary<ulong, GameDat
                 ? "Struct" : null
         };
 
-        foreach (Byml changelog in entries) {
+        foreach (var changelog in entries) {
             BymlMerger.Merge(baseEntry, changelog, tracking);
         }
 

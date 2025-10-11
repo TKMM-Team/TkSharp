@@ -17,11 +17,11 @@ internal sealed class SwitchFsContainer : List<(string Label, SwitchFs Fs)>, IDi
     
     public void Dispose()
     {
-        foreach ((_, SwitchFs fs) in this) {
+        foreach (var (_, fs) in this) {
             fs.Dispose();
         }
         
-        foreach (IDisposable disposable in _cleanup) {
+        foreach (var disposable in _cleanup) {
             disposable.Dispose();
         }
     }

@@ -34,18 +34,18 @@ public sealed class RsdbRowChangelogBuilder<TKey>(string keyName) : ITkChangelog
         Dictionary<TKey, Byml> changelog = [];
         HashSet<TKey> foundKeys = [];
         
-        Byml root = Byml.FromBinary(srcBuffer, out Endianness endianness, out ushort version);
-        BymlArray rows = root.GetArray();
+        var root = Byml.FromBinary(srcBuffer, out var endianness, out ushort version);
+        var rows = root.GetArray();
 
-        BymlArray vanillaRows = Byml.FromBinary(vanillaBuffer).GetArray();
+        var vanillaRows = Byml.FromBinary(vanillaBuffer).GetArray();
 
         BymlTrackingInfo bymlTrackingInfo = new(path.Canonical, depth: 0);
 
         for (int i = 0; i < rows.Count; i++) {
-            Byml rowEntry = rows[i];
-            BymlMap entry = rowEntry.GetMap();
+            var rowEntry = rows[i];
+            var entry = rowEntry.GetMap();
 
-            if (!TryGetKeyHash(entry, out ulong keyHash, out TKey? key)) {
+            if (!TryGetKeyHash(entry, out ulong keyHash, out var key)) {
                 TkLog.Instance.LogWarning(
                     "RSDB file '{Canonical}' has an invalid entry at {Index}. The key field '{KeyName}' is missing.",
                     canonical, i, _keyName);
@@ -58,7 +58,7 @@ public sealed class RsdbRowChangelogBuilder<TKey>(string keyName) : ITkChangelog
                 goto UpdateChangelog;
             }
 
-            if (!RsdbRowCache.TryGetVanilla(dbNameHash, keyHash, path.FileVersion, out Byml? vanillaRow)) {
+            if (!RsdbRowCache.TryGetVanilla(dbNameHash, keyHash, path.FileVersion, out var vanillaRow)) {
                 vanillaRow = vanillaRows[index];
             }
             
@@ -72,10 +72,10 @@ public sealed class RsdbRowChangelogBuilder<TKey>(string keyName) : ITkChangelog
 
         if (flags.TrackRemovedRsDbEntries) {
             for (int i = 0; i < vanillaRows.Count; i++) {
-                Byml rowEntry = vanillaRows[i];
-                BymlMap entry = rowEntry.GetMap();
+                var rowEntry = vanillaRows[i];
+                var entry = rowEntry.GetMap();
                 
-                if (!TryGetKeyHash(entry, out ulong _, out TKey? key)) {
+                if (!TryGetKeyHash(entry, out ulong _, out var key)) {
                     TkLog.Instance.LogWarning(
                         "Vanilla RSDB file '{Canonical}' has an invalid entry at {Index}. The key field '{KeyName}' is missing.",
                         canonical, i, _keyName);
@@ -95,7 +95,7 @@ public sealed class RsdbRowChangelogBuilder<TKey>(string keyName) : ITkChangelog
         }
 
         using MemoryStream ms = new();
-        Byml changelogByml = changelog switch {
+        var changelogByml = changelog switch {
             IDictionary<uint, Byml> hashMap32 => new Byml(hashMap32),
             IDictionary<string, Byml> map => new Byml(map),
             _ => throw new NotSupportedException(
@@ -105,7 +105,7 @@ public sealed class RsdbRowChangelogBuilder<TKey>(string keyName) : ITkChangelog
         changelogByml.WriteBinary(ms, endianness, version);
         ms.Seek(0, SeekOrigin.Begin);
         
-        using Stream output = openWrite(path, canonical);
+        using var output = openWrite(path, canonical);
         ms.CopyTo(output);
         return true;
     }
@@ -113,7 +113,7 @@ public sealed class RsdbRowChangelogBuilder<TKey>(string keyName) : ITkChangelog
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool TryGetKeyHash(in BymlMap row, out ulong keyHash, [MaybeNullWhen(false)] out TKey key)
     {
-        if (!row.TryGetValue(_keyName, out Byml? keyEntry)) {
+        if (!row.TryGetValue(_keyName, out var keyEntry)) {
             keyHash = 0;
             key = default;
             return false;

@@ -26,7 +26,7 @@ public static class BinaryExtensions
             return ReadString(input, buffer);
         }
         
-        using SpanOwner<byte> rented = SpanOwner<byte>.Allocate(length);
+        using var rented = SpanOwner<byte>.Allocate(length);
         return ReadString(input, rented.Span);
     }
     
@@ -64,7 +64,7 @@ public static class BinaryExtensions
             return;
         }
 
-        using SpanOwner<byte> rented = SpanOwner<byte>.Allocate(byteCount);
+        using var rented = SpanOwner<byte>.Allocate(byteCount);
         WriteString(output, value, rented.Span);
     }
 

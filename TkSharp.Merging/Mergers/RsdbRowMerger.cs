@@ -24,11 +24,11 @@ public sealed class RsdbRowMerger(string keyName) : ITkMerger
 
     public MergeResult Merge(TkChangelogEntry entry, RentedBuffers<byte> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
-        Byml merged = Byml.FromBinary(vanillaData, out Endianness endianness, out ushort version);
-        BymlArray rows = merged.GetArray();
+        var merged = Byml.FromBinary(vanillaData, out var endianness, out ushort version);
+        var rows = merged.GetArray();
         BymlMergeTracking tracking = new(entry.Canonical);
 
-        foreach (RentedBuffers<byte>.Entry input in inputs) {
+        foreach (var input in inputs) {
             MergeEntry(rows, input.Span, tracking);
         }
 
@@ -42,11 +42,11 @@ public sealed class RsdbRowMerger(string keyName) : ITkMerger
 
     public MergeResult Merge(TkChangelogEntry entry, IEnumerable<ArraySegment<byte>> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
-        Byml merged = Byml.FromBinary(vanillaData, out Endianness endianness, out ushort version);
-        BymlArray rows = merged.GetArray();
+        var merged = Byml.FromBinary(vanillaData, out var endianness, out ushort version);
+        var rows = merged.GetArray();
         BymlMergeTracking tracking = new(entry.Canonical);
 
-        foreach (ArraySegment<byte> input in inputs) {
+        foreach (var input in inputs) {
             MergeEntry(rows, input, tracking);
         }
 
@@ -60,8 +60,8 @@ public sealed class RsdbRowMerger(string keyName) : ITkMerger
 
     public MergeResult MergeSingle(TkChangelogEntry entry, ArraySegment<byte> input, ArraySegment<byte> @base, Stream output)
     {
-        Byml merged = Byml.FromBinary(@base, out Endianness endianness, out ushort version);
-        BymlArray rows = merged.GetArray();
+        var merged = Byml.FromBinary(@base, out var endianness, out ushort version);
+        var rows = merged.GetArray();
         BymlMergeTracking tracking = new(entry.Canonical);
         MergeEntry(rows, input, tracking);
         tracking.Apply();
@@ -73,7 +73,7 @@ public sealed class RsdbRowMerger(string keyName) : ITkMerger
 
     private void MergeEntry(BymlArray rows, Span<byte> input, BymlMergeTracking tracking)
     {
-        Byml changelog = Byml.FromBinary(input);
+        var changelog = Byml.FromBinary(input);
 
         switch (changelog.Value) {
             case IDictionary<uint, Byml> hashMap32:
@@ -88,15 +88,15 @@ public sealed class RsdbRowMerger(string keyName) : ITkMerger
     private void MergeMap<TKey>(IDictionary<TKey, Byml> changelog, BymlArray @base, BymlMergeTracking tracking) where TKey : notnull
     {
         for (int i = 0; i < @base.Count; i++) {
-            Byml entry = @base[i];
-            BymlMap baseMap = entry.GetMap();
+            var entry = @base[i];
+            var baseMap = entry.GetMap();
             var key = baseMap[_keyName].Get<TKey>();
 
-            if (!changelog.Remove(key, out Byml? changelogEntry)) {
+            if (!changelog.Remove(key, out var changelogEntry)) {
                 continue;
             }
             
-            if (!tracking.Arrays.TryGetValue(@base, out BymlMergeTrackingArrayEntry? trackingEntry)) {
+            if (!tracking.Arrays.TryGetValue(@base, out var trackingEntry)) {
                 tracking.Arrays[@base] = trackingEntry = new BymlMergeTrackingArrayEntry();
             }
 
@@ -114,7 +114,7 @@ public sealed class RsdbRowMerger(string keyName) : ITkMerger
             BymlMerger.MergeMap(baseMap, changelogEntry.GetMap(), tracking);
         }
 
-        foreach ((_, Byml value) in changelog) {   
+        foreach (var (_, value) in changelog) {   
             @base.Add(value);
         }
     }

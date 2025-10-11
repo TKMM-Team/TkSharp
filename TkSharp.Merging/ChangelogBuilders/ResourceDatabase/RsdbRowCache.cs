@@ -24,15 +24,15 @@ public static class RsdbRowCache
 
     public static Byml? GetVanilla(ulong dbNameHash, ulong rowId, int dbFileVersion)
     {
-        if (!_overflow.TryGetValue(dbNameHash, out OverflowMapEntries? rows) ||
-            !rows.TryGetValue(rowId, out OverflowMapEntry[]? result)) {
+        if (!_overflow.TryGetValue(dbNameHash, out var rows) ||
+            !rows.TryGetValue(rowId, out var result)) {
             return null;
         }
 
-        OverflowMapEntry entry = result[0];
+        var entry = result[0];
 
         for (int i = 1; i < result.Length; i++) {
-            OverflowMapEntry next = result[i];
+            var next = result[i];
             if (next.Version > dbFileVersion) {
                 break;
             }
@@ -45,7 +45,7 @@ public static class RsdbRowCache
 
     static RsdbRowCache()
     {
-        using Stream stream = typeof(RsdbRowCache).Assembly
+        using var stream = typeof(RsdbRowCache).Assembly
             .GetManifestResourceStream("TkSharp.Merging.Resources.RsdbCache.bpcc")!;
 
         int count = stream.Read<int>();
@@ -83,7 +83,7 @@ public static class RsdbRowCache
             int version = stream.Read<int>();
             int bymlBufferSize = stream.Read<int>();
 
-            using SpanOwner<byte> buffer = SpanOwner<byte>.Allocate(bymlBufferSize);
+            using var buffer = SpanOwner<byte>.Allocate(bymlBufferSize);
             int read = stream.Read(buffer.Span);
             Debug.Assert(read == buffer.Length);
 

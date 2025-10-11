@@ -121,7 +121,7 @@ public class TkExtensibleRomProviderBuilder
     {
         var report = TkExtensibleRomReportBuilder.Create();
 
-        if (_root.ExtractedGameDumpFolderPath.Get(out IEnumerable<string>? gameDumpPaths)) {
+        if (_root.ExtractedGameDumpFolderPath.Get(out var gameDumpPaths)) {
             const string infoKey = "Game Dump Path(s)";
             foreach (string gameDumpPath in gameDumpPaths) {
                 bool hasBaseGame = TkGameDumpUtils.CheckGameDump(gameDumpPath, out bool hasUpdate);
@@ -130,7 +130,7 @@ public class TkExtensibleRomProviderBuilder
             }
         }
 
-        if (!TkKeyUtils.TryGetKeys(out KeySet? keys)) {
+        if (!TkKeyUtils.TryGetKeys(out var keys)) {
             goto Result;
         }
         
@@ -143,7 +143,7 @@ public class TkExtensibleRomProviderBuilder
             report.SetHasUpdate(hasUpdateInSdCard, infoKey);
         }
 
-        if (_root.PackagedBaseGame.Get(out IEnumerable<string>? packagedBaseGamePaths)) {
+        if (_root.PackagedBaseGame.Get(out var packagedBaseGamePaths)) {
             const string packagedInfoKey = "Packaged Base Game File(s)";
             const string splitFileInfoKey = "Packaged Base Game Split File(s)";
 
@@ -158,7 +158,7 @@ public class TkExtensibleRomProviderBuilder
             }
         }
 
-        if (_root.PackagedUpdate.Get(out IEnumerable<string>? packagedUpdatePaths)) {
+        if (_root.PackagedUpdate.Get(out var packagedUpdatePaths)) {
             const string packagedInfoKey = "Packaged Update File(s)";
             const string splitFileInfoKey = "Packaged Update Split File(s)";
             
@@ -173,7 +173,7 @@ public class TkExtensibleRomProviderBuilder
             }
         }
         
-        if (_root.NandFolders.Get(out IEnumerable<string>? nandFolderPaths)) {
+        if (_root.NandFolders.Get(out var nandFolderPaths)) {
             const string infoKey = "Nand Folder(s)";
 
             foreach (string nandFolderPath in nandFolderPaths) {

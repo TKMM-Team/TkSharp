@@ -71,7 +71,7 @@ public sealed partial class TkProfile : TkItem
             return target;
         }
 
-        TkProfileMod store = Mods[newIndex];
+        var store = Mods[newIndex];
         Mods[newIndex] = target;
         Mods[currentIndex] = store;
         
@@ -125,8 +125,8 @@ public sealed partial class TkProfile : TkItem
         TkLog.Instance.LogDebug(
             "Rebasing to '{ModName}' in '{ProfileName}'", mod.Mod.Name, Name);
         
-        foreach (TkModOptionGroup group in mod.Mod.OptionGroups) {
-            foreach (TkModOption option in group.Options) {
+        foreach (var group in mod.Mod.OptionGroups) {
+            foreach (var option in group.Options) {
                 option.InitializeProfileState(group, mod);
             }
         }
@@ -142,7 +142,7 @@ public sealed partial class TkProfile : TkItem
     {
         TkProfileMod profileMod;
         
-        foreach (TkProfileMod existingProfileMod in Mods) {
+        foreach (var existingProfileMod in Mods) {
             if (existingProfileMod.Mod.Id == target.Id) {
                 profileMod = existingProfileMod;
                 existingProfileMod.Mod = target;
@@ -160,7 +160,7 @@ public sealed partial class TkProfile : TkItem
 
     public void Update(TkMod target)
     {
-        foreach (TkProfileMod existingProfileMod in Mods) {
+        foreach (var existingProfileMod in Mods) {
             if (existingProfileMod.Mod.Id == target.Id) {
                 existingProfileMod.Mod = target;
                 existingProfileMod.SelectedOptions = [];
@@ -172,7 +172,7 @@ public sealed partial class TkProfile : TkItem
 
     public void EnsureOptionSelection()
     {
-        foreach (TkProfileMod profileMod in Mods) {
+        foreach (var profileMod in Mods) {
             profileMod.EnsureOptionSelection();
         }
     }

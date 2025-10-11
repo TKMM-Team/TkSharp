@@ -35,15 +35,15 @@ public sealed class TkPackReader(ITkSystemProvider systemProvider) : ITkModReade
                 "Unexpected TotK mod pack version. Expected 2.0.0");
         }
 
-        TkMod result = TkBinaryReader.ReadTkMod(context, stream, _systemProvider);
+        var result = TkBinaryReader.ReadTkMod(context, stream, _systemProvider);
 
-        ZipReader reader = ZipReader.Open(stream);
+        var reader = ZipReader.Open(stream);
         
-        ITkModWriter writer = _systemProvider.GetSystemWriter(context);
+        var writer = _systemProvider.GetSystemWriter(context);
         while (reader.MoveToNextEntry()) {
-            ZipEntry entry = reader.Entry;
+            var entry = reader.Entry;
             await using Stream archiveStream = reader.OpenEntryStream();
-            await using Stream output = writer.OpenWrite(entry.Key!.Replace('\\', '/'));
+            await using var output = writer.OpenWrite(entry.Key!.Replace('\\', '/'));
             await archiveStream.CopyToAsync(output, ct);
         }
 

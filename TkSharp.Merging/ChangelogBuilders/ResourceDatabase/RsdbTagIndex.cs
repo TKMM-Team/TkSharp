@@ -20,8 +20,8 @@ public sealed class RsdbTagIndex : IDisposable
 
     public RsdbTagIndex(BymlMap table)
     {
-        BymlArray paths = table[RsdbTagTable.PATH_LIST].GetArray();
-        BymlArray tags = table[RsdbTagTable.TAG_LIST].GetArray();
+        var paths = table[RsdbTagTable.PATH_LIST].GetArray();
+        var tags = table[RsdbTagTable.TAG_LIST].GetArray();
         int entryCount = paths.Count / 3;
 
         byte[] bitTable = table[RsdbTagTable.BIT_TABLE].GetBinary();

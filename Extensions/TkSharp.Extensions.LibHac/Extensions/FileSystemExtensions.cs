@@ -21,7 +21,7 @@ public static class FileSystemExtensions
             return IsNsp(storage) ? OpenNsp(keys, storage) : OpenXci(keys, storage);
         }
 
-        ReadOnlySpan<char> extension = Path.GetExtension(filePath.AsSpan());
+        var extension = Path.GetExtension(filePath.AsSpan());
 
         return extension switch {
             ".nsp" => OpenNsp(keys, storage),
@@ -53,7 +53,7 @@ public static class FileSystemExtensions
     private static SwitchFs OpenXci(KeySet keys, IStorage storage)
     {
         Xci xci = new(keys, storage);
-        using XciPartition fs = xci.OpenPartition(XciPartitionType.Secure);
+        using var fs = xci.OpenPartition(XciPartitionType.Secure);
         return SwitchFs.OpenNcaDirectory(keys, fs);
     }
 
@@ -66,7 +66,7 @@ public static class FileSystemExtensions
 
     private static void ImportTikFiles(KeySet keys, IFileSystem fs)
     {
-        foreach (DirectoryEntryEx? entry in fs.EnumerateEntries("*.tik", SearchOptions.Default)) {
+        foreach (var entry in fs.EnumerateEntries("*.tik", SearchOptions.Default)) {
             var file = new UniqueRef<IFile>();
             fs.OpenFile(ref file.Ref, entry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
             using NxFileStream stream = new(file.Get, OpenMode.Read, false);
@@ -77,7 +77,7 @@ public static class FileSystemExtensions
     private static void ImportTikFile(KeySet keys, Stream stream)
     {
         Ticket ticket = new(stream);
-        ExternalKeySet externalKeySet = keys.ExternalKeySet;
+        var externalKeySet = keys.ExternalKeySet;
         RightsId rightsId = new(ticket.RightsId);
         AccessKey key = new(ticket.GetTitleKey(keys));
         externalKeySet.Add(rightsId, key);

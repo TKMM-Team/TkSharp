@@ -29,7 +29,7 @@ public sealed partial class TkModManager : ObservableObject, ITkSystemProvider
             };
         }
 
-        using FileStream fs = File.OpenRead(portableManagerStateFile);
+        using var fs = File.OpenRead(portableManagerStateFile);
         return TkModManagerSerializer.Read(fs, dataFolderPath);
     }
 
@@ -42,7 +42,7 @@ public sealed partial class TkModManager : ObservableObject, ITkSystemProvider
             };
         }
 
-        using FileStream fs = File.OpenRead(portableManagerStateFile);
+        using var fs = File.OpenRead(portableManagerStateFile);
         return TkModManagerSerializer.Read(fs, legacyDataFolderPath, systemVersion);
     }
 
@@ -79,7 +79,7 @@ public sealed partial class TkModManager : ObservableObject, ITkSystemProvider
 
     public static IEnumerable<TkChangelog> GetMergeTargets(TkProfile profile, Func<TkProfileMod, bool>? predicate = null)
     {
-        foreach ((TkModOptionGroup group, HashSet<TkModOption> options) in profile.Mods.SelectMany(x => x.SelectedOptions)) {
+        foreach (var (group, options) in profile.Mods.SelectMany(x => x.SelectedOptions)) {
             if (group.Type is not (OptionGroupType.MultiRequired or OptionGroupType.SingleRequired)) {
                 continue;
             }
@@ -148,7 +148,7 @@ public sealed partial class TkModManager : ObservableObject, ITkSystemProvider
         
         Mods.Remove(target);
 
-        foreach (TkProfile profile in Profiles) {
+        foreach (var profile in Profiles) {
             if (profile.Mods.FirstOrDefault(x => x.Mod == target) is TkProfileMod profileMod) {
                 profile.Mods.Remove(profileMod);
             }
@@ -189,7 +189,7 @@ public sealed partial class TkModManager : ObservableObject, ITkSystemProvider
                 goto Retry;
             }
 
-            using FileStream fs = File.Create(currentDbFile);
+            using var fs = File.Create(currentDbFile);
             fs.Write(buffer);
         }
         catch (IOException ex) {
@@ -227,7 +227,7 @@ public sealed partial class TkModManager : ObservableObject, ITkSystemProvider
         return;
         
     UpdateProfiles:
-        foreach (TkProfile profile in Profiles) {
+        foreach (var profile in Profiles) {
             profile.Update(target);
         }
     }

@@ -24,7 +24,7 @@ public class BymlMergeTracking(string canonical)
 
     public void Apply()
     {
-        ReadOnlySpan<char> type = GetBgymlType();
+        var type = GetBgymlType();
         BymlTrackingInfo info = new() {
             Type = type
         };
@@ -92,7 +92,7 @@ public class BymlMergeTracking(string canonical)
             @base[i] = BymlChangeType.Remove;
         }
 
-        IEnumerable<(int Key, Byml[])> additions = entry.Additions
+        var additions = entry.Additions
             .SelectMany(x => x)
             .GroupBy(x => x.InsertIndex, x => x.Entry)
             .OrderBy(x => x.Key)
@@ -100,7 +100,7 @@ public class BymlMergeTracking(string canonical)
 
         Dictionary<BymlKey, int> keyedAdditions = new();
 
-        foreach ((int insertIndex, Byml[] entries) in additions) {
+        foreach ((int insertIndex, var entries) in additions) {
             ProcessAdditions(ref newEntryOffset, @base, entry, insertIndex, entries, ref info, keyedAdditions);
         }
 
@@ -138,11 +138,11 @@ public class BymlMergeTracking(string canonical)
     private void ProcessKeyedAdditions(ref int newEntryOffset, BymlArray @base, int insertIndex, Byml[] additions,
         BymlKeyName keyName, ref BymlTrackingInfo info, Dictionary<BymlKey, int> keyedAdditions)
     {
-        IEnumerable<(BymlKey Key, Byml[])> elements = additions
+        var elements = additions
             .GroupBy(keyName.GetKey)
             .Select(x => (x.Key, x.ToArray()));
 
-        foreach ((BymlKey key, Byml[] entries) in elements) {
+        foreach (var (key, entries) in elements) {
             if (entries.Length == 0) {
                 continue;
             }
@@ -153,7 +153,7 @@ public class BymlMergeTracking(string canonical)
             }
 
             if (keyedAdditions.TryGetValue(key, out int oldIndex)) {
-                ref Byml existingEntry = ref @base.AsSpan()[oldIndex];
+                ref var existingEntry = ref @base.AsSpan()[oldIndex];
                 int index = MergeKeyedAdditions(existingEntry, entries, ref newEntryOffset, @base, insertIndex, ref info);
                 existingEntry = BymlChangeType.Remove;
                 keyedAdditions[key] = index;
@@ -182,7 +182,7 @@ public class BymlMergeTracking(string canonical)
         // This is as sketchy as it looks
         BymlMergeTracking tracking = new(_canonical);
 
-        foreach (Byml changelog in entries) {
+        foreach (var changelog in entries) {
             BymlMerger.Merge(@base, changelog, tracking);
         }
 
@@ -192,7 +192,7 @@ public class BymlMergeTracking(string canonical)
 
     private static void InsertAdditions(ref int newEntryOffset, BymlArray @base, int insertIndex, Byml[] additions)
     {
-        foreach (Byml addition in additions) {
+        foreach (var addition in additions) {
             InsertAddition(ref newEntryOffset, @base, insertIndex, addition);
         }
     }
@@ -213,7 +213,7 @@ public class BymlMergeTracking(string canonical)
 
     private ReadOnlySpan<char> GetBgymlType()
     {
-        ReadOnlySpan<char> result = Path.GetExtension(
+        var result = Path.GetExtension(
             Path.GetFileNameWithoutExtension(_canonical.AsSpan())
         );
 

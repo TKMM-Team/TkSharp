@@ -20,13 +20,13 @@ public sealed class MsbtChangelogBuilder : Singleton<MsbtChangelogBuilder>, ITkC
             return false;
         }
         
-        Msbt vanilla = Msbt.FromBinary(vanillaBuffer);
+        var vanilla = Msbt.FromBinary(vanillaBuffer);
 
         Msbt changelog = [];
-        Msbt src = Msbt.FromBinary(srcBuffer, _options);
+        var src = Msbt.FromBinary(srcBuffer, _options);
 
-        foreach ((string key, MsbtEntry entry) in src) {
-            if (!vanilla.TryGetValue(key, out MsbtEntry? vanillaEntry)) {
+        foreach ((string key, var entry) in src) {
+            if (!vanilla.TryGetValue(key, out var vanillaEntry)) {
                 goto UpdateChangelog;
             }
             
@@ -42,7 +42,7 @@ public sealed class MsbtChangelogBuilder : Singleton<MsbtChangelogBuilder>, ITkC
             return false;
         }
 
-        using Stream output = openWrite(path, canonical);
+        using var output = openWrite(path, canonical);
         changelog.WriteBinary(output);
         return true;
     }

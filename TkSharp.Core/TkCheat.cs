@@ -49,8 +49,8 @@ public class TkCheat(string name) : Dictionary<string, uint[][]>
             }
 
             List<uint> inLine = [];
-            foreach (Range range in line.Split(' ')) {
-                ReadOnlySpan<char> hex = line[range];
+            foreach (var range in line.Split(' ')) {
+                var hex = line[range];
                 if (hex.Length != 8 || !uint.TryParse(hex, NumberStyles.HexNumber, NumberFormatInfo.InvariantInfo, out uint value)) {
                     continue;
                 }

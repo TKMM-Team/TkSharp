@@ -49,7 +49,7 @@ public static class TkGameRomUtils
         }
 
         LocalStorage storage = new(target, FileAccess.Read);
-        SwitchFs nx = storage.GetSwitchFs(target, keys);
+        var nx = storage.GetSwitchFs(target, keys);
         bool result = IsValid(nx, out hasUpdate);
 
         if (switchFsContainer is null) {
@@ -83,7 +83,7 @@ public static class TkGameRomUtils
         ];
 
         ConcatenationStorage storage = new(splitFiles, true);
-        SwitchFs nx = storage.GetSwitchFs(target, keys);
+        var nx = storage.GetSwitchFs(target, keys);
         bool result = IsValid(nx, out hasUpdate);
         
         if (switchFsContainer is null) {
@@ -99,7 +99,7 @@ public static class TkGameRomUtils
 
     public static bool IsValid(SwitchFs nx, out bool hasUpdate)
     {
-        if (!nx.Applications.TryGetValue(EX_KING_APP_ID, out Application? totk)) {
+        if (!nx.Applications.TryGetValue(EX_KING_APP_ID, out var totk)) {
             hasUpdate = false;
             return false;
         }
@@ -123,7 +123,7 @@ public static class TkGameRomUtils
         }
         
         foreach (string file in Directory.EnumerateFiles(target, "*.*", SearchOption.AllDirectories)) {
-            ReadOnlySpan<char> ext = Path.GetExtension(file.AsSpan());
+            var ext = Path.GetExtension(file.AsSpan());
             if (ext is not (".xci" or ".nsp")) {
                 continue;
             }
@@ -131,7 +131,7 @@ public static class TkGameRomUtils
             Application? totk;
             try {
                 using LocalStorage storage = new(file, FileAccess.Read);
-                using SwitchFs nx = storage.GetSwitchFs(file, keys);
+                using var nx = storage.GetSwitchFs(file, keys);
 
                 if (!nx.Applications.TryGetValue(EX_KING_APP_ID, out totk)) {
                     continue;

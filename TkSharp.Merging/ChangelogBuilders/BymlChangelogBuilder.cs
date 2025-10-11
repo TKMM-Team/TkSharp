@@ -13,8 +13,8 @@ public sealed class BymlChangelogBuilder : Singleton<BymlChangelogBuilder>, ITkC
 
     public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
     {
-        Byml vanillaByml = Byml.FromBinary(vanillaBuffer);
-        Byml srcByml = Byml.FromBinary(srcBuffer, out Endianness endianness, out ushort version);
+        var vanillaByml = Byml.FromBinary(vanillaBuffer);
+        var srcByml = Byml.FromBinary(srcBuffer, out var endianness, out ushort version);
         BymlTrackingInfo info = new(path.Canonical, depth: 0);
         bool isVanilla = LogChangesInline(ref info, ref srcByml, vanillaByml);
 
@@ -26,7 +26,7 @@ public sealed class BymlChangelogBuilder : Singleton<BymlChangelogBuilder>, ITkC
         srcByml.WriteBinary(ms, endianness, version);
         ms.Seek(0, SeekOrigin.Begin);
 
-        using Stream output = openWrite(path, canonical);
+        using var output = openWrite(path, canonical);
         ms.CopyTo(output);
 
         return true;
@@ -72,13 +72,13 @@ public sealed class BymlChangelogBuilder : Singleton<BymlChangelogBuilder>, ITkC
     private static bool LogMapChanges<T>(ref BymlTrackingInfo info, IDictionary<T, Byml> src, IDictionary<T, Byml> vanilla, IBymlArrayChangelogBuilderProvider bymlArrayChangelogBuilderProvider) 
     {
         info.Depth++;
-        foreach (T key in src.Keys.Concat(vanilla.Keys).Distinct().ToArray()) {
-            if (!src.TryGetValue(key, out Byml? srcValue)) {
+        foreach (var key in src.Keys.Concat(vanilla.Keys).Distinct().ToArray()) {
+            if (!src.TryGetValue(key, out var srcValue)) {
                 src[key] = BymlChangeType.Remove;
                 continue;
             }
 
-            if (!vanilla.TryGetValue(key, out Byml? vanillaNode)) {
+            if (!vanilla.TryGetValue(key, out var vanillaNode)) {
                 continue;
             }
 

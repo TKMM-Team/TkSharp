@@ -19,7 +19,7 @@ public static class TkBinaryWriter
         output.WriteString(mod.Author);
 
         output.Write(mod.Contributors.Count);
-        foreach (TkModContributor contributor in mod.Contributors) {
+        foreach (var contributor in mod.Contributors) {
             output.WriteString(contributor.Author);
             output.WriteString(contributor.Contribution);
         }
@@ -27,13 +27,13 @@ public static class TkBinaryWriter
         output.Write(mod.OptionGroups.Count);
         
         for (int i = 0; i < mod.OptionGroups.Count; i++) {
-            TkModOptionGroup optionGroup = mod.OptionGroups[i];
+            var optionGroup = mod.OptionGroups[i];
             WriteTkModOptionGroup(output, optionGroup, context);
             context.Groups[optionGroup] = i;
         }
 
         output.Write(mod.Dependencies.Count);
-        foreach (TkModDependency dependency in mod.Dependencies) {
+        foreach (var dependency in mod.Dependencies) {
             WriteTkModDependency(output, dependency);
         }
     }
@@ -47,18 +47,18 @@ public static class TkBinaryWriter
         
         output.Write(optionGroup.Options.Count);
         for (int i = 0; i < optionGroup.Options.Count; i++) {
-            TkModOption option = optionGroup.Options[i];
+            var option = optionGroup.Options[i];
             WriteTkModOption(output, option);
             context.Options[option] = i;
         }
 
         output.Write(optionGroup.DefaultSelectedOptions.Count);
-        foreach (TkModOption selectedOptionIndex in optionGroup.DefaultSelectedOptions) {
+        foreach (var selectedOptionIndex in optionGroup.DefaultSelectedOptions) {
             output.Write(context.Options[selectedOptionIndex]);
         }
 
         output.Write(optionGroup.Dependencies.Count);
-        foreach (TkModDependency dependency in optionGroup.Dependencies) {
+        foreach (var dependency in optionGroup.Dependencies) {
             WriteTkModDependency(output, dependency);
         }
     }
@@ -81,7 +81,7 @@ public static class TkBinaryWriter
         WriteTkItem(output, profile);
         
         output.Write(profile.Mods.Count);
-        foreach (TkProfileMod mod in profile.Mods) {
+        foreach (var mod in profile.Mods) {
             WriteTkProfileMod(output, mod, lookup);
         }
         
@@ -98,7 +98,7 @@ public static class TkBinaryWriter
         
         output.Write(mod.SelectedOptions.Count(x => x.Value.Count != 0));
         
-        foreach ((TkModOptionGroup groupKey, HashSet<TkModOption> selection) in mod.SelectedOptions) {
+        foreach (var (groupKey, selection) in mod.SelectedOptions) {
             if (selection.Count == 0) {
                 continue;
             }
@@ -106,7 +106,7 @@ public static class TkBinaryWriter
             output.Write(lookup.Groups[groupKey]);
             output.Write(selection.Count);
 
-            foreach (TkModOption option in selection) {
+            foreach (var option in selection) {
                 output.Write(lookup.Options[option]);
             }
         }

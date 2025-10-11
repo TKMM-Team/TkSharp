@@ -78,7 +78,7 @@ public class ThreadedDownloadStrategy(HttpClient client) : IDownloadStrategy
             for (int i = 0; i < segments; i++) {
                 int segmentIndex = i;
                 downloadTasks[i] = Task.Run<Task>(async () => {
-                    while (downloadQueue.TryDequeue(out (long start, long end) segment)) {
+                    while (downloadQueue.TryDequeue(out var segment)) {
                         long start = segment.start;
                         long end = segment.end;
                         long expectedBytes = end - start + 1;
@@ -95,7 +95,7 @@ public class ThreadedDownloadStrategy(HttpClient client) : IDownloadStrategy
                                 long resumePosition = start + segmentBytesRead;
                                 request.Headers.Range = new RangeHeaderValue(resumePosition, end);
 
-                                using HttpResponseMessage segmentResponse = await client.SendAsync(
+                                using var segmentResponse = await client.SendAsync(
                                     request, HttpCompletionOption.ResponseHeadersRead, ct);
                                 
                                 if (!segmentResponse.IsSuccessStatusCode) {
@@ -110,7 +110,7 @@ public class ThreadedDownloadStrategy(HttpClient client) : IDownloadStrategy
                                     break;
                                 }
 
-                                await using Stream responseStream = await segmentResponse.Content.ReadAsStreamAsync(ct);
+                                await using var responseStream = await segmentResponse.Content.ReadAsStreamAsync(ct);
                                 byte[] buffer = new byte[Math.Min(BUFFER_SIZE, expectedBytes - segmentBytesRead)];
 
                                 while (segmentBytesRead < expectedBytes) {

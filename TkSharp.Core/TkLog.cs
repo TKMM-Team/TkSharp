@@ -21,7 +21,7 @@ public class TkLog : Singleton<TkLog>, ILogger
     
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
     {
-        foreach (ILogger logger in _loggers) {
+        foreach (var logger in _loggers) {
             logger.Log(logLevel, eventId, state, exception, FormatMessage);
         }
     }

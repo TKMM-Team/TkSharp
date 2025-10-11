@@ -50,7 +50,7 @@ public partial class GameBananaModRecord : ObservableObject
         }
 
         try {
-            await using Stream image = await GameBanana.Get($"{img.BaseUrl}/{img.SmallFile}", ct);
+            await using var image = await GameBanana.Get($"{img.BaseUrl}/{img.SmallFile}", ct);
             await using MemoryStream ms = new();
             await image.CopyToAsync(ms, ct);
             ms.Seek(0, SeekOrigin.Begin);

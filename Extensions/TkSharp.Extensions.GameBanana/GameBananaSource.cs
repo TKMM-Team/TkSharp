@@ -28,7 +28,7 @@ public sealed partial class GameBananaSource(int gameId) : ObservableObject, IGa
     private static async ValueTask FilterRecords(GameBananaFeed feed, CancellationToken ct)
     {
         for (int i = 0; i < feed.Records.Count; i++) {
-            GameBananaModRecord record = feed.Records[i];
+            var record = feed.Records[i];
             await record.DownloadFullMod(ct);
             
             if (ct.IsCancellationRequested) {

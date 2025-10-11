@@ -38,8 +38,8 @@ public readonly ref struct TkPath(ReadOnlySpan<char> canonical, int fileVersion,
             _ => rootFolderPath.Length + 1
         };
 
-        ReadOnlySpan<char> span = path.AsSpan();
-        ReadOnlySpan<char> relative = span[rootFolderLength..];
+        var span = path.AsSpan();
+        var relative = span[rootFolderLength..];
 
         if (relative.Length < 6) {
             throw new ArgumentException(
@@ -61,8 +61,8 @@ public readonly ref struct TkPath(ReadOnlySpan<char> canonical, int fileVersion,
             return default;
         }
 
-        ReadOnlySpan<char> canonical = span[(rootFolderLength + rootLength + 1)..].GetCanonical(
-            out int fileVersion, out TkFileAttributes attributes
+        var canonical = span[(rootFolderLength + rootLength + 1)..].GetCanonical(
+            out int fileVersion, out var attributes
         );
 
         return new TkPath(

@@ -16,7 +16,7 @@ public class GameDataIndex
 
     static GameDataIndex()
     {
-        using Stream stream = typeof(GameDataIndex).Assembly
+        using var stream = typeof(GameDataIndex).Assembly
             .GetManifestResourceStream("TkSharp.Merging.Resources.GameDataIndex.bpclt")!;
 
         if (stream.Read<int>() != MAGIC) {
@@ -39,7 +39,7 @@ public class GameDataIndex
             Dictionary<ulong, FrozenDictionary<uint, int>> standardLookups = new(tableCount);
 
             for (int i = 0; i < tableCount; i++) {
-                FrozenDictionary<uint, int> lookupTable = ReadTable<uint>(stream, out ulong lookupTableHash);
+                var lookupTable = ReadTable<uint>(stream, out ulong lookupTableHash);
                 standardLookups[lookupTableHash] = lookupTable;
             }
 

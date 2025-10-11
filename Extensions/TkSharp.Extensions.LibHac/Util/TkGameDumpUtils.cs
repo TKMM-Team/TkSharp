@@ -20,10 +20,10 @@ public static class TkGameDumpUtils
             return false;
         }
         
-        using FileStream fs = File.OpenRead(regionLangMaskFilePath);
+        using var fs = File.OpenRead(regionLangMaskFilePath);
         int size = (int)fs.Length;
         
-        using SpanOwner<byte> buffer = SpanOwner<byte>.Allocate(size);
+        using var buffer = SpanOwner<byte>.Allocate(size);
         fs.ReadExactly(buffer.Span);
 
         version = RegionLangMaskParser.ParseVersion(buffer.Span, out string nsoBinaryId);

@@ -4,7 +4,7 @@ public static class GbUrlHelper
 {
     public static bool TryGetId(in ReadOnlySpan<char> url, out long id)
     {
-        ReadOnlySpan<char> normalizedUrl = url[^1] switch {
+        var normalizedUrl = url[^1] switch {
             '/' => url[..^1],
             _ => url
         };

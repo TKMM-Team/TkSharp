@@ -42,7 +42,7 @@ public sealed class TkChecksums
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public static ulong GetNameHash(ReadOnlySpan<char> canonicalFileName)
     {
-        ReadOnlySpan<byte> canonicalFileNameBytes = MemoryMarshal.Cast<char, byte>(canonicalFileName);
+        var canonicalFileNameBytes = MemoryMarshal.Cast<char, byte>(canonicalFileName);
         return XxHash3.HashToUInt64(canonicalFileNameBytes);
     }
 
@@ -59,7 +59,7 @@ public sealed class TkChecksums
 
     public bool IsFileVanilla(ReadOnlySpan<char> canonical, Span<byte> src, int fileVersion, out bool isEntryFound)
     {
-        if (!(isEntryFound = Lookup(canonical, fileVersion, out Entry entry))) {
+        if (!(isEntryFound = Lookup(canonical, fileVersion, out var entry))) {
             return false;
         }
 
@@ -74,7 +74,7 @@ public sealed class TkChecksums
     {
         ulong key = GetNameHash(canonicalFileName);
 
-        if (_entries.TryGetValue(key, out Entry[]? entries) == false) {
+        if (_entries.TryGetValue(key, out var entries) == false) {
             entry = default;
             return false;
         }
@@ -85,7 +85,7 @@ public sealed class TkChecksums
         }
 
         for (int i = 1; i < entries.Length; i++) {
-            ref Entry next = ref entries[i];
+            ref var next = ref entries[i];
             if (next.Version > version) {
                 break;
             }

@@ -34,11 +34,11 @@ public sealed class TkPackFileLookup(Stream pkcache, Stream? precompiled = null)
     {
         isFoundMissing = false;
         
-        if (GetPackFileName(canonical, out RentedBuffer<byte> buffer) is (string packFileCanonical, var attributes)) {
-            RentedBuffer<byte> sarcBuffer = rom.GetVanilla(packFileCanonical, attributes);
+        if (GetPackFileName(canonical, out var buffer) is (string packFileCanonical, var attributes)) {
+            var sarcBuffer = rom.GetVanilla(packFileCanonical, attributes);
             RevrsReader reader = new(sarcBuffer.Span);
             ImmutableSarc sarc = new(ref reader);
-            if (sarc.TryGet(canonical, out ImmutableSarcEntry entry)) {
+            if (sarc.TryGet(canonical, out var entry)) {
                 sarcBuffer.Slice(entry.DataStartOffset, entry.DataEndOffset);
                 return sarcBuffer;
             }
@@ -74,14 +74,14 @@ public sealed class TkPackFileLookup(Stream pkcache, Stream? precompiled = null)
     {
         const uint magic = 0x48434B50;
         
-        using RentedBuffer<byte> compressed = RentedBuffer<byte>.Allocate(pkcache);
-        using RentedBuffer<byte> buffer = RentedBuffer<byte>.Allocate(
+        using var compressed = RentedBuffer<byte>.Allocate(pkcache);
+        using var buffer = RentedBuffer<byte>.Allocate(
             TkZstd.GetDecompressedSize(compressed.Span)
         );
         
         _zstd.Unwrap(compressed.Span, buffer.Span);
         
-        RevrsReader reader = RevrsReader.Native(buffer.Span);
+        var reader = RevrsReader.Native(buffer.Span);
         if (reader.Read<uint>() != magic) {
             throw new InvalidDataException("Invalid pkcache magic");
         }
@@ -90,8 +90,8 @@ public sealed class TkPackFileLookup(Stream pkcache, Stream? precompiled = null)
         int stringTableOffset = reader.Read<int>();
         int stringCount = reader.Read<int>();
         
-        using SpanOwner<(string, TkFileAttributes)> valuesOwner = SpanOwner<(string, TkFileAttributes)>.Allocate(stringCount);
-        Span<(string, TkFileAttributes)> values = valuesOwner.Span;
+        using var valuesOwner = SpanOwner<(string, TkFileAttributes)>.Allocate(stringCount);
+        var values = valuesOwner.Span;
 
         reader.Seek(stringTableOffset);
         fixed (byte* ptr = &reader.Data[reader.Position]) {

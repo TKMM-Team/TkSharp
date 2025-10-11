@@ -28,7 +28,7 @@ public sealed unsafe class RsdbTagTableWriter
             int bitOffset = 0;
             byte** current = &ptr;
 
-            foreach (List<string?> tags in _entries) {
+            foreach (var tags in _entries) {
                 FillEntry(tags, current, ref bitOffset);
             }
 

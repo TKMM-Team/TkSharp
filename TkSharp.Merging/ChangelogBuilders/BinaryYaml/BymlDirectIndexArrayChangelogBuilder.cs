@@ -9,7 +9,7 @@ public class BymlDirectIndexArrayChangelogBuilder : IBymlArrayChangelogBuilder
     
     public bool LogChanges(ref BymlTrackingInfo info, ref Byml root, BymlArray src, BymlArray vanilla)
     {
-        (bool isVanillaSmaller, BymlArray larger, BymlArray smaller) = (vanilla.Count < src.Count)
+        (bool isVanillaSmaller, var larger, var smaller) = (vanilla.Count < src.Count)
             ? (true, src, vanilla)
             : (false, vanilla, src);
 
@@ -18,7 +18,7 @@ public class BymlDirectIndexArrayChangelogBuilder : IBymlArrayChangelogBuilder
         int i = 0;
 
         for (; i < smaller.Count; i++) {
-            Byml srcEntry = src[i];
+            var srcEntry = src[i];
             if (!BymlChangelogBuilder.LogChangesInline(ref info, ref srcEntry, vanilla[i])) {
                 changelog.Add((i, BymlChangeType.Edit, srcEntry));
             }

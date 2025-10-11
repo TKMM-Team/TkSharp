@@ -56,12 +56,12 @@ public partial class TkProject(string folderPath) : ObservableObject
     {
         PackThumbnails(writer);
 
-        TkChangelogBuilderFlags flags = Flags.GetBuilderFlags();
+        var flags = Flags.GetBuilderFlags();
 
         FolderModSource source = new(FolderPath);
         Mod.Changelog = await Build(Mod, source, writer, rom, systemSource, flags, ct);
 
-        foreach (TkModOption option in Mod.OptionGroups.SelectMany(group => group.Options)) {
+        foreach (var option in Mod.OptionGroups.SelectMany(group => group.Options)) {
             if (!TryGetPath(option, out string? optionPath)) {
                 continue;
             }
@@ -83,7 +83,7 @@ public partial class TkProject(string folderPath) : ObservableObject
         TkLog.Instance.LogInformation("Building: '{ItemName}'", item.Name);
 
         TkChangelogBuilder builder = new(source, writer, rom, systemSource, flags);
-        TkChangelog result = await builder.BuildAsync(ct)
+        var result = await builder.BuildAsync(ct)
             .ConfigureAwait(false);
 
         TkLog.Instance.LogInformation("Built: '{ItemName}'", item.Name);
@@ -94,7 +94,7 @@ public partial class TkProject(string folderPath) : ObservableObject
     {
         Directory.CreateDirectory(FolderPath);
         string projectFilePath = Path.Combine(FolderPath, ".tkproj");
-        using FileStream output = File.Create(projectFilePath);
+        using var output = File.Create(projectFilePath);
         JsonSerializer.Serialize(output, this);
 
         SaveOptionsGroups();
@@ -102,13 +102,13 @@ public partial class TkProject(string folderPath) : ObservableObject
 
     private void SaveOptionsGroups()
     {
-        foreach (TkModOptionGroup group in Mod.OptionGroups) {
+        foreach (var group in Mod.OptionGroups) {
             if (!TryGetPath(group, out string? groupFolderPath)) {
                 continue;
             }
 
             string metadataFilePath = Path.Combine(groupFolderPath, "info.json");
-            using FileStream fs = File.Create(metadataFilePath);
+            using var fs = File.Create(metadataFilePath);
             JsonSerializer.Serialize(fs, group);
 
             SaveOptions(group);
@@ -117,13 +117,13 @@ public partial class TkProject(string folderPath) : ObservableObject
 
     private void SaveOptions(TkModOptionGroup group)
     {
-        foreach (TkModOption option in group.Options) {
+        foreach (var option in group.Options) {
             if (!TryGetPath(option, out string? optionPath)) {
                 continue;
             }
 
             string metadataFilePath = Path.Combine(optionPath, "info.json");
-            using FileStream fs = File.Create(metadataFilePath);
+            using var fs = File.Create(metadataFilePath);
             JsonSerializer.Serialize(fs, option);
         }
     }
@@ -155,14 +155,14 @@ public partial class TkProject(string folderPath) : ObservableObject
 
         PackThumbnail(Mod, writer);
 
-        foreach (TkModOptionGroup group in Mod.OptionGroups) {
+        foreach (var group in Mod.OptionGroups) {
             if (TryGetPath(group, out var groupPath)) {
                 SetThumbnailIfNull(group, groupPath);
             }
 
             PackThumbnail(group, writer);
 
-            foreach (TkModOption option in group.Options) {
+            foreach (var option in group.Options) {
                 if (TryGetPath(option, out var optionPath)) {
                     SetThumbnailIfNull(option, optionPath);
                 }
@@ -203,12 +203,12 @@ public partial class TkProject(string folderPath) : ObservableObject
         string thumbnailFilePath = Path.Combine("img", Ulid.NewUlid().ToString());
         item.Thumbnail.RelativeThumbnailPath = thumbnailFilePath;
 
-        using FileStream fs = File.OpenRead(item.Thumbnail.ThumbnailPath);
+        using var fs = File.OpenRead(item.Thumbnail.ThumbnailPath);
         int size = (int)fs.Length;
-        using SpanOwner<byte> buffer = SpanOwner<byte>.Allocate(size);
+        using var buffer = SpanOwner<byte>.Allocate(size);
         fs.ReadExactly(buffer.Span);
 
-        using Stream output = writer.OpenWrite(thumbnailFilePath);
+        using var output = writer.OpenWrite(thumbnailFilePath);
         output.Write(buffer.Span);
     }
 
@@ -231,14 +231,14 @@ public partial class TkProject(string folderPath) : ObservableObject
     {
         PackThumbnails(writer);
         
-        TkChangelogBuilderFlags flags = Flags.GetBuilderFlags();
+        var flags = Flags.GetBuilderFlags();
 
         FolderModSource source = new(FolderPath);
         var nullRom = new NullTkRom();
         TkChangelogBuilder builder = new(source, writer, nullRom, systemSource, flags);
         Mod.Changelog = await builder.BuildAsync(ct);
 
-        foreach (TkModOption option in Mod.OptionGroups.SelectMany(group => group.Options)) {
+        foreach (var option in Mod.OptionGroups.SelectMany(group => group.Options)) {
             if (!TryGetPath(option, out string? optionPath)) {
                 continue;
             }

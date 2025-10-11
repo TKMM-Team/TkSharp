@@ -55,7 +55,7 @@ public sealed class GameBananaModReader(ITkModReaderProvider readerProvider) : I
             return null;
         }
 
-        TkMod? mod = await ParseFromFileUrl(context, target.DownloadUrl, target.Id, target, ct);
+        var mod = await ParseFromFileUrl(context, target.DownloadUrl, target.Id, target, ct);
 
         if (mod is null) {
             return null;
@@ -80,7 +80,7 @@ public sealed class GameBananaModReader(ITkModReaderProvider readerProvider) : I
         };
         mod.Version = string.IsNullOrWhiteSpace(gbMod.Version) ? "1.0.0" : gbMod.Version;
 
-        foreach (GameBananaAuthor author in gbMod.Credits.SelectMany(group => group.Authors)) {
+        foreach (var author in gbMod.Credits.SelectMany(group => group.Authors)) {
             mod.Contributors.Add(new TkModContributor(author.Name, author.Role));
         }
 
@@ -97,7 +97,7 @@ public sealed class GameBananaModReader(ITkModReaderProvider readerProvider) : I
 
         var fileIdAsInt = (Int128)fileId;
 
-        ITkModReader? reader = _readerProvider.GetReader(target.Name);
+        var reader = _readerProvider.GetReader(target.Name);
         context.EnsureId(
             Unsafe.As<Int128, Ulid>(ref fileIdAsInt)
         );

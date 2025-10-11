@@ -8,7 +8,7 @@ public static class AddressTableParser
 {
     public static FrozenDictionary<string, string> ParseAddressTable(in ReadOnlySpan<byte> src, TkZstd zstd)
     {
-        using RentedBuffer<byte> decompressed = RentedBuffer<byte>.Allocate(TkZstd.GetDecompressedSize(src));
+        using var decompressed = RentedBuffer<byte>.Allocate(TkZstd.GetDecompressedSize(src));
         zstd.Decompress(src, decompressed.Span);
 
         return Byml.FromBinary(decompressed.Span)

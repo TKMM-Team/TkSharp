@@ -6,13 +6,13 @@ public class TkProfileOptionStateLookup(TkModOption target, TkModOptionGroup gro
 {
     public bool GetIsEnabled()
     {
-        return parent.SelectedOptions.TryGetValue(group, out HashSet<TkModOption>? selected)
+        return parent.SelectedOptions.TryGetValue(group, out var selected)
                && selected.Contains(target);
     }
 
     public void SetIsEnabled(bool value)
     {
-        if (!parent.SelectedOptions.TryGetValue(group, out HashSet<TkModOption>? selected)) {
+        if (!parent.SelectedOptions.TryGetValue(group, out var selected)) {
             if (!value) {
                 return;
             }
@@ -49,14 +49,14 @@ public class TkProfileOptionStateLookup(TkModOption target, TkModOptionGroup gro
     {
         selected.Add(target);
         
-        foreach (TkModOption option in purge) {
+        foreach (var option in purge) {
             option.IsEnabled = false;
         }
     }
 
     private void UpdateState()
     {
-        foreach (TkModOption option in group.Options) {
+        foreach (var option in group.Options) {
             option.UpdateState();
         }
     }
@@ -64,7 +64,7 @@ public class TkProfileOptionStateLookup(TkModOption target, TkModOptionGroup gro
     public bool CanChangeState()
     {
         return !(
-            parent.SelectedOptions.TryGetValue(group, out HashSet<TkModOption>? selected)
+            parent.SelectedOptions.TryGetValue(group, out var selected)
                && selected.Contains(target)
                && selected.Count == 1
                && group.Type is OptionGroupType.MultiRequired or OptionGroupType.SingleRequired

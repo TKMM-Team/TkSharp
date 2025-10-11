@@ -18,8 +18,8 @@ public sealed class SevenZipModReader(ITkSystemProvider systemProvider, ITkRomPr
             return null;
         }
         
-        using SevenZipArchive archive = SevenZipArchive.Open(context.Stream);
-        (string? root, TkMod? embeddedMod, bool hasValidRoot) = await ArchiveModReader.LocateRoot(archive, readerProvider);
+        using var archive = SevenZipArchive.Open(context.Stream);
+        (string? root, var embeddedMod, bool hasValidRoot) = await ArchiveModReader.LocateRoot(archive, readerProvider);
         if (!hasValidRoot) {
             return null;
         }
@@ -31,12 +31,12 @@ public sealed class SevenZipModReader(ITkSystemProvider systemProvider, ITkRomPr
         context.EnsureId();
         
         ArchiveModSource source = new(archive, root);
-        ITkModWriter writer = _systemProvider.GetSystemWriter(context);
+        var writer = _systemProvider.GetSystemWriter(context);
 
         TkChangelogBuilder builder = new(source, writer, _romProvider.GetRom(),
             _systemProvider.GetSystemSource(context.Id.ToString())
         );
-        TkChangelog changelog = await builder.BuildAsync(ct);
+        var changelog = await builder.BuildAsync(ct);
 
         return new TkMod {
             Id = context.Id,

@@ -42,43 +42,43 @@ internal sealed class TkSwitchRom : ITkRom
         _checksums = checksums;
         _packFileLookup = packFileLookup;
 
-        using (Stream regionLangMaskFs = _fileSystem.OpenFileStream("/System/RegionLangMask.txt"))
-        using (RentedBuffer<byte> regionLangMask = RentedBuffer<byte>.Allocate(regionLangMaskFs)) {
+        using (var regionLangMaskFs = _fileSystem.OpenFileStream("/System/RegionLangMask.txt"))
+        using (var regionLangMask = RentedBuffer<byte>.Allocate(regionLangMaskFs)) {
             GameVersion = RegionLangMaskParser.ParseVersion(regionLangMask.Span, out string nsoBinaryId);
             NsoBinaryId = nsoBinaryId;
         }
 
-        using (Stream zsDicFs = _fileSystem.OpenFileStream("/Pack/ZsDic.pack.zs")) {
+        using (var zsDicFs = _fileSystem.OpenFileStream("/Pack/ZsDic.pack.zs")) {
             Zstd = new TkZstd(zsDicFs);
         }
 
-        using (Stream addressTableFs = _fileSystem.OpenFileStream($"/System/AddressTable/Product.{GameVersion}.Nin_NX_NVN.atbl.byml.zs"))
-        using (RentedBuffer<byte> addressTableBuffer = RentedBuffer<byte>.Allocate(addressTableFs)) {
+        using (var addressTableFs = _fileSystem.OpenFileStream($"/System/AddressTable/Product.{GameVersion}.Nin_NX_NVN.atbl.byml.zs"))
+        using (var addressTableBuffer = RentedBuffer<byte>.Allocate(addressTableFs)) {
             AddressTable = AddressTableParser.ParseAddressTable(addressTableBuffer.Span, Zstd);
         }
 
-        using (Stream eventFlowFileEntryFs = _fileSystem.OpenFileStream($"/{AddressTable["Event/EventFlow/EventFlowFileEntry.Product.byml"]}.zs"))
-        using (RentedBuffer<byte> eventFlowFileEntryBuffer = RentedBuffer<byte>.Allocate(eventFlowFileEntryFs)) {
+        using (var eventFlowFileEntryFs = _fileSystem.OpenFileStream($"/{AddressTable["Event/EventFlow/EventFlowFileEntry.Product.byml"]}.zs"))
+        using (var eventFlowFileEntryBuffer = RentedBuffer<byte>.Allocate(eventFlowFileEntryFs)) {
             EventFlowVersions = EventFlowFileEntryParser.ParseFileEntry(eventFlowFileEntryBuffer.Span, Zstd);
         }
 
-        using (Stream effectInfoFs = _fileSystem.OpenFileStream($"/{AddressTable["Effect/EffectFileInfo.Product.Nin_NX_NVN.byml"]}.zs"))
-        using (RentedBuffer<byte> effectInfoBuffer = RentedBuffer<byte>.Allocate(effectInfoFs)) {
+        using (var effectInfoFs = _fileSystem.OpenFileStream($"/{AddressTable["Effect/EffectFileInfo.Product.Nin_NX_NVN.byml"]}.zs"))
+        using (var effectInfoBuffer = RentedBuffer<byte>.Allocate(effectInfoFs)) {
             EffectVersions = EffectInfoParser.ParseFileEntry(effectInfoBuffer.Span, Zstd);
         }
 
-        using (Stream ainbFileEntryFs = _fileSystem.OpenFileStream($"/{AddressTable["AI/FileEntry/FileEntry.Product.byml"]}.zs"))
-        using (RentedBuffer<byte> ainbFileEntryBuffer = RentedBuffer<byte>.Allocate(ainbFileEntryFs)) {
+        using (var ainbFileEntryFs = _fileSystem.OpenFileStream($"/{AddressTable["AI/FileEntry/FileEntry.Product.byml"]}.zs"))
+        using (var ainbFileEntryBuffer = RentedBuffer<byte>.Allocate(ainbFileEntryFs)) {
             AiVersions = StandardFileEntryParser.ParseStandardFileEntry(ainbFileEntryBuffer.Span, Zstd);
         }
 
-        using (Stream logicFileEntryFs = _fileSystem.OpenFileStream($"/{AddressTable["Logic/FileEntry/FileEntry.Product.byml"]}.zs"))
-        using (RentedBuffer<byte> logicFileEntryBuffer = RentedBuffer<byte>.Allocate(logicFileEntryFs)) {
+        using (var logicFileEntryFs = _fileSystem.OpenFileStream($"/{AddressTable["Logic/FileEntry/FileEntry.Product.byml"]}.zs"))
+        using (var logicFileEntryBuffer = RentedBuffer<byte>.Allocate(logicFileEntryFs)) {
             LogicVersions = StandardFileEntryParser.ParseStandardFileEntry(logicFileEntryBuffer.Span, Zstd);
         }
 
-        using (Stream sequenceFileEntryFs = _fileSystem.OpenFileStream($"/{AddressTable["Sequence/FileEntry/FileEntry.Product.byml"]}.zs"))
-        using (RentedBuffer<byte> sequenceFileEntryBuffer = RentedBuffer<byte>.Allocate(sequenceFileEntryFs)) {
+        using (var sequenceFileEntryFs = _fileSystem.OpenFileStream($"/{AddressTable["Sequence/FileEntry/FileEntry.Product.byml"]}.zs"))
+        using (var sequenceFileEntryBuffer = RentedBuffer<byte>.Allocate(sequenceFileEntryFs)) {
             SequenceVersions = StandardFileEntryParser.ParseStandardFileEntry(sequenceFileEntryBuffer.Span, Zstd);
         }
     }
@@ -96,8 +96,8 @@ internal sealed class TkSwitchRom : ITkRom
         }
 
         file.Get.GetSize(out long size);
-        RentedBuffer<byte> rawBuffer = RentedBuffer<byte>.Allocate((int)size);
-        Span<byte> raw = rawBuffer.Span;
+        var rawBuffer = RentedBuffer<byte>.Allocate((int)size);
+        var raw = rawBuffer.Span;
         file.Get.Read(out _, offset: 0, raw);
         file.Destroy();
 
@@ -106,7 +106,7 @@ internal sealed class TkSwitchRom : ITkRom
         }
 
         try {
-            RentedBuffer<byte> decompressed = RentedBuffer<byte>.Allocate(TkZstd.GetDecompressedSize(raw));
+            var decompressed = RentedBuffer<byte>.Allocate(TkZstd.GetDecompressedSize(raw));
             Zstd.Decompress(raw, decompressed.Span);
             return decompressed;
         }
@@ -122,7 +122,7 @@ internal sealed class TkSwitchRom : ITkRom
 
     public void Dispose()
     {
-        foreach (SwitchFs fs in _disposables) {
+        foreach (var fs in _disposables) {
             fs.Dispose();
         }
         

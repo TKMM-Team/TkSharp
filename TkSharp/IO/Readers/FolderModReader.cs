@@ -19,13 +19,13 @@ public sealed class FolderModReader(ITkSystemProvider systemProvider, ITkRomProv
         context.EnsureId();
         
         FolderModSource source = new(directory);
-        ITkModWriter writer = _systemProvider.GetSystemWriter(context);
+        var writer = _systemProvider.GetSystemWriter(context);
 
         TkChangelogBuilder builder = new(source, writer, _romProvider.GetRom(),
             _systemProvider.GetSystemSource(context.Id.ToString())
         );
         
-        TkChangelog changelog = await builder.BuildAsync(ct)
+        var changelog = await builder.BuildAsync(ct)
             .ConfigureAwait(false);
 
         return new TkMod {

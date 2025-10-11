@@ -63,7 +63,7 @@ internal static class GameBanana
             }
             
             feed.Metadata = response.Metadata;
-            foreach (GameBananaModRecord record in response.Records) {
+            foreach (var record in response.Records) {
                 feed.Records.Add(record);
             }
         }

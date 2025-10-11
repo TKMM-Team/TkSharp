@@ -13,7 +13,7 @@ public static class TkBinaryReader
         context.EnsureId(input.Read<Ulid>());
         
         string relativeModFolderPath = context.Id.ToString();
-        ITkSystemSource source = systemProvider.GetSystemSource(relativeModFolderPath);
+        var source = systemProvider.GetSystemSource(relativeModFolderPath);
         
         var result = new TkMod {
             Id = context.Id,
@@ -93,7 +93,7 @@ public static class TkBinaryReader
     {
         var id = input.Read<Ulid>();
         string changelogFolderPath = Path.Combine(parentModFolderPath, id.ToString());
-        ITkSystemSource source = systemProvider.GetSystemSource(changelogFolderPath);
+        var source = systemProvider.GetSystemSource(changelogFolderPath);
         
         return new TkModOption {
             Id = id,
@@ -148,7 +148,7 @@ public static class TkBinaryReader
         for (int i = 0; i < selectionGroupCount; i++) {
             int groupKeyIndex = input.Read<int>();
             int indexCount = input.Read<int>();
-            TkModOptionGroup group = mod.OptionGroups[groupKeyIndex];
+            var group = mod.OptionGroups[groupKeyIndex];
             HashSet<TkModOption> selection = result.SelectedOptions[group] = [];
 
             for (int _ = 0; _ < indexCount; _++) {

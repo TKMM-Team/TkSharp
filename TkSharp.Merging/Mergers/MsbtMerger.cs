@@ -14,11 +14,11 @@ public sealed class MsbtMerger : Singleton<MsbtMerger>, ITkMerger
 
     public MergeResult Merge(TkChangelogEntry entry, IEnumerable<ArraySegment<byte>> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
-        Msbt baseMsbt = Msbt.FromBinary(vanillaData);
+        var baseMsbt = Msbt.FromBinary(vanillaData);
 
-        foreach (ArraySegment<byte> input in inputs) {
-            Msbt changelog = Msbt.FromBinary(input);
-            foreach ((string key, MsbtEntry value) in changelog) {
+        foreach (var input in inputs) {
+            var changelog = Msbt.FromBinary(input);
+            foreach ((string key, var value) in changelog) {
                 baseMsbt[key] = value;
             }
         }
@@ -30,10 +30,10 @@ public sealed class MsbtMerger : Singleton<MsbtMerger>, ITkMerger
 
     public MergeResult MergeSingle(TkChangelogEntry entry, ArraySegment<byte> input, ArraySegment<byte> @base, Stream output)
     {
-        Msbt baseMsbt = Msbt.FromBinary(@base);
-        Msbt changelog = Msbt.FromBinary(input);
+        var baseMsbt = Msbt.FromBinary(@base);
+        var changelog = Msbt.FromBinary(input);
 
-        foreach ((string key, MsbtEntry value) in changelog) {
+        foreach ((string key, var value) in changelog) {
             baseMsbt[key] = value;
         }
         

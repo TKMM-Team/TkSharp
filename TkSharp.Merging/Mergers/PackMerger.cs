@@ -14,11 +14,11 @@ public sealed class PackMerger(TkPackFileCollector packFileCollector) : ITkMerge
     {
         // Copy the vanillaData because it will be
         // disposed later and the Sarc will persist
-        Sarc merged = Sarc.FromBinary(vanillaData.ToArray());
+        var merged = Sarc.FromBinary(vanillaData.ToArray());
         var changelogs = new Sarc[inputs.Count];
 
         for (int i = 0; i < inputs.Count; i++) {
-            RentedBuffers<byte>.Entry input = inputs[i];
+            var input = inputs[i];
             changelogs[i] = Sarc.FromBinary(input.Segment);
         }
         
@@ -32,7 +32,7 @@ public sealed class PackMerger(TkPackFileCollector packFileCollector) : ITkMerge
     {
         // Copy the vanillaData because it will be
         // disposed later and the Sarc will persist
-        Sarc merged = Sarc.FromBinary(vanillaData.ToArray());
+        var merged = Sarc.FromBinary(vanillaData.ToArray());
         MergeMany(merged, inputs.Select(Sarc.FromBinary));
         packFileCollector.RegisterPackFile(entry.Canonical, merged);
         
@@ -43,8 +43,8 @@ public sealed class PackMerger(TkPackFileCollector packFileCollector) : ITkMerge
     {
         // Copy the vanillaData because it will be
         // disposed later and the Sarc will persist
-        Sarc merged = Sarc.FromBinary(@base.ToArray());
-        Sarc changelog = Sarc.FromBinary(input);
+        var merged = Sarc.FromBinary(@base.ToArray());
+        var changelog = Sarc.FromBinary(input);
         MergeSingle(merged, changelog);
         packFileCollector.RegisterPackFile(entry.Canonical, merged);
         
@@ -58,8 +58,8 @@ public sealed class PackMerger(TkPackFileCollector packFileCollector) : ITkMerge
             .GroupBy(x => x.Key, x => x.Value)
             .Select(x => (x.Key, x.ToArray()));
         
-        foreach ((string name, ArraySegment<byte>[] buffers) in groups) {
-            ArraySegment<byte> data = buffers[^1];
+        foreach ((string name, var buffers) in groups) {
+            var data = buffers[^1];
             if (IsRemovedEntry(data)) {
                 merged[name] = data.ToArray();
             }
@@ -68,7 +68,7 @@ public sealed class PackMerger(TkPackFileCollector packFileCollector) : ITkMerge
 
     private static void MergeSingle(in Sarc merged, Sarc changelog)
     {
-        foreach ((string name, ArraySegment<byte> data) in changelog) {
+        foreach ((string name, var data) in changelog) {
             if (IsRemovedEntry(data)) {
                 merged[name] = data.ToArray();
             }

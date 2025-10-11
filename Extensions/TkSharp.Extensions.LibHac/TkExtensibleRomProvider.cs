@@ -50,7 +50,7 @@ public class TkExtensibleRomProvider : ITkRomProvider
             : null;
 
         TkLog.Instance.LogDebug("[ROM *] Checking Extracted Game Dump");
-        if (_config.ExtractedGameDumpFolderPath.Get(out IEnumerable<string>? extractedGameDumpPaths)) {
+        if (_config.ExtractedGameDumpFolderPath.Get(out var extractedGameDumpPaths)) {
             if (GetPreferred(extractedGameDumpPaths, preferredVersionValue, out int version) is not string extractedGameDumpPath) {
                 error = TkLocalizationInterface.Locale["TkExtensibleRomProvider_InvalidGameDump"];
                 goto Continue;
@@ -110,7 +110,7 @@ public class TkExtensibleRomProvider : ITkRomProvider
 
             try {
                 TkLog.Instance.LogDebug("[ROM *] Configuration Valid (Mixed)");
-                IFileSystem fs = main.MainNca.Nca
+                var fs = main.MainNca.Nca
                     .OpenFileSystemWithPatch((update ?? alternateUpdate)!.MainNca.Nca,
                         NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
                 return new TkSwitchRom(fs, collected.AsFsList(), _checksums, _packFileLookup);
@@ -139,13 +139,13 @@ public class TkExtensibleRomProvider : ITkRomProvider
 
         if (_config.SdCard.Get(out string? sdCardFolder)) {
             TkLog.Instance.LogDebug("[ROM *] Looking for Keys in SD card '{SdCard}'", sdCardFolder);
-            if (TkKeyUtils.TryGetKeys(sdCardFolder, out KeySet? keyFromSdCard)) {
+            if (TkKeyUtils.TryGetKeys(sdCardFolder, out var keyFromSdCard)) {
                 return keyFromSdCard;
             }
         }
 
         TkLog.Instance.LogDebug("[ROM *] Looking for roaming keys");
-        TkKeyUtils.TryGetKeys(out KeySet? keys);
+        TkKeyUtils.TryGetKeys(out var keys);
         return keys;
     }
 
@@ -162,8 +162,8 @@ public class TkExtensibleRomProvider : ITkRomProvider
             return null;
         }
 
-        foreach ((string label, SwitchFs switchFs) in collected) {
-            if (!switchFs.Applications.TryGetValue(TkGameRomUtils.EX_KING_APP_ID, out Application? totk)) {
+        foreach ((string label, var switchFs) in collected) {
+            if (!switchFs.Applications.TryGetValue(TkGameRomUtils.EX_KING_APP_ID, out var totk)) {
                 TkLog.Instance.LogDebug("[ROM *] TotK missing in {Label}", label);
                 continue;
             }
@@ -195,7 +195,7 @@ public class TkExtensibleRomProvider : ITkRomProvider
     IsValid:
         try {
             TkLog.Instance.LogDebug("[ROM *] Configuration Valid");
-            IFileSystem fs = main.MainNca.Nca
+            var fs = main.MainNca.Nca
                 .OpenFileSystemWithPatch(update.MainNca.Nca, NcaSectionType.Data, IntegrityCheckLevel.ErrorOnInvalid);
             return new TkSwitchRom(fs, collected.AsFsList(), _checksums, _packFileLookup);
         }

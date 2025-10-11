@@ -15,7 +15,7 @@ public sealed class FatFileSystem : LocalFileSystem
         UnsafeHelpers.SkipParamInit(out fileSystem);
 
         var localFs = new FatFileSystem();
-        Result res = localFs.Initialize(rootPath, pathMode, ensurePathExists);
+        var res = localFs.Initialize(rootPath, pathMode, ensurePathExists);
         if (res.IsFailure()) return res.Miss();
 
         fileSystem = localFs;
@@ -24,8 +24,8 @@ public sealed class FatFileSystem : LocalFileSystem
 
     protected override Result DoGetFileAttributes(out NxFileAttributes attributes, ref readonly Path path)
     {
-        Result result = base.DoGetFileAttributes(out attributes, in path);
-        ReadOnlySpan<byte> fileName = path.GetString();
+        var result = base.DoGetFileAttributes(out attributes, in path);
+        var fileName = path.GetString();
         if (fileName.IndexOf((byte)'\0') is not (var nameEnd and > -1)) {
             return result;
         }
@@ -44,7 +44,7 @@ public sealed class FatFileSystem : LocalFileSystem
 
     protected override Result DoOpenDirectory(ref UniqueRef<IDirectory> outDirectory, ref readonly Path path, OpenDirectoryMode mode)
     {
-        Result result = base.DoOpenDirectory(ref outDirectory, in path, mode);
+        var result = base.DoOpenDirectory(ref outDirectory, in path, mode);
 
         FatArchiveDirectory archiveDir = new(outDirectory.Get);
         outDirectory.Reset(archiveDir);

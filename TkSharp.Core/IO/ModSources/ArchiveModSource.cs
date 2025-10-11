@@ -15,7 +15,7 @@ public sealed class ArchiveModSource(IArchive archive, string? rootFolderPath) :
     {
         lock (_archive) {
             MemoryStream copy = new();
-            using Stream archive = input.OpenEntryStream();
+            using var archive = input.OpenEntryStream();
             archive.CopyTo(copy);
             copy.Seek(0, SeekOrigin.Begin);
             return copy;

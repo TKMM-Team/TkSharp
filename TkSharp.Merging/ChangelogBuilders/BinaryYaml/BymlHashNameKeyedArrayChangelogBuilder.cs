@@ -14,7 +14,7 @@ public class BymlNameHashArrayChangelogBuilder : Singleton<BymlNameHashArrayChan
         using var vanillaRecordsFound = RentedBitArray.Create(vanilla.Count);
 
         for (int i = 0; i < src.Count; i++) {
-            Byml node = src[i];
+            var node = src[i];
 
             int vanillaIndex;
             Byml? keyPrimary;

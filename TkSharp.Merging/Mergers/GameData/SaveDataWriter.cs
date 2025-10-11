@@ -50,7 +50,7 @@ public static class SaveDataWriter
 
         Metadata metaDataStore = new(saveDataOffsets, saveDataSizes);
 
-        BymlArray saveDirectories = metaData["SaveDirectory"]
+        var saveDirectories = metaData["SaveDirectory"]
             .GetArray();
 
         foreach (string tableName in ValidTables) {
@@ -82,8 +82,8 @@ public static class SaveDataWriter
         bool isBool64BitKey = tableName is "Bool64bitKey";
         bool isArrayTable = tableName.Length > 5 && tableName.AsSpan()[^5..] is "Array";
 
-        foreach (BymlMap entry in table.Select(x => x.GetMap())) {
-            if (!entry.TryGetValue("SaveFileIndex", out Byml? saveFileIndexEntry) || saveFileIndexEntry.Value is not int saveFileIndex) {
+        foreach (var entry in table.Select(x => x.GetMap())) {
+            if (!entry.TryGetValue("SaveFileIndex", out var saveFileIndexEntry) || saveFileIndexEntry.Value is not int saveFileIndex) {
                 continue;
             }
 
@@ -122,7 +122,7 @@ public static class SaveDataWriter
 
     private static int CalculateEntrySize(string tableName, BymlMap entry, bool isArrayTable)
     {
-        (int entryCount, int entrySize, Range tableTypeMask) = isArrayTable switch {
+        (int entryCount, int entrySize, var tableTypeMask) = isArrayTable switch {
             true => (GetArrayCount(tableName, entry), 0xC, ..^5),
             false => (1, 0x8, ..)
         };
@@ -133,15 +133,15 @@ public static class SaveDataWriter
 
     private static int GetArrayCount(string tableName, BymlMap entry)
     {
-        if (entry.TryGetValue("ArraySize", out Byml? entryArraySize)) {
+        if (entry.TryGetValue("ArraySize", out var entryArraySize)) {
             return (int)entryArraySize.GetUInt32();
         }
 
-        if (entry.TryGetValue("Size", out Byml? entrySize)) {
+        if (entry.TryGetValue("Size", out var entrySize)) {
             return (int)entrySize.GetUInt32();
         }
 
-        if (entry.TryGetValue("DefaultValue", out Byml? defaultValue) && defaultValue.Value is BymlArray defaultValueArray) {
+        if (entry.TryGetValue("DefaultValue", out var defaultValue) && defaultValue.Value is BymlArray defaultValueArray) {
             return defaultValueArray.Count;
         }
 

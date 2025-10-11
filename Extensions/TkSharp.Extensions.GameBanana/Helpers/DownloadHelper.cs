@@ -52,7 +52,7 @@ public static class DownloadHelper
 
             try {
                 await OnDownloadStarted();
-                data = await strategy.GetBytesAndReportProgress(fileUrl, Reporters.TryPeek(out DownloadReporter? reporter) ? reporter : null, ct);
+                data = await strategy.GetBytesAndReportProgress(fileUrl, Reporters.TryPeek(out var reporter) ? reporter : null, ct);
                 hash = MD5.HashData(data);
             }
             catch (HttpRequestException ex) {

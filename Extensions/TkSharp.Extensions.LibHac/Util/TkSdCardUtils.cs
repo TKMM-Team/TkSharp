@@ -25,10 +25,10 @@ internal static class TkSdCardUtils
 
         string emummcPath;
 
-        using (FileStream fs = File.OpenRead(emummcConfig)) {
+        using (var fs = File.OpenRead(emummcConfig)) {
             using StreamReader reader = new(fs);
             while (reader.ReadLine() is string line) {
-                ReadOnlySpan<char> lineContents = line.AsSpan();
+                var lineContents = line.AsSpan();
                 if (lineContents.Length < 5) {
                     continue;
                 }
@@ -77,11 +77,11 @@ internal static class TkSdCardUtils
             return false;
         }
         
-        FatFileSystem.Create(out FatFileSystem? fatFileSystem, target)
+        FatFileSystem.Create(out var fatFileSystem, target)
             .ThrowIfFailure();
         UniqueRef<IAttributeFileSystem> fs = new(fatFileSystem);
 
-        SwitchFs switchFs = SwitchFs.OpenSdCard(keys, ref fs);
+        var switchFs = SwitchFs.OpenSdCard(keys, ref fs);
         bool result = TkGameRomUtils.IsValid(switchFs, out hasUpdate);
 
         if (switchFsContainer is not null) {

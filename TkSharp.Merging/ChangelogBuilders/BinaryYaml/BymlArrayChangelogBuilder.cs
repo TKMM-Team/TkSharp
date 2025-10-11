@@ -18,7 +18,7 @@ public class BymlArrayChangelogBuilder : IBymlArrayChangelogBuilder
         using var srcRecordsThatAreVanilla = RentedBitArray.Create(src.Count); 
 
         for (int i = 0; i < src.Count; i++) {
-            Byml element = src[i];
+            var element = src[i];
             if (!vanilla.TryGetIndex(element, Byml.ValueEqualityComparer.Default, vanillaRecordsFound, out int vanillaIndex)) {
                 additions.Enqueue(i);
                 continue;
@@ -42,7 +42,7 @@ public class BymlArrayChangelogBuilder : IBymlArrayChangelogBuilder
                 // If we are still in the bounds of the
                 // modded array, but the value is not vanilla,
                 // consider this index modified
-                Byml element = src[i];
+                var element = src[i];
                 BymlChangelogBuilder.LogChangesInline(ref info, ref element, vanilla[i]);
                 changelog.Add(
                     (index: i, BymlChangeType.Edit, node: element)

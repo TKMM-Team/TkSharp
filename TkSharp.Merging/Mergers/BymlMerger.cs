@@ -15,11 +15,11 @@ public sealed class BymlMerger : Singleton<BymlMerger>, ITkMerger
 {
     public MergeResult Merge(TkChangelogEntry entry, RentedBuffers<byte> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
-        Byml merged = Byml.FromBinary(vanillaData, out Endianness endianness, out ushort version);
+        var merged = Byml.FromBinary(vanillaData, out var endianness, out ushort version);
         BymlMergeTracking tracking = new(entry.Canonical);
 
-        foreach (RentedBuffers<byte>.Entry input in inputs) {
-            Byml changelog = Byml.FromBinary(input.Span);
+        foreach (var input in inputs) {
+            var changelog = Byml.FromBinary(input.Span);
             Merge(merged, changelog, tracking);
         }
         
@@ -31,11 +31,11 @@ public sealed class BymlMerger : Singleton<BymlMerger>, ITkMerger
 
     public MergeResult Merge(TkChangelogEntry entry, IEnumerable<ArraySegment<byte>> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
-        Byml merged = Byml.FromBinary(vanillaData, out Endianness endianness, out ushort version);
+        var merged = Byml.FromBinary(vanillaData, out var endianness, out ushort version);
         BymlMergeTracking tracking = new(entry.Canonical);
 
-        foreach (ArraySegment<byte> input in inputs) {
-            Byml changelog = Byml.FromBinary(input);
+        foreach (var input in inputs) {
+            var changelog = Byml.FromBinary(input);
             Merge(merged, changelog, tracking);
         }
         
@@ -47,8 +47,8 @@ public sealed class BymlMerger : Singleton<BymlMerger>, ITkMerger
 
     public MergeResult MergeSingle(TkChangelogEntry entry, ArraySegment<byte> input, ArraySegment<byte> @base, Stream output)
     {
-        Byml merged = Byml.FromBinary(@base, out Endianness endianness, out ushort version);
-        Byml changelog = Byml.FromBinary(input);
+        var merged = Byml.FromBinary(@base, out var endianness, out ushort version);
+        var changelog = Byml.FromBinary(input);
         BymlMergeTracking tracking = new(entry.Canonical);
 
         Merge(merged, changelog, tracking);
@@ -87,7 +87,7 @@ public sealed class BymlMerger : Singleton<BymlMerger>, ITkMerger
     {
         tracking.Depth++;
         
-        foreach ((T key, Byml entry) in changelog) {
+        foreach (var (key, entry) in changelog) {
             if (entry.Value is BymlChangeType.Remove) {
                 tracking.GetMapTrackingEntry(@base).Add(key);
                 continue;
@@ -96,7 +96,7 @@ public sealed class BymlMerger : Singleton<BymlMerger>, ITkMerger
             // In every case, this key is re-added, or used in some way
             tracking.RemoveMapTrackingEntry(@base, key);
             
-            if (!@base.TryGetValue(key, out Byml? baseEntry)) {
+            if (!@base.TryGetValue(key, out var baseEntry)) {
                 @base[key] = entry;
                 continue;
             }
@@ -128,10 +128,10 @@ public sealed class BymlMerger : Singleton<BymlMerger>, ITkMerger
             keyName = bymlKeyName;
         }
         
-        foreach ((int i, BymlChangeType change, Byml entry, Byml? keyPrimary, Byml? keySecondary) in changelog) {
+        foreach ((int i, var change, var entry, var keyPrimary, var keySecondary) in changelog) {
             switch (change) {
                 case BymlChangeType.Add: {
-                    if (!tracking.Arrays.TryGetValue(@base, out BymlMergeTrackingArrayEntry? trackingEntry)) {
+                    if (!tracking.Arrays.TryGetValue(@base, out var trackingEntry)) {
                         tracking.Arrays[@base] = trackingEntry = new BymlMergeTrackingArrayEntry {
                             ArrayName = arrayName,
                             Depth = tracking.Depth
@@ -146,7 +146,7 @@ public sealed class BymlMerger : Singleton<BymlMerger>, ITkMerger
                     break;
                 }
                 case BymlChangeType.Remove: {
-                    if (!tracking.Arrays.TryGetValue(@base, out BymlMergeTrackingArrayEntry? trackingEntry)) {
+                    if (!tracking.Arrays.TryGetValue(@base, out var trackingEntry)) {
                         tracking.Arrays[@base] = trackingEntry = new BymlMergeTrackingArrayEntry();
                     }
                     
@@ -154,12 +154,12 @@ public sealed class BymlMerger : Singleton<BymlMerger>, ITkMerger
                     break;
                 }
                 case BymlChangeType.Edit: {
-                    if (tracking.Arrays.TryGetValue(@base, out BymlMergeTrackingArrayEntry? trackingEntry)) {
+                    if (tracking.Arrays.TryGetValue(@base, out var trackingEntry)) {
                         trackingEntry.Removals.Remove(i);
                     }
                     
                     BymlKey key = new(keyPrimary, keySecondary);
-                    ref Byml baseEntry = ref GetBestMatch(@base, i, key, keyName, ref lookup);
+                    ref var baseEntry = ref GetBestMatch(@base, i, key, keyName, ref lookup);
                     
                     if (entry.Value is IBymlNode) {
                         Merge(baseEntry, entry, tracking);

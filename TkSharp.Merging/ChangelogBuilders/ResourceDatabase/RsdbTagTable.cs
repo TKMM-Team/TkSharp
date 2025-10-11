@@ -16,14 +16,14 @@ public class RsdbTagTable
 
     public RsdbTagTable(BymlMap root)
     {
-        BymlArray paths = root[PATH_LIST].GetArray();
-        BymlArray tags = root[TAG_LIST].GetArray();
+        var paths = root[PATH_LIST].GetArray();
+        var tags = root[TAG_LIST].GetArray();
         Span<byte> bitTable = root[BIT_TABLE].GetBinary();
         _rankTable = root[RANK_TABLE].GetBinary();
 
         for (int i = 0; i < paths.Count; i++) {
             int entryIndex = i / 3;
-            (string, string, string) key = (
+            var key = (
                 paths[i].GetString(), paths[++i].GetString(), paths[++i].GetString()
             );
 
@@ -39,7 +39,7 @@ public class RsdbTagTable
             Entries.OrderBy(x => x.Key, RsdbTagTableKeyComparer.Instance)
         ];
 
-        BymlArray paths = CollectPaths(entries);
+        var paths = CollectPaths(entries);
         Tags.Sort(StringComparer.Ordinal);
 
         return new BymlMap {
@@ -59,7 +59,7 @@ public class RsdbTagTable
     private BymlArray CollectPaths(List<KeyValuePair<(string, string, string), List<string?>>> entries)
     {
         BymlArray paths = new(Entries.Count * 3);
-        foreach (((string Prefix, string Name, string Suffix) entry, List<string?> tags) in entries) {
+        foreach (((string Prefix, string Name, string Suffix) entry, var tags) in entries) {
             paths.Add(entry.Prefix);
             paths.Add(entry.Name);
             paths.Add(entry.Suffix);
@@ -79,7 +79,7 @@ public class RsdbTagTable
         fixed (byte* ptr = &bitTable[index / 8]) {
             byte* current = ptr;
 
-            foreach (Byml tagEntry in tags) {
+            foreach (var tagEntry in tags) {
                 if ((*current >> bitOffset & 1) == 1) {
                     entryTags.Add(tagEntry.GetString());
                 }

@@ -7,7 +7,7 @@ public static class StandardFileEntryParser
 {
     public static Dictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> ParseStandardFileEntry(Span<byte> src, TkZstd zstd)
     {
-        using RentedBuffer<byte> decompressed = RentedBuffer<byte>.Allocate(TkZstd.GetDecompressedSize(src));
+        using var decompressed = RentedBuffer<byte>.Allocate(TkZstd.GetDecompressedSize(src));
         zstd.Decompress(src, decompressed.Span);
         
         return Byml.FromBinary(decompressed.Span)

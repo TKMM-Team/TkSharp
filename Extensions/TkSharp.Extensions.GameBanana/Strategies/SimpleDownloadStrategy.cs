@@ -45,7 +45,7 @@ public class SimpleDownloadStrategy(HttpClient client) : IDownloadStrategy
 
             int bytesReadAtLastFrame = 0;
             long startTime = Stopwatch.GetTimestamp();
-            await using Stream stream = await response.Content.ReadAsStreamAsync(ct);
+            await using var stream = await response.Content.ReadAsStreamAsync(ct);
             
             while (bytesRead < contentLength) {
                 try {

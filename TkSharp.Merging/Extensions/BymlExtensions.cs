@@ -20,8 +20,8 @@ public static class BymlExtensions
         Dictionary<BymlKey, int> indexCache = new();
 
         for (int i = 0; i < array.Count; i++) {
-            Byml entry = array[i];
-            if (!keyName.TryGetKey(entry, out BymlKey key)) {
+            var entry = array[i];
+            if (!keyName.TryGetKey(entry, out var key)) {
                 TkLog.Instance.LogWarning(
                     "Invalid BYML key name, vanilla entry at '{Index}' does not match the key type {KeyName}", i, keyName);
                 continue;
