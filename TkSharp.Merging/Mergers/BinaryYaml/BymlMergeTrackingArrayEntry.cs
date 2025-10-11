@@ -2,7 +2,7 @@ using BymlLibrary;
 
 namespace TkSharp.Merging.Mergers.BinaryYaml;
 
-public class BymlMergeTrackingEntry
+public class BymlMergeTrackingArrayEntry
 {
     public string? ArrayName { get; set; }
     

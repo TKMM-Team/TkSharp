@@ -1,3 +1,6 @@
+using System.Collections;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using BymlLibrary;
 using BymlLibrary.Nodes.Containers;
 using CommunityToolkit.HighPerformance;
@@ -7,9 +10,13 @@ using TkSharp.Merging.Common.BinaryYaml;
 
 namespace TkSharp.Merging.Mergers.BinaryYaml;
 
-public class BymlMergeTracking(string canonical) : Dictionary<BymlArray, BymlMergeTrackingEntry>
+public class BymlMergeTracking(string canonical)
 {
     private readonly string _canonical = canonical;
+    private readonly Dictionary<IEnumerable, object> _maps = [];
+    
+    public Dictionary<BymlArray, BymlMergeTrackingArrayEntry> Arrays { get; } = [];
+    
 
     public int Depth { get; set; }
 
@@ -22,12 +29,56 @@ public class BymlMergeTracking(string canonical) : Dictionary<BymlArray, BymlMer
             Type = type
         };
 
-        foreach ((BymlArray @base, BymlMergeTrackingEntry entry) in this) {
-            ApplyEntry(@base, entry, ref info);
+        foreach ((var map, object entry) in _maps) {
+            switch (map) {
+                case IDictionary<uint, Byml> hashMap32:
+                    ApplyMapEntry(hashMap32, entry);
+                    continue;
+                case IDictionary<ulong, Byml> hashMap64:
+                    ApplyMapEntry(hashMap64, entry);
+                    continue;
+                default:
+                    ApplyMapEntry((IDictionary<string, Byml>)map, entry);
+                    continue;
+            }
+        }
+
+        foreach (var (array, entry) in Arrays) {
+            ApplyArrayEntry(array, entry, ref info);
         }
     }
 
-    private void ApplyEntry(BymlArray @base, BymlMergeTrackingEntry entry, ref BymlTrackingInfo info)
+    public BymlMergeTrackingMapEntry<TKey> GetMapTrackingEntry<TKey>(ICollection<KeyValuePair<TKey, Byml>> @base) where TKey : notnull
+    {
+        ref object? entry = ref CollectionsMarshal.GetValueRefOrAddDefault(_maps, @base, out bool hasEntry);
+        if (!hasEntry || Unsafe.IsNullRef(ref entry) || entry is null) {
+            entry = new BymlMergeTrackingMapEntry<TKey>();
+        }
+
+        return (BymlMergeTrackingMapEntry<TKey>)entry;
+    }
+
+    public void RemoveMapTrackingEntry<TKey>(ICollection<KeyValuePair<TKey, Byml>> @base, TKey key) where TKey : notnull
+    {
+        if (!_maps.TryGetValue(@base, out object? entry) || entry is not BymlMergeTrackingMapEntry<TKey> mapTrackingEntry) {
+            return;
+        }
+
+        mapTrackingEntry.Remove(key);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void ApplyMapEntry<TKey>(IDictionary<TKey, Byml> @base, object entry) where TKey : notnull
+        => ApplyMapEntry(@base, (BymlMergeTrackingMapEntry<TKey>)entry);
+
+    private static void ApplyMapEntry<TKey>(IDictionary<TKey, Byml> @base, BymlMergeTrackingMapEntry<TKey> entry) where TKey : notnull
+    {
+        foreach (var key in entry) {
+            @base.Remove(key);
+        }
+    }
+    
+    private void ApplyArrayEntry(BymlArray @base, BymlMergeTrackingArrayEntry entry, ref BymlTrackingInfo info)
     {
         info.Depth = entry.Depth;
 
@@ -63,7 +114,7 @@ public class BymlMergeTracking(string canonical) : Dictionary<BymlArray, BymlMer
         }
     }
 
-    private void ProcessAdditions(ref int newEntryOffset, BymlArray @base, BymlMergeTrackingEntry entry, int insertIndex,
+    private void ProcessAdditions(ref int newEntryOffset, BymlArray @base, BymlMergeTrackingArrayEntry entry, int insertIndex,
         Byml[] additions, ref BymlTrackingInfo info, Dictionary<BymlKey, int> keyedAdditions)
     {
         if (additions.Length == 0) {

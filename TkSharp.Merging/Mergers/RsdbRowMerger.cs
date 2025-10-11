@@ -96,8 +96,8 @@ public sealed class RsdbRowMerger(string keyName) : ITkMerger
                 continue;
             }
             
-            if (!tracking.TryGetValue(@base, out BymlMergeTrackingEntry? trackingEntry)) {
-                tracking[@base] = trackingEntry = new BymlMergeTrackingEntry();
+            if (!tracking.Arrays.TryGetValue(@base, out BymlMergeTrackingArrayEntry? trackingEntry)) {
+                tracking.Arrays[@base] = trackingEntry = new BymlMergeTrackingArrayEntry();
             }
 
             if (changelogEntry.Value is BymlChangeType.Remove) {

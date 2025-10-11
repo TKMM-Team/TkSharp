@@ -83,16 +83,19 @@ public sealed class BymlMerger : Singleton<BymlMerger>, ITkMerger
         }
     }
 
-    public static void MergeMap<T>(IDictionary<T, Byml> @base, IDictionary<T, Byml> changelog, BymlMergeTracking tracking)
+    public static void MergeMap<T>(IDictionary<T, Byml> @base, IDictionary<T, Byml> changelog, BymlMergeTracking tracking) where T : notnull
     {
         tracking.Depth++;
         
         foreach ((T key, Byml entry) in changelog) {
             if (entry.Value is BymlChangeType.Remove) {
-                @base.Remove(key);
+                tracking.GetMapTrackingEntry(@base).Add(key);
                 continue;
             }
 
+            // In every case, this key is re-added, or used in some way
+            tracking.RemoveMapTrackingEntry(@base, key);
+            
             if (!@base.TryGetValue(key, out Byml? baseEntry)) {
                 @base[key] = entry;
                 continue;
@@ -128,8 +131,8 @@ public sealed class BymlMerger : Singleton<BymlMerger>, ITkMerger
         foreach ((int i, BymlChangeType change, Byml entry, Byml? keyPrimary, Byml? keySecondary) in changelog) {
             switch (change) {
                 case BymlChangeType.Add: {
-                    if (!tracking.TryGetValue(@base, out BymlMergeTrackingEntry? trackingEntry)) {
-                        tracking[@base] = trackingEntry = new BymlMergeTrackingEntry {
+                    if (!tracking.Arrays.TryGetValue(@base, out BymlMergeTrackingArrayEntry? trackingEntry)) {
+                        tracking.Arrays[@base] = trackingEntry = new BymlMergeTrackingArrayEntry {
                             ArrayName = arrayName,
                             Depth = tracking.Depth
                         };
@@ -143,15 +146,15 @@ public sealed class BymlMerger : Singleton<BymlMerger>, ITkMerger
                     break;
                 }
                 case BymlChangeType.Remove: {
-                    if (!tracking.TryGetValue(@base, out BymlMergeTrackingEntry? trackingEntry)) {
-                        tracking[@base] = trackingEntry = new BymlMergeTrackingEntry();
+                    if (!tracking.Arrays.TryGetValue(@base, out BymlMergeTrackingArrayEntry? trackingEntry)) {
+                        tracking.Arrays[@base] = trackingEntry = new BymlMergeTrackingArrayEntry();
                     }
                     
                     trackingEntry.Removals.Add(i);
                     break;
                 }
                 case BymlChangeType.Edit: {
-                    if (tracking.TryGetValue(@base, out BymlMergeTrackingEntry? trackingEntry)) {
+                    if (tracking.Arrays.TryGetValue(@base, out BymlMergeTrackingArrayEntry? trackingEntry)) {
                         trackingEntry.Removals.Remove(i);
                     }
                     
