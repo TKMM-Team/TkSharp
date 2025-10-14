@@ -27,6 +27,12 @@ public class TkZstd : IDisposable
         LoadDictionaries(zsDicPack);
     }
 
+    public TkZstd(in Span<byte> zsDicPack)
+    {
+        _defaultCompressor = new Compressor(CompressionLevel);
+        LoadDictionaries(zsDicPack);
+    }
+
     public int CompressionLevel {
         get => _compressionLevel;
         set {
