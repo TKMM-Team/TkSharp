@@ -168,6 +168,11 @@ public class TkChangelogBuilder(
         var parentAttributes = path.Attributes;
         bool isVanilla = !builder.Build(canonical, path, flags, decompressed.IsEmpty ? raw.Segment : decompressed.Segment, vanilla.Segment,
             (path, canon, archiveCanon, type) => {
+                if (Path.GetFileName(canon).IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) {
+                    TkLog.Instance.LogWarning("The target '{FileName}' was ignored due to incorrect characters in the file name", canon);
+                    return Stream.Null;
+                }
+                
                 AddChangelogMetadata(path, ref canon, type, zsDictionaryId, path.FileVersion,
                     // Force the parent attributes onto the entry for all parent archives
                     archiveCanon, archiveCanon is not null ? parentAttributes : null);
