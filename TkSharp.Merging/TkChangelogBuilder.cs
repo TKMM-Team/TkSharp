@@ -132,6 +132,17 @@ public class TkChangelogBuilder(
             goto Copy;
         }
 
+        if (path.Canonical.StartsWith("GameData/") && path.FileVersion != -1) {
+            var versionedPath = $"GameData/GameDataList.Product.{path.FileVersion}.byml";
+            using var testVanilla = _tk.GetVanilla(versionedPath, path.Attributes);
+            
+            if (testVanilla.IsEmpty) {
+                TkLog.Instance.LogTrace(
+                    "The target '{FileName}' was skipped because its version {FileVersion} does not correspond to the provided dump.", versionedPath, path.FileVersion);
+                return;
+            }
+        }
+
         using var raw = RentedBuffer<byte>.Allocate(content);
         _ = content.Read(raw.Span);
 
