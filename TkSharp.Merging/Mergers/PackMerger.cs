@@ -61,7 +61,7 @@ public sealed class PackMerger(TkPackFileCollector packFileCollector) : ITkMerge
         foreach ((string name, var buffers) in groups) {
             var data = buffers[^1];
             if (IsRemovedEntry(data)) {
-                merged[name] = data.ToArray();
+                merged.Remove(name);
             }
         }
     }
@@ -70,7 +70,7 @@ public sealed class PackMerger(TkPackFileCollector packFileCollector) : ITkMerge
     {
         foreach ((string name, var data) in changelog) {
             if (IsRemovedEntry(data)) {
-                merged[name] = data.ToArray();
+                merged.Remove(name);
             }
         }
     }
