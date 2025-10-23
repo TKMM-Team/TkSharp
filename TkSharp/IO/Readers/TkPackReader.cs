@@ -27,12 +27,12 @@ public sealed class TkPackReader(ITkSystemProvider systemProvider) : ITkModReade
 
         if (stream.Read<uint>() != TKPK_MAGIC) {
             throw new InvalidDataException(
-                "Invalid TotK mod pack magic.");
+                "Invalid TotK mod pack.");
         }
 
         if (stream.Read<uint>() != TKPK_VERSION) {
             throw new InvalidDataException(
-                "Unexpected TotK mod pack version. Expected 2.0.0");
+                "You are trying to install an outdated TotK mod pack. Contact the mod author or install the unpackaged mod.");
         }
 
         var result = TkBinaryReader.ReadTkMod(context, stream, _systemProvider);
