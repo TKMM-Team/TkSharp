@@ -102,9 +102,13 @@ public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBu
                 goto WriteRaw;
             }
 
-            builder.Build(name, nested, flags, data, vanilla.Segment,
+            var hasChanges = builder.Build(name, nested, flags, data, vanilla.Segment,
                 (tkPath, canon, _, _) => openWrite(tkPath, canon, archiveCanonical: canonical));
             builder.Dispose();
+            
+            if (!hasChanges) {
+                WritePlaceholder(nested, name, canonical, openWrite);
+            }
             
             continue;
             
