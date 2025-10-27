@@ -51,7 +51,7 @@ public class TkExtensibleRomProvider : ITkRomProvider
 
         TkLog.Instance.LogDebug("[ROM *] Checking Extracted Game Dump");
         if (_config.ExtractedGameDumpFolderPath.Get(out var extractedGameDumpPaths)) {
-            if (GetPreferred(extractedGameDumpPaths, preferredVersionValue, out int version) is not string extractedGameDumpPath) {
+            if (GetPreferred(extractedGameDumpPaths, preferredVersionValue, out int version) is not { } extractedGameDumpPath) {
                 error = TkLocalizationInterface.Locale["TkExtensibleRomProvider_InvalidGameDump"];
                 goto Continue;
             }
@@ -70,7 +70,7 @@ public class TkExtensibleRomProvider : ITkRomProvider
 
     Continue:
         TkLog.Instance.LogDebug("[ROM *] Looking for Keys");
-        if (TryGetKeys() is not KeySet keys) {
+        if (TryGetKeys() is not { } keys) {
             hasBaseGame = hasUpdate = false;
             error = TkLocalizationInterface.Locale["TkExtensibleRomProvider_MissingKeys"];
             return defaultValue();
@@ -132,7 +132,7 @@ public class TkExtensibleRomProvider : ITkRomProvider
     {
         if (_config.KeysFolder.Get(out string? keysFolder)) {
             TkLog.Instance.LogDebug("[ROM *] Looking for Keys in {KeysFolder}", keysFolder);
-            if (TkKeyUtils.GetKeysFromFolder(keysFolder) is KeySet keyFromFolder) {
+            if (TkKeyUtils.GetKeysFromFolder(keysFolder) is { } keyFromFolder) {
                 return keyFromFolder;
             }
         }
@@ -209,7 +209,7 @@ public class TkExtensibleRomProvider : ITkRomProvider
     {
         foundVersion = -1;
 
-        if (preferredVersion is not int version) {
+        if (preferredVersion is not { } version) {
             foreach (string path in extractedGameDumpPaths) {
                 if (TkGameDumpUtils.CheckGameDump(path, out _, out foundVersion)) {
                     return path;

@@ -121,7 +121,7 @@ public class BymlMergeTracking(string canonical)
             return;
         }
 
-        if (entry.ArrayName is string arrayName &&
+        if (entry.ArrayName is { } arrayName &&
             BymlMergerKeyNameProvider.Instance.GetKeyName(arrayName, Type ?? info.Type, info.Depth) is var keyName) {
             ProcessKeyedAdditions(ref newEntryOffset, @base, insertIndex, additions, keyName, ref info, keyedAdditions);
             return;

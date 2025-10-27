@@ -6,7 +6,7 @@ public static class TkModReaderExtensions
 {
     public static async Task<TkMod?> ReadFromInput(this ITkModReaderProvider readerProvider, object input, CancellationToken ct = default)
     {
-        if (readerProvider.GetReader(input) is not ITkModReader reader) {
+        if (readerProvider.GetReader(input) is not { } reader) {
             return null;
         }
 
@@ -22,7 +22,7 @@ public static class TkModReaderExtensions
     
     public static async Task<TkMod?> ReadFromStream(this ITkModReaderProvider readerProvider, object input, Stream stream, CancellationToken ct = default)
     {
-        if (readerProvider.GetReader(input) is not ITkModReader reader) {
+        if (readerProvider.GetReader(input) is not { } reader) {
             return null;
         }
 

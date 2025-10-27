@@ -46,7 +46,7 @@ public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBu
                 continue;
             }
 
-            if (TkChangelogBuilder.GetChangelogBuilder(nested) is not ITkChangelogBuilder builder) {
+            if (TkChangelogBuilder.GetChangelogBuilder(nested) is not { } builder) {
                 goto MoveContent;
             }
 
@@ -98,7 +98,7 @@ public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBu
                 continue;
             }
             
-            if (TkChangelogBuilder.GetChangelogBuilder(nested) is not ITkChangelogBuilder builder) {
+            if (TkChangelogBuilder.GetChangelogBuilder(nested) is not { } builder) {
                 goto WriteRaw;
             }
 

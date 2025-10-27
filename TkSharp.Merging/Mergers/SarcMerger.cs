@@ -75,7 +75,7 @@ public sealed class SarcMerger(TkMerger masterMerger, TkResourceSizeCollector re
                 continue;
             }
 
-            if (_masterMerger.GetMerger(name) is not ITkMerger merger) {
+            if (_masterMerger.GetMerger(name) is not { } merger) {
                 merged[name] = last;
                 continue;
             }
@@ -120,7 +120,7 @@ public sealed class SarcMerger(TkMerger masterMerger, TkResourceSizeCollector re
                 continue;
             }
 
-            if (_masterMerger.GetMerger(name) is not ITkMerger merger) {
+            if (_masterMerger.GetMerger(name) is not { } merger) {
                 merged[name] = data;
                 continue;
             }

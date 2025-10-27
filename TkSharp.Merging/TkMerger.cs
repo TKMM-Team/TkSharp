@@ -412,7 +412,7 @@ public sealed class TkMerger
         // every archive requesting this file
         group.Key.RuntimeArchiveCanonicals = group.SelectMany(x => x.Entry.ArchiveCanonicals).ToList();
 
-        if (GetMerger(group.Key.Canonical) is ITkMerger merger) {
+        if (GetMerger(group.Key.Canonical) is { } merger) {
             return (
                 Changelog: group.Key,
                 Target: (Merger: merger,

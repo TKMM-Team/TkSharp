@@ -86,13 +86,13 @@ public class TkChangelogBuilder(
 
         switch (path) {
             case { Root: "exefs", Extension: ".ips" }:
-                if (TkPatch.FromIps(content, path.Canonical[..^4].ToString()) is TkPatch patch) {
+                if (TkPatch.FromIps(content, path.Canonical[..^4].ToString()) is { } patch) {
                     _changelog.PatchFiles.Add(patch);
                 }
 
                 return;
             case { Root: "exefs", Extension: ".pchtxt" }:
-                if (TkPatch.FromPchTxt(content) is TkPatch patchFromPchtxt) {
+                if (TkPatch.FromPchTxt(content) is { } patchFromPchtxt) {
                     _changelog.PatchFiles.Add(patchFromPchtxt);
                 }
 
@@ -127,7 +127,7 @@ public class TkChangelogBuilder(
         return;
 
     Build:
-        if (GetChangelogBuilder(path) is not ITkChangelogBuilder builder) {
+        if (GetChangelogBuilder(path) is not { } builder) {
             AddChangelogMetadata(path, ref canonical, ChangelogEntryType.Copy, zsDictionaryId: -1, path.FileVersion);
             goto Copy;
         }
@@ -202,7 +202,7 @@ public class TkChangelogBuilder(
     {
         TkPath path = new(canonical, 100, attributes, "romfs", "");
 
-        if (GetChangelogBuilder(path) is not ITkChangelogBuilder builder) {
+        if (GetChangelogBuilder(path) is not { } builder) {
             throw new InvalidOperationException(
                 $"Target file {canonical} cannot be merged as a custom file because no changelog builder could be found.");
         }

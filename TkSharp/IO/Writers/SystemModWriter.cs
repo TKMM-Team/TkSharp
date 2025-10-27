@@ -10,7 +10,7 @@ public sealed class SystemModWriter(TkModManager manager, Ulid id) : ITkModWrite
     public Stream OpenWrite(string filePath)
     {
         string outputFilePath = Path.Combine(_rootFolder, _relativeRootFolder, filePath);
-        if (Path.GetDirectoryName(outputFilePath) is string folderPath) {
+        if (Path.GetDirectoryName(outputFilePath) is { } folderPath) {
             Directory.CreateDirectory(folderPath);
         }
         

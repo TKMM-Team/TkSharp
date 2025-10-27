@@ -27,7 +27,7 @@ internal static class TkSdCardUtils
 
         using (var fs = File.OpenRead(emummcConfig)) {
             using StreamReader reader = new(fs);
-            while (reader.ReadLine() is string line) {
+            while (reader.ReadLine() is { } line) {
                 var lineContents = line.AsSpan();
                 if (lineContents.Length < 5) {
                     continue;

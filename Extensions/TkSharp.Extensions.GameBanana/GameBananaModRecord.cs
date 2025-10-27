@@ -45,7 +45,7 @@ public partial class GameBananaModRecord : ObservableObject
 
     public async ValueTask DownloadThumbnail(CancellationToken ct = default)
     {
-        if (Media.Images.FirstOrDefault() is not GameBananaImage img || TkThumbnail.CreateBitmap is null) {
+        if (Media.Images.FirstOrDefault() is not { } img || TkThumbnail.CreateBitmap is null) {
             return;
         }
 

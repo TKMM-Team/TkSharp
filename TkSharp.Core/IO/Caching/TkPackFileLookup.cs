@@ -34,7 +34,7 @@ public sealed class TkPackFileLookup(Stream pkcache, Stream? precompiled = null)
     {
         isFoundMissing = false;
         
-        if (GetPackFileName(canonical, out var buffer) is (string packFileCanonical, var attributes)) {
+        if (GetPackFileName(canonical, out var buffer) is ({ } packFileCanonical, var attributes)) {
             var sarcBuffer = rom.GetVanilla(packFileCanonical, attributes);
             RevrsReader reader = new(sarcBuffer.Span);
             ImmutableSarc sarc = new(ref reader);

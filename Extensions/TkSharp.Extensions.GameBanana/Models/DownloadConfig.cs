@@ -30,7 +30,7 @@ public class DownloadConfig(bool useThreadedDownloads, int timeoutSeconds, int m
 
     public void Save()
     {
-        if (Path.GetDirectoryName(_path) is string folder) {
+        if (Path.GetDirectoryName(_path) is { } folder) {
             Directory.CreateDirectory(folder);
         }
 

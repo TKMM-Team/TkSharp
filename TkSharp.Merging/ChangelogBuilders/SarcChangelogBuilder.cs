@@ -36,7 +36,7 @@ public sealed class SarcChangelogBuilder : Singleton<SarcChangelogBuilder>, ITkC
                 name
             );
 
-            if (TkChangelogBuilder.GetChangelogBuilder(nested) is not ITkChangelogBuilder builder) {
+            if (TkChangelogBuilder.GetChangelogBuilder(nested) is not { } builder) {
                 goto MoveContent;
             }
 

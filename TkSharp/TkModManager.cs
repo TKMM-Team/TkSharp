@@ -149,7 +149,7 @@ public sealed partial class TkModManager : ObservableObject, ITkSystemProvider
         Mods.Remove(target);
 
         foreach (var profile in Profiles) {
-            if (profile.Mods.FirstOrDefault(x => x.Mod == target) is TkProfileMod profileMod) {
+            if (profile.Mods.FirstOrDefault(x => x.Mod == target) is { } profileMod) {
                 profile.Mods.Remove(profileMod);
             }
         }

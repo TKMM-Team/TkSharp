@@ -40,7 +40,7 @@ public sealed partial class TkProfileMod(TkMod mod) : ObservableObject
                 SelectedOptions[group] = selection = [];
             }
 
-            if (selection.Count == 0 && group.Options.FirstOrDefault() is TkModOption option) {
+            if (selection.Count == 0 && group.Options.FirstOrDefault() is { } option) {
                 selection.Add(option);
             }
         }

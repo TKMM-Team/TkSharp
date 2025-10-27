@@ -63,7 +63,7 @@ public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomPro
         foreach (var entry in archive.Entries) {
             if (entry.Key is not null
                 && Path.GetExtension(entry.Key.AsSpan()) is ".tkcl"
-                && readerProvider.GetReader(entry.Key) is ITkModReader reader) {
+                && readerProvider.GetReader(entry.Key) is { } reader) {
                 await using var entryStream = entry.OpenEntryStream();
                 result.Embedded = await reader.ReadMod(entry.Key, entryStream);
             }

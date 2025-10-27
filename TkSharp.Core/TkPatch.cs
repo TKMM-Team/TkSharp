@@ -100,7 +100,7 @@ public class TkPatch(string nsoBinaryId)
     {
         using StreamReader reader = new(stream);
 
-        if (reader.ReadLine() is not string firstLine) {
+        if (reader.ReadLine() is not { } firstLine) {
             return null;
         }
 
@@ -111,7 +111,7 @@ public class TkPatch(string nsoBinaryId)
         TkPatch patch = new(nsoBinaryId);
 
         var state = State.None;
-        while (reader.ReadLine() is string line) {
+        while (reader.ReadLine() is { } line) {
             if (state is State.Enabled) {
                 if (line.StartsWith(STOP_KEYWORD)) {
                     state = State.None;

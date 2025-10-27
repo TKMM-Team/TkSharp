@@ -16,7 +16,7 @@ public class TkCheat(string name) : Dictionary<string, uint[][]>
         List<uint[]> current = [];
 
         using StreamReader reader = new(input);
-        while (reader.ReadLine() is string ln) {
+        while (reader.ReadLine() is { } ln) {
             ReadOnlySpan<char> line = ln;
             if (line.Length == 0) {
                 continue;

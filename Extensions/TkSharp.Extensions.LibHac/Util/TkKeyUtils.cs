@@ -13,13 +13,13 @@ public static class TkKeyUtils
 
     public static bool TryGetKeys(string? sdCardRootPath, [MaybeNullWhen(false)] out KeySet keys)
     {
-        if (sdCardRootPath is not null && GetKeys(sdCardRootPath) is KeySet keysFromSdCard) {
+        if (sdCardRootPath is not null && GetKeys(sdCardRootPath) is { } keysFromSdCard) {
             keys = keysFromSdCard;
             return true;
         }
 
         foreach (string possibleKeyLocation in _possibleKeyLocations) {
-            if (!Directory.Exists(possibleKeyLocation) || GetKeysFromFolder(possibleKeyLocation) is not KeySet roamingKeys) {
+            if (!Directory.Exists(possibleKeyLocation) || GetKeysFromFolder(possibleKeyLocation) is not { } roamingKeys) {
                 continue;
             }
 

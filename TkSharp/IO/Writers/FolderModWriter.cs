@@ -11,7 +11,7 @@ public sealed class FolderModWriter(string outputModFolder) : ITkModWriter
     {
         string absolute = Path.Combine(_outputModFolder, _relativeRootFolder, filePath);
 
-        if (Path.GetDirectoryName(absolute) is string folder) {
+        if (Path.GetDirectoryName(absolute) is { } folder) {
             Directory.CreateDirectory(folder);
         }
 
