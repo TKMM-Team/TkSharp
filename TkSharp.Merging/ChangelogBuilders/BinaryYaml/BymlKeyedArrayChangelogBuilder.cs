@@ -16,12 +16,12 @@ public class BymlKeyedArrayChangelogBuilder(string key, string? secondaryKey = n
     public bool LogChanges(ref BymlTrackingInfo info, ref Byml root, BymlArray src, BymlArray vanilla)
     {
         BymlArrayChangelog changelog = [];
-        int detectedAdditions = 0;
+        var detectedAdditions = 0;
 
         var vanillaIndexMap = vanilla.CreateIndexCache(_key);
         using var vanillaRecordsFound = RentedBitArray.Create(vanilla.Count);
 
-        for (int i = 0; i < src.Count; i++) {
+        for (var i = 0; i < src.Count; i++) {
             var node = src[i];
             if (!_key.TryGetKey(node, out var key)) {
                 TkLog.Instance.LogWarning(
@@ -32,8 +32,8 @@ public class BymlKeyedArrayChangelogBuilder(string key, string? secondaryKey = n
                 continue;
             }
             
-            if (!vanillaIndexMap.TryGetValue(key, out int vanillaIndex)) {
-                int relativeIndex = i - detectedAdditions;
+            if (!vanillaIndexMap.TryGetValue(key, out var vanillaIndex)) {
+                var relativeIndex = i - detectedAdditions;
                 changelog.Add(((vanilla.Count > relativeIndex) switch {
                     true => relativeIndex, false => i
                 }, BymlChangeType.Add, node));
@@ -53,7 +53,7 @@ public class BymlKeyedArrayChangelogBuilder(string key, string? secondaryKey = n
             vanillaRecordsFound[vanillaIndex] = true;
         }
 
-        for (int i = 0; i < vanilla.Count; i++) {
+        for (var i = 0; i < vanilla.Count; i++) {
             if (vanillaRecordsFound[i]) {
                 continue;
             }

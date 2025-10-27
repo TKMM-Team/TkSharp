@@ -22,7 +22,7 @@ public class TkCheat(string name) : Dictionary<string, uint[][]>
                 continue;
             }
 
-            bool isKeyStart = line[0] is '[';
+            var isKeyStart = line[0] is '[';
 
         ReadKey:
             if (isKeyStart && key is null) {
@@ -51,7 +51,7 @@ public class TkCheat(string name) : Dictionary<string, uint[][]>
             List<uint> inLine = [];
             foreach (var range in line.Split(' ')) {
                 var hex = line[range];
-                if (hex.Length != 8 || !uint.TryParse(hex, NumberStyles.HexNumber, NumberFormatInfo.InvariantInfo, out uint value)) {
+                if (hex.Length != 8 || !uint.TryParse(hex, NumberStyles.HexNumber, NumberFormatInfo.InvariantInfo, out var value)) {
                     continue;
                 }
 
@@ -72,21 +72,21 @@ public class TkCheat(string name) : Dictionary<string, uint[][]>
 
     public static TkCheat FromBinary(Stream input)
     {
-        string name = input.ReadString()!;
+        var name = input.ReadString()!;
         TkCheat result = new(name);
 
-        int count = input.Read<int>();
+        var count = input.Read<int>();
 
-        for (int i = 0; i < count; i++) {
-            string key = input.ReadString()!;
-            int lineCount = input.Read<int>();
+        for (var i = 0; i < count; i++) {
+            var key = input.ReadString()!;
+            var lineCount = input.Read<int>();
 
             List<uint[]> lines = new(lineCount);
-            for (int ln = 0; ln < lineCount; ln++) {
-                int valueCount = input.Read<int>();
-                uint[] values = new uint[valueCount];
+            for (var ln = 0; ln < lineCount; ln++) {
+                var valueCount = input.Read<int>();
+                var values = new uint[valueCount];
 
-                for (int vi = 0; vi < valueCount; vi++) {
+                for (var vi = 0; vi < valueCount; vi++) {
                     values[vi] = input.Read<uint>();
                 }
 
@@ -101,9 +101,9 @@ public class TkCheat(string name) : Dictionary<string, uint[][]>
 
     public void WriteText(StreamWriter output)
     {
-        bool isFirst = true;
+        var isFirst = true;
         
-        foreach ((string key, uint[][] values) in this) {
+        foreach ((var key, var values) in this) {
             if (!isFirst) {
                 output.WriteLine();
             }
@@ -114,9 +114,9 @@ public class TkCheat(string name) : Dictionary<string, uint[][]>
             output.Write(key);
             output.WriteLine(']');
 
-            foreach (uint[] valuesInLine in values) {
+            foreach (var valuesInLine in values) {
                 Span<uint> valuesInLineSpan = valuesInLine;
-                foreach (uint value in valuesInLineSpan[..^1]) {
+                foreach (var value in valuesInLineSpan[..^1]) {
                     output.Write(value.ToString("X8"));
                     output.Write(' ');
                 }
@@ -131,13 +131,13 @@ public class TkCheat(string name) : Dictionary<string, uint[][]>
         output.WriteString(Name);
         output.Write(Count);
 
-        foreach ((string key, uint[][] values) in this) {
+        foreach ((var key, var values) in this) {
             output.WriteString(key);
             output.Write(values.Length);
 
-            foreach (uint[] valuesInLine in values) {
+            foreach (var valuesInLine in values) {
                 output.Write(valuesInLine.Length);
-                foreach (uint value in valuesInLine) {
+                foreach (var value in valuesInLine) {
                     output.Write(value);
                 }
             }

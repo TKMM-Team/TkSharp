@@ -9,13 +9,13 @@ public class BymlDirectIndexArrayChangelogBuilder : IBymlArrayChangelogBuilder
     
     public bool LogChanges(ref BymlTrackingInfo info, ref Byml root, BymlArray src, BymlArray vanilla)
     {
-        (bool isVanillaSmaller, var larger, var smaller) = (vanilla.Count < src.Count)
+        (var isVanillaSmaller, var larger, var smaller) = (vanilla.Count < src.Count)
             ? (true, src, vanilla)
             : (false, vanilla, src);
 
         BymlArrayChangelog changelog = [];
 
-        int i = 0;
+        var i = 0;
 
         for (; i < smaller.Count; i++) {
             var srcEntry = src[i];

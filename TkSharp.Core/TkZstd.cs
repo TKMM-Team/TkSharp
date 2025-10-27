@@ -39,7 +39,7 @@ public class TkZstd : IDisposable
             _compressionLevel = value;
             _defaultCompressor.Level = _compressionLevel;
 
-            foreach ((int _, var compressor) in _compressors) {
+            foreach ((var _, var compressor) in _compressors) {
                 compressor.Level = value;
             }
         }
@@ -73,8 +73,8 @@ public class TkZstd : IDisposable
 
     public byte[] Decompress(ReadOnlySpan<byte> data, out int zsDictionaryId)
     {
-        int size = GetDecompressedSize(data);
-        byte[] result = new byte[size];
+        var size = GetDecompressedSize(data);
+        var result = new byte[size];
         Decompress(data, result, out zsDictionaryId);
         return result;
     }
@@ -101,9 +101,9 @@ public class TkZstd : IDisposable
 
     public RentedBuffer<byte> Compress(ReadOnlySpan<byte> data, int zsDictionaryId = -1)
     {
-        int bounds = Compressor.GetCompressBound(data.Length);
+        var bounds = Compressor.GetCompressBound(data.Length);
         var result = RentedBuffer<byte>.Allocate(bounds);
-        int size = Compress(data, result.Span, zsDictionaryId);
+        var size = Compress(data, result.Span, zsDictionaryId);
         result.Resize(size);
         return result;
     }
@@ -130,7 +130,7 @@ public class TkZstd : IDisposable
             return false;
         }
         
-        bool result = stream.Read<uint>() == ZSTD_MAGIC;
+        var result = stream.Read<uint>() == ZSTD_MAGIC;
         stream.Seek(-sizeof(uint), SeekOrigin.Current);
         return result;
     }
@@ -150,9 +150,9 @@ public class TkZstd : IDisposable
 
     public static int GetDictionaryId(ReadOnlySpan<byte> buffer)
     {
-        byte descriptor = buffer[4];
-        int windowDescriptorSize = ((descriptor & 0b00100000) >> 5) ^ 0b1;
-        int dictionaryIdFlag = descriptor & 0b00000011;
+        var descriptor = buffer[4];
+        var windowDescriptorSize = ((descriptor & 0b00100000) >> 5) ^ 0b1;
+        var dictionaryIdFlag = descriptor & 0b00000011;
 
         return dictionaryIdFlag switch {
             0x0 => -1,
@@ -166,12 +166,12 @@ public class TkZstd : IDisposable
 
     private static int GetFrameContentSize(ReadOnlySpan<byte> buffer)
     {
-        byte descriptor = buffer[4];
-        int windowDescriptorSize = ((descriptor & 0b00100000) >> 5) ^ 0b1;
-        int dictionaryIdFlag = descriptor & 0b00000011;
-        int frameContentFlag = descriptor >> 6;
+        var descriptor = buffer[4];
+        var windowDescriptorSize = ((descriptor & 0b00100000) >> 5) ^ 0b1;
+        var dictionaryIdFlag = descriptor & 0b00000011;
+        var frameContentFlag = descriptor >> 6;
 
-        int offset = dictionaryIdFlag switch {
+        var offset = dictionaryIdFlag switch {
             0x0 => 5 + windowDescriptorSize,
             0x1 => 5 + windowDescriptorSize + 1,
             0x2 => 5 + windowDescriptorSize + 2,
@@ -191,9 +191,9 @@ public class TkZstd : IDisposable
 
     public void LoadDictionaries(in Stream stream)
     {
-        int size = Convert.ToInt32(stream.Length);
+        var size = Convert.ToInt32(stream.Length);
         using var buffer = SpanOwner<byte>.Allocate(size);
-        int read = stream.Read(buffer.Span);
+        var read = stream.Read(buffer.Span);
         Debug.Assert(size == read);
         LoadDictionaries(buffer.Span);
     }
@@ -203,7 +203,7 @@ public class TkZstd : IDisposable
         byte[]? decompressedBuffer = null;
 
         if (IsCompressed(data)) {
-            int decompressedSize = GetDecompressedSize(data);
+            var decompressedSize = GetDecompressedSize(data);
             decompressedBuffer = ArrayPool<byte>.Shared.Rent(decompressedSize);
             var decompressed = decompressedBuffer.AsSpan()[..decompressedSize];
             Decompress(data, decompressed, out _);
@@ -220,7 +220,7 @@ public class TkZstd : IDisposable
 
         RevrsReader reader = new(data);
         ImmutableSarc sarc = new(ref reader);
-        foreach ((string _, var sarcFileData) in sarc) {
+        foreach ((var _, var sarcFileData) in sarc) {
             TryLoadDictionary(sarcFileData);
         }
 

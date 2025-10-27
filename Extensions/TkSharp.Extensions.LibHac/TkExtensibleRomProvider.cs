@@ -30,7 +30,7 @@ public class TkExtensibleRomProvider : ITkRomProvider
 
     public ITkRom GetRom()
     {
-        if (TryGetRom(out _, out _, out string? error) is { } rom) {
+        if (TryGetRom(out _, out _, out var error) is { } rom) {
             return rom;
         }
 
@@ -43,15 +43,15 @@ public class TkExtensibleRomProvider : ITkRomProvider
         error = null;
         Func<ITkRom?> defaultValue = () => null;
 
-        _ = _config.PreferredVersion.Get(out string? preferredVersion);
+        _ = _config.PreferredVersion.Get(out var preferredVersion);
         
-        int? preferredVersionValue = int.TryParse(preferredVersion?.Replace(".", string.Empty), out int parsedVersionInline)
+        int? preferredVersionValue = int.TryParse(preferredVersion?.Replace(".", string.Empty), out var parsedVersionInline)
             ? parsedVersionInline
             : null;
 
         TkLog.Instance.LogDebug("[ROM *] Checking Extracted Game Dump");
         if (_config.ExtractedGameDumpFolderPath.Get(out var extractedGameDumpPaths)) {
-            if (GetPreferred(extractedGameDumpPaths, preferredVersionValue, out int version) is not { } extractedGameDumpPath) {
+            if (GetPreferred(extractedGameDumpPaths, preferredVersionValue, out var version) is not { } extractedGameDumpPath) {
                 error = TkLocalizationInterface.Locale["TkExtensibleRomProvider_InvalidGameDump"];
                 goto Continue;
             }
@@ -130,14 +130,14 @@ public class TkExtensibleRomProvider : ITkRomProvider
 
     private KeySet? TryGetKeys()
     {
-        if (_config.KeysFolder.Get(out string? keysFolder)) {
+        if (_config.KeysFolder.Get(out var keysFolder)) {
             TkLog.Instance.LogDebug("[ROM *] Looking for Keys in {KeysFolder}", keysFolder);
             if (TkKeyUtils.GetKeysFromFolder(keysFolder) is { } keyFromFolder) {
                 return keyFromFolder;
             }
         }
 
-        if (_config.SdCard.Get(out string? sdCardFolder)) {
+        if (_config.SdCard.Get(out var sdCardFolder)) {
             TkLog.Instance.LogDebug("[ROM *] Looking for Keys in SD card '{SdCard}'", sdCardFolder);
             if (TkKeyUtils.TryGetKeys(sdCardFolder, out var keyFromSdCard)) {
                 return keyFromSdCard;
@@ -162,7 +162,7 @@ public class TkExtensibleRomProvider : ITkRomProvider
             return null;
         }
 
-        foreach ((string label, var switchFs) in collected) {
+        foreach ((var label, var switchFs) in collected) {
             if (!switchFs.Applications.TryGetValue(TkGameRomUtils.EX_KING_APP_ID, out var totk)) {
                 TkLog.Instance.LogDebug("[ROM *] TotK missing in {Label}", label);
                 continue;
@@ -210,7 +210,7 @@ public class TkExtensibleRomProvider : ITkRomProvider
         foundVersion = -1;
 
         if (preferredVersion is not { } version) {
-            foreach (string path in extractedGameDumpPaths) {
+            foreach (var path in extractedGameDumpPaths) {
                 if (TkGameDumpUtils.CheckGameDump(path, out _, out foundVersion)) {
                     return path;
                 }
@@ -220,7 +220,7 @@ public class TkExtensibleRomProvider : ITkRomProvider
         }
 
         string? result = null;
-        foreach (string gameDumpPath in extractedGameDumpPaths) {
+        foreach (var gameDumpPath in extractedGameDumpPaths) {
             if (!TkGameDumpUtils.CheckGameDump(gameDumpPath, out _, out foundVersion)) {
                 continue;
             }

@@ -19,7 +19,7 @@ internal static class TkModManagerSerializer
         TkLookupContext lookup = new();
 
         output.Write(manager.Mods.Count);
-        for (int i = 0; i < manager.Mods.Count; i++) {
+        for (var i = 0; i < manager.Mods.Count; i++) {
             var mod = manager.Mods[i];
             TkBinaryWriter.WriteTkMod(output, mod, lookup);
             lookup.Mods[mod] = i;
@@ -52,26 +52,26 @@ internal static class TkModManagerSerializer
             throw new InvalidDataException("Invalid mod manager version, expected 1.1.0.");
         }
 
-        int modCount = input.Read<int>();
-        for (int i = 0; i < modCount; i++) {
+        var modCount = input.Read<int>();
+        for (var i = 0; i < modCount; i++) {
             manager.Mods.Add(
                 TkBinaryReader.ReadTkMod(new TkModContext(), input, manager, systemVersion)
             );
         }
         
-        int profileCount = input.Read<int>();
-        for (int i = 0; i < profileCount; i++) {
+        var profileCount = input.Read<int>();
+        for (var i = 0; i < profileCount; i++) {
             manager.Profiles.Add(
                 TkBinaryReader.ReadTkProfile(input, manager.Mods)
             );
         }
         
-        int selectedModIndex = input.Read<int>();
+        var selectedModIndex = input.Read<int>();
         if (selectedModIndex > -1) {
             manager.Selected = manager.Mods[selectedModIndex];
         }
         
-        int currentProfileIndex = input.Read<int>();
+        var currentProfileIndex = input.Read<int>();
         if (currentProfileIndex > -1) {
             manager.CurrentProfile = manager.Profiles[currentProfileIndex];
         }

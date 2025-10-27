@@ -26,11 +26,11 @@ internal struct TkExtensibleRomConfig
 
     private static bool CheckPackagedFile(IEnumerable<string> values, KeySet keys, SwitchFsContainer? switchFsContainer)
     {
-        bool result = false;
-        bool hasUpdate = false;
+        var result = false;
+        var hasUpdate = false;
 
-        foreach (string path in values) {
-            result = TkGameRomUtils.IsValid(keys, path, out bool hasUpdateInline, switchFsContainer);
+        foreach (var path in values) {
+            result = TkGameRomUtils.IsValid(keys, path, out var hasUpdateInline, switchFsContainer);
             if (!hasUpdate) hasUpdate = hasUpdateInline;
         }
         
@@ -39,17 +39,17 @@ internal struct TkExtensibleRomConfig
 
     private static bool CheckSdCard(string value, KeySet keys, SwitchFsContainer? switchFsContainer)
     {
-        bool result = TkSdCardUtils.CheckSdCard(keys, value, out bool hasUpdate, switchFsContainer);
+        var result = TkSdCardUtils.CheckSdCard(keys, value, out var hasUpdate, switchFsContainer);
         return result || hasUpdate;
     }
 
     private static bool CheckNandFolder(IEnumerable<string> values, KeySet keys, SwitchFsContainer? switchFsContainer)
     {
-        bool result = false;
-        bool hasUpdate = false;
+        var result = false;
+        var hasUpdate = false;
 
-        foreach (string path in values) {
-            result = TkNandUtils.IsValid(keys, path, out bool hasUpdateInline, switchFsContainer);
+        foreach (var path in values) {
+            result = TkNandUtils.IsValid(keys, path, out var hasUpdateInline, switchFsContainer);
             if (!hasUpdate) hasUpdate = hasUpdateInline;
         }
 

@@ -42,7 +42,7 @@ public sealed class TkResourceSizeCollector
         
         using var compressed = SpanOwner<byte>.Allocate(buffer.Count);
         var compressedData = compressed.Span;
-        int compressedSize = _rom.Zstd.Compress(buffer, compressedData);
+        var compressedSize = _rom.Zstd.Compress(buffer, compressedData);
 
         using var output = _writer.OpenWrite(Path.Combine("romfs", _relativePath));
         output.Write(compressedData[..compressedSize]);
@@ -50,7 +50,7 @@ public sealed class TkResourceSizeCollector
 
     public void Collect(int fileSize, string path, in Span<byte> data)
     {
-        string canonical = GetResourceName(path);
+        var canonical = GetResourceName(path);
         var extension = GetResourceExtension(path);
         
         if (canonical is "Pack/ZsDic.pack" || extension is ".rsizetable" or ".bwav" or ".webm") {
@@ -59,7 +59,7 @@ public sealed class TkResourceSizeCollector
 
         fileSize += fileSize.AlignUp(0x20);
         
-        uint size = GetResourceSize(
+        var size = GetResourceSize(
             (uint)fileSize,
             canonical,
             extension,
@@ -73,7 +73,7 @@ public sealed class TkResourceSizeCollector
             return;
         }
 
-        uint hash = Crc32.Compute(canonical);
+        var hash = Crc32.Compute(canonical);
         lock (_result) {
             if (_result.HashTable.TryAdd(hash, size)) {
                 return;
@@ -177,20 +177,20 @@ public sealed class TkResourceSizeCollector
     [Pure]
     private static unsafe string GetResourceName(ReadOnlySpan<char> path)
     {
-        int size = path.Length switch {
+        var size = path.Length switch {
             > 3 when path[^3..] is ".zs" or ".mc" => path.Length - 3,
             _ => path.Length
         };
         
-        string result = path[..size].ToString();
+        var result = path[..size].ToString();
         Span<char> canonical;
 
         fixed (char* ptr = result) {
             canonical = new Span<char>(ptr, size);
         }
 
-        for (int i = 0; i < size; i++) {
-            ref char @char = ref canonical[i];
+        for (var i = 0; i < size; i++) {
+            ref var @char = ref canonical[i];
             @char = @char switch {
                 '\\' => '/',
                 _ => @char

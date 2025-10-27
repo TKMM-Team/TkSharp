@@ -65,7 +65,7 @@ public class TkChangelogBuilder(
 
     public TkChangelog Build()
     {
-        foreach ((string file, object entry) in _source.Files) {
+        foreach ((var file, var entry) in _source.Files) {
             BuildTarget(file, entry);
         }
 
@@ -75,12 +75,12 @@ public class TkChangelogBuilder(
 
     private void BuildTarget(string file, object entry)
     {
-        var path = TkPath.FromPath(file, _source.PathToRoot, out bool isInvalid);
+        var path = TkPath.FromPath(file, _source.PathToRoot, out var isInvalid);
         if (isInvalid) {
             return;
         }
 
-        string canonical = path.Canonical.ToString();
+        var canonical = path.Canonical.ToString();
 
         using var content = _source.OpenRead(entry);
 
@@ -118,7 +118,7 @@ public class TkChangelogBuilder(
         goto Build;
 
     Copy:
-        string outputFilePath = Path.Combine(path.Root.ToString(), canonical);
+        var outputFilePath = Path.Combine(path.Root.ToString(), canonical);
         // ReSharper disable once ConvertToUsingDeclaration
         using (var output = _writer.OpenWrite(outputFilePath)) {
             content.CopyTo(output);
@@ -146,13 +146,13 @@ public class TkChangelogBuilder(
         using var raw = RentedBuffer<byte>.Allocate(content);
         _ = content.Read(raw.Span);
 
-        bool isZsCompressed = TkZstd.IsCompressed(raw.Span);
+        var isZsCompressed = TkZstd.IsCompressed(raw.Span);
 
         using var decompressed = isZsCompressed
             ? RentedBuffer<byte>.Allocate(TkZstd.GetDecompressedSize(raw.Span))
             : default;
 
-        int zsDictionaryId = -1;
+        var zsDictionaryId = -1;
         if (isZsCompressed) {
             _tk.Zstd.Decompress(raw.Span, decompressed.Span, out zsDictionaryId);
         }
@@ -177,7 +177,7 @@ public class TkChangelogBuilder(
         }
 
         var parentAttributes = path.Attributes;
-        bool isVanilla = !builder.Build(canonical, path, flags, decompressed.IsEmpty ? raw.Segment : decompressed.Segment, vanilla.Segment,
+        var isVanilla = !builder.Build(canonical, path, flags, decompressed.IsEmpty ? raw.Segment : decompressed.Segment, vanilla.Segment,
             (path, canon, archiveCanon, type) => {
                 if (Path.GetFileName(canon).IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) {
                     TkLog.Instance.LogWarning("The target '{FileName}' was ignored due to incorrect characters in the file name", canon);
@@ -187,7 +187,7 @@ public class TkChangelogBuilder(
                 AddChangelogMetadata(path, ref canon, type, zsDictionaryId, path.FileVersion,
                     // Force the parent attributes onto the entry for all parent archives
                     archiveCanon, archiveCanon is not null ? parentAttributes : null);
-                string outputFile = Path.Combine(path.Root.ToString(), canon);
+                var outputFile = Path.Combine(path.Root.ToString(), canon);
                 return _writer.OpenWrite(outputFile);
             });
         builder.Dispose();
@@ -207,7 +207,7 @@ public class TkChangelogBuilder(
                 $"Target file {canonical} cannot be merged as a custom file because no changelog builder could be found.");
         }
 
-        int index = -1;
+        var index = -1;
         var result = new ArraySegment<byte>[changelogs.Count];
 
         foreach (var entry in changelogs) {
@@ -235,7 +235,7 @@ public class TkChangelogBuilder(
             return;
         }
 
-        ref var entry = ref CollectionsMarshal.GetValueRefOrAddDefault(_entries, canonical, out bool exists);
+        ref var entry = ref CollectionsMarshal.GetValueRefOrAddDefault(_entries, canonical, out var exists);
         if (!exists || entry is null) {
             entry = new TkChangelogEntry(
                 canonical, type, archiveAttributes ?? path.Attributes, zsDictionaryId

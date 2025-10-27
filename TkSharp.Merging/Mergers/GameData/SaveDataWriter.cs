@@ -45,25 +45,25 @@ public static class SaveDataWriter
 
     public static void CalculateMetadata(BymlMap metaData, BymlMap tables)
     {   
-        int[] saveDataOffsets = new int[7];
-        int[] saveDataSizes = new int[7];
+        var saveDataOffsets = new int[7];
+        var saveDataSizes = new int[7];
 
         Metadata metaDataStore = new(saveDataOffsets, saveDataSizes);
 
         var saveDirectories = metaData["SaveDirectory"]
             .GetArray();
 
-        foreach (string tableName in ValidTables) {
+        foreach (var tableName in ValidTables) {
             CalculateTableMetadata(ref metaDataStore,
                 tableName, tables.GetValueOrDefault(tableName)?.Value as BymlArray,
                 saveDirectories);
         }
 
-        for (int i = 0; i < 7; i++) {
-            ref int saveDataOffset = ref saveDataOffsets[i];
+        for (var i = 0; i < 7; i++) {
+            ref var saveDataOffset = ref saveDataOffsets[i];
             if (saveDataOffset > 0) saveDataOffset += DEFAULT_SIZE;
 
-            ref int saveDataSize = ref saveDataSizes[i];
+            ref var saveDataSize = ref saveDataSizes[i];
             if (saveDataSize > 0) saveDataSize += DEFAULT_SIZE;
         }
 
@@ -79,8 +79,8 @@ public static class SaveDataWriter
             return;
         }
         
-        bool isBool64BitKey = tableName is "Bool64bitKey";
-        bool isArrayTable = tableName.Length > 5 && tableName.AsSpan()[^5..] is "Array";
+        var isBool64BitKey = tableName is "Bool64bitKey";
+        var isArrayTable = tableName.Length > 5 && tableName.AsSpan()[^5..] is "Array";
 
         foreach (var entry in table.Select(x => x.GetMap())) {
             if (!entry.TryGetValue("SaveFileIndex", out var saveFileIndexEntry) || saveFileIndexEntry.Value is not int saveFileIndex) {
@@ -97,8 +97,8 @@ public static class SaveDataWriter
                 continue;
             }
 
-            ref int offset = ref metadata.SaveDataOffsets[saveFileIndex];
-            ref int size = ref metadata.SaveDataSizes[saveFileIndex];
+            ref var offset = ref metadata.SaveDataOffsets[saveFileIndex];
+            ref var size = ref metadata.SaveDataSizes[saveFileIndex];
 
             if (!isBool64BitKey) {
                 offset += 8;
@@ -106,7 +106,7 @@ public static class SaveDataWriter
                 goto CalculateEntry;
             }
 
-            ref bool hasSizeBeenUpdated = ref metadata.SaveDataSizesHasKey[saveFileIndex];
+            ref var hasSizeBeenUpdated = ref metadata.SaveDataSizesHasKey[saveFileIndex];
             if (!hasSizeBeenUpdated) {
                 size += 8;
                 metadata.AllDataSaveSize += 8;
@@ -114,7 +114,7 @@ public static class SaveDataWriter
             }
 
         CalculateEntry:
-            int entrySize = CalculateEntrySize(tableName, entry, isArrayTable);
+            var entrySize = CalculateEntrySize(tableName, entry, isArrayTable);
             size += entrySize;
             metadata.AllDataSaveSize += entrySize;
         }
@@ -122,7 +122,7 @@ public static class SaveDataWriter
 
     private static int CalculateEntrySize(string tableName, BymlMap entry, bool isArrayTable)
     {
-        (int entryCount, int entrySize, var tableTypeMask) = isArrayTable switch {
+        (var entryCount, var entrySize, var tableTypeMask) = isArrayTable switch {
             true => (GetArrayCount(tableName, entry), 0xC, ..^5),
             false => (1, 0x8, ..)
         };

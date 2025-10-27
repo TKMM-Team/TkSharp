@@ -52,8 +52,8 @@ public static class DownloadHelper
             ? new ThreadedDownloadStrategy(Client)
             : new SimpleDownloadStrategy(Client);
 
-        int maxRetry = Config.MaxRetries;
-        int attempt = 0;
+        var maxRetry = Config.MaxRetries;
+        var attempt = 0;
         
         byte[] data;
         byte[] hash;

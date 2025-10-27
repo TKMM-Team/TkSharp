@@ -18,11 +18,11 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
     {
         BymlMap changelog = [];
         var src = Byml.FromBinary(srcBuffer).GetMap()["Data"].GetMap();
-        var vanilla = Byml.FromBinary(vanillaBuffer, out var endianness, out ushort version).GetMap()["Data"].GetMap();
+        var vanilla = Byml.FromBinary(vanillaBuffer, out var endianness, out var version).GetMap()["Data"].GetMap();
 
         BymlTrackingInfo bymlTrackingInfo = new(path.Canonical, 0);
 
-        foreach ((string tableName, var srcEntry) in src) {
+        foreach ((var tableName, var srcEntry) in src) {
             var entries = srcEntry.GetArray();
             var vanillaEntries = vanilla[tableName].GetArray();
 
@@ -39,7 +39,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
                 _ => GameDataArrayChangelogBuilderProvider.Instance
             };
 
-            ulong tableNameHash = XxHash3.HashToUInt64(
+            var tableNameHash = XxHash3.HashToUInt64(
                 tableName.AsSpan().Cast<char, byte>());
             if (LogEntries(ref bymlTrackingInfo, path.FileVersion, tableNameHash, entries, vanillaEntries, arrayChangelogBuilderProvider) is { Count: > 0 } logResult) {
                 changelog[tableName] = logResult;
@@ -64,14 +64,14 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
     {
         BymlHashMap32 changelog = [];
 
-        for (int i = 0; i < src.Count; i++) {
+        for (var i = 0; i < src.Count; i++) {
             var srcEntry = src[i];
             var entry = srcEntry.GetMap();
             if (!entry.TryGetValue("Hash", out var hashEntry) || hashEntry.Value is not uint hash) {
                 continue;
             }
 
-            if (!GameDataIndex.TryGetIndex(gameDataListFileVersion, tableNameHash, hash, out int index)) {
+            if (!GameDataIndex.TryGetIndex(gameDataListFileVersion, tableNameHash, hash, out var index)) {
                 src.RemoveAt(i);
                 i--;
                 goto UpdateChangelog;
@@ -106,7 +106,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
                 continue;
             }
 
-            if (!GameDataIndex.TryGetIndex(gameDataListFileVersion, hash, out int index)) {
+            if (!GameDataIndex.TryGetIndex(gameDataListFileVersion, hash, out var index)) {
                 goto UpdateChangelog;
             }
 

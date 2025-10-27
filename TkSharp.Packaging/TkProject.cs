@@ -62,13 +62,13 @@ public partial class TkProject(string folderPath) : ObservableObject
         Mod.Changelog = await Build(Mod, source, writer, rom, systemSource, flags, ct);
 
         foreach (var option in Mod.OptionGroups.SelectMany(group => group.Options)) {
-            if (!TryGetPath(option, out string? optionPath)) {
+            if (!TryGetPath(option, out var optionPath)) {
                 continue;
             }
 
             FolderModSource optionSource = new(optionPath);
 
-            string id = option.Id.ToString();
+            var id = option.Id.ToString();
             writer.SetRelativeFolder(id);
             option.Changelog = await Build(
                 option, optionSource, writer, rom, systemSource?.GetRelative(id), flags, ct);
@@ -93,7 +93,7 @@ public partial class TkProject(string folderPath) : ObservableObject
     public void Save()
     {
         Directory.CreateDirectory(FolderPath);
-        string projectFilePath = Path.Combine(FolderPath, ".tkproj");
+        var projectFilePath = Path.Combine(FolderPath, ".tkproj");
         using var output = File.Create(projectFilePath);
         JsonSerializer.Serialize(output, this);
 
@@ -103,11 +103,11 @@ public partial class TkProject(string folderPath) : ObservableObject
     private void SaveOptionsGroups()
     {
         foreach (var group in Mod.OptionGroups) {
-            if (!TryGetPath(group, out string? groupFolderPath)) {
+            if (!TryGetPath(group, out var groupFolderPath)) {
                 continue;
             }
 
-            string metadataFilePath = Path.Combine(groupFolderPath, "info.json");
+            var metadataFilePath = Path.Combine(groupFolderPath, "info.json");
             using var fs = File.Create(metadataFilePath);
             JsonSerializer.Serialize(fs, group);
 
@@ -118,11 +118,11 @@ public partial class TkProject(string folderPath) : ObservableObject
     private void SaveOptions(TkModOptionGroup group)
     {
         foreach (var option in group.Options) {
-            if (!TryGetPath(option, out string? optionPath)) {
+            if (!TryGetPath(option, out var optionPath)) {
                 continue;
             }
 
-            string metadataFilePath = Path.Combine(optionPath, "info.json");
+            var metadataFilePath = Path.Combine(optionPath, "info.json");
             using var fs = File.Create(metadataFilePath);
             JsonSerializer.Serialize(fs, option);
         }
@@ -135,7 +135,7 @@ public partial class TkProject(string folderPath) : ObservableObject
 
     public bool TryGetPath(TkItem item, [MaybeNullWhen(false)] out string path)
     {
-        if (_itemPathLookup.TryGetValue(item, out string? folderPath) && Directory.Exists(folderPath)) {
+        if (_itemPathLookup.TryGetValue(item, out var folderPath) && Directory.Exists(folderPath)) {
             path = folderPath;
             return true;
         }
@@ -200,11 +200,11 @@ public partial class TkProject(string folderPath) : ObservableObject
             return;
         }
 
-        string thumbnailFilePath = Path.Combine("img", Ulid.NewUlid().ToString());
+        var thumbnailFilePath = Path.Combine("img", Ulid.NewUlid().ToString());
         item.Thumbnail.RelativeThumbnailPath = thumbnailFilePath;
 
         using var fs = File.OpenRead(item.Thumbnail.ThumbnailPath);
-        int size = (int)fs.Length;
+        var size = (int)fs.Length;
         using var buffer = SpanOwner<byte>.Allocate(size);
         fs.ReadExactly(buffer.Span);
 
@@ -239,12 +239,12 @@ public partial class TkProject(string folderPath) : ObservableObject
         Mod.Changelog = await builder.BuildAsync(ct);
 
         foreach (var option in Mod.OptionGroups.SelectMany(group => group.Options)) {
-            if (!TryGetPath(option, out string? optionPath)) {
+            if (!TryGetPath(option, out var optionPath)) {
                 continue;
             }
 
             FolderModSource optionSource = new(optionPath);
-            string id = option.Id.ToString();
+            var id = option.Id.ToString();
             writer.SetRelativeFolder(id);
 
             TkChangelogBuilder optionBuilder = new(optionSource, writer, nullRom,

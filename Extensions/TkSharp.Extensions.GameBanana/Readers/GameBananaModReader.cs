@@ -23,7 +23,7 @@ public sealed class GameBananaModReader(ITkModReaderProvider readerProvider) : I
             return null;
         }
 
-        if (!GbUrlHelper.TryGetId(arg, out long id)) {
+        if (!GbUrlHelper.TryGetId(arg, out var id)) {
             return null;
         }
 
@@ -117,7 +117,7 @@ public sealed class GameBananaModReader(ITkModReaderProvider readerProvider) : I
             Unsafe.As<Int128, Ulid>(ref fileIdAsInt)
         );
 
-        byte[] data = await DownloadHelper.DownloadAndVerify(
+        var data = await DownloadHelper.DownloadAndVerify(
             fileUrl, Convert.FromHexString(target.Checksum), ct: ct);
 
         await using MemoryStream ms = new(data);

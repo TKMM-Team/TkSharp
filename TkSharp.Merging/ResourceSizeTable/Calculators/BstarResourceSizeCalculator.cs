@@ -10,7 +10,7 @@ public sealed class BstarResourceSizeCalculator : ITkResourceSizeCalculator
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static uint GetResourceSize(in Span<byte> data)
     {
-        uint entryCount = data[0x8..0xC].Read<uint>();
+        var entryCount = data[0x8..0xC].Read<uint>();
         return 0x120 + entryCount * 8;
     }
 }

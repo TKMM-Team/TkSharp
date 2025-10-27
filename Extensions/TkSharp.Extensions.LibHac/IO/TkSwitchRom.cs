@@ -44,7 +44,7 @@ internal sealed class TkSwitchRom : ITkRom
 
         using (var regionLangMaskFs = _fileSystem.OpenFileStream("/System/RegionLangMask.txt"))
         using (var regionLangMask = RentedBuffer<byte>.Allocate(regionLangMaskFs)) {
-            GameVersion = RegionLangMaskParser.ParseVersion(regionLangMask.Span, out string nsoBinaryId);
+            GameVersion = RegionLangMaskParser.ParseVersion(regionLangMask.Span, out var nsoBinaryId);
             NsoBinaryId = nsoBinaryId;
         }
 
@@ -95,7 +95,7 @@ internal sealed class TkSwitchRom : ITkRom
             return _packFileLookup.GetNested(relativeFilePath, this, out isFoundMissing);
         }
 
-        file.Get.GetSize(out long size);
+        file.Get.GetSize(out var size);
         var rawBuffer = RentedBuffer<byte>.Allocate((int)size);
         var raw = rawBuffer.Span;
         file.Get.Read(out _, offset: 0, raw);

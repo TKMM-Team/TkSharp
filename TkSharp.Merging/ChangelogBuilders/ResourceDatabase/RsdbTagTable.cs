@@ -21,8 +21,8 @@ public class RsdbTagTable
         Span<byte> bitTable = root[BIT_TABLE].GetBinary();
         _rankTable = root[RANK_TABLE].GetBinary();
 
-        for (int i = 0; i < paths.Count; i++) {
-            int entryIndex = i / 3;
+        for (var i = 0; i < paths.Count; i++) {
+            var entryIndex = i / 3;
             var key = (
                 paths[i].GetString(), paths[++i].GetString(), paths[++i].GetString()
             );
@@ -73,11 +73,11 @@ public class RsdbTagTable
     {
         T entryTags = [];
 
-        int index = entryIndex * tags.Count;
-        int bitOffset = index % 8;
+        var index = entryIndex * tags.Count;
+        var bitOffset = index % 8;
 
         fixed (byte* ptr = &bitTable[index / 8]) {
-            byte* current = ptr;
+            var current = ptr;
 
             foreach (var tagEntry in tags) {
                 if ((*current >> bitOffset & 1) == 1) {

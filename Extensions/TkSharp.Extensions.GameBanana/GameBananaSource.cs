@@ -18,7 +18,7 @@ public sealed partial class GameBananaSource(int gameId) : ObservableObject, IGa
     
     public async ValueTask LoadPage(int page, string? searchTerm = null, CancellationToken ct = default)
     {
-        string sort = SortMode.ToString().ToLower();
+        var sort = SortMode.ToString().ToLower();
         Feed = new GameBananaFeed();
         await GameBanana.FillFeed(Feed, _gameId, page, sort, searchTerm, ct);
         await FilterRecords(Feed, ct);
@@ -27,7 +27,7 @@ public sealed partial class GameBananaSource(int gameId) : ObservableObject, IGa
 
     private static async ValueTask FilterRecords(GameBananaFeed feed, CancellationToken ct)
     {
-        for (int i = 0; i < feed.Records.Count; i++) {
+        for (var i = 0; i < feed.Records.Count; i++) {
             var record = feed.Records[i];
             await record.DownloadFullMod(ct);
             
@@ -35,7 +35,7 @@ public sealed partial class GameBananaSource(int gameId) : ObservableObject, IGa
                 break;
             }
 
-            bool isRecordClean = record is {
+            var isRecordClean = record is {
                 Full: {
                     IsTrashed: false, IsFlagged: false, IsPrivate: false
                 },

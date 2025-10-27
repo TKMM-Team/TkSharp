@@ -20,7 +20,7 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
     {
         foreach (var packFile in _cache.GroupBy(x => x.Key, x => x)) {
             var key = packFile.Key;
-            string relativePath = rom.CanonicalToRelativePath(key.ArchiveCanonical, key.Attributes);
+            var relativePath = rom.CanonicalToRelativePath(key.ArchiveCanonical, key.Attributes);
 
             if (_trackedArchives.TryGetValue(key.ArchiveCanonical, out var trackedSarc)) {
                 WritePackFile(trackedSarc, relativePath, key, packFile);
@@ -41,7 +41,7 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
         IEnumerable<PackFileEntry> entries)
     {
         foreach (var entry in entries) {
-            string name = entry.Changelog.Canonical;
+            var name = entry.Changelog.Canonical;
             if (sarc.TryGetValue(name, out var entryData) && PackMerger.IsRemovedEntry(entryData)) {
                 sarc.Remove(name);
                 continue;
@@ -74,7 +74,7 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
 
     public void Collect(TkChangelogEntry changelog, Stream input)
     {
-        foreach (string archiveCanonical in changelog.RuntimeArchiveCanonicals) {
+        foreach (var archiveCanonical in changelog.RuntimeArchiveCanonicals) {
             _cache.Add(new PackFileEntry(
                 new PackFileEntryKey(archiveCanonical, changelog.Attributes, changelog.ZsDictionaryId),
                 changelog, input)
@@ -84,7 +84,7 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
 
     public void Collect(TkChangelogEntry changelog, byte[] input)
     {
-        foreach (string archiveCanonical in changelog.RuntimeArchiveCanonicals) {
+        foreach (var archiveCanonical in changelog.RuntimeArchiveCanonicals) {
             _cache.Add(new PackFileEntry(
                 new PackFileEntryKey(archiveCanonical, changelog.Attributes, changelog.ZsDictionaryId),
                 changelog, null, input)

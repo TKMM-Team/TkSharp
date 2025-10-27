@@ -14,7 +14,7 @@ public static class TkNandUtils
 
     internal static bool IsValid(KeySet keys, string nandFolderPath, out bool hasUpdate, SwitchFsContainer? switchFsContainer)
     {
-        string systemContents = Path.Combine(nandFolderPath, "user", "Contents", "registered");
+        var systemContents = Path.Combine(nandFolderPath, "user", "Contents", "registered");
         if (!Directory.Exists(systemContents)) {
             hasUpdate = false;
             return false;
@@ -29,7 +29,7 @@ public static class TkNandUtils
         LayeredFileSystem fs = new(sources);
 
         var switchFs = SwitchFs.OpenNcaDirectory(keys, fs);
-        bool result = TkGameRomUtils.IsValid(switchFs, out hasUpdate);
+        var result = TkGameRomUtils.IsValid(switchFs, out hasUpdate);
 
         if (switchFsContainer is not null) {
             foreach (var disposable in sources) {

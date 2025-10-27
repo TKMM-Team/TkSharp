@@ -39,7 +39,7 @@ internal struct TkExtensibleConfig<T>(TkExtensibleConfigType type, TkConfigValid
         
         result = _value();
 
-        bool isValid = result is not null && _type switch {
+        var isValid = result is not null && _type switch {
             TkExtensibleConfigType.File when result is string filePath
                 => File.Exists(filePath),
             TkExtensibleConfigType.Folder when result is string folderPath

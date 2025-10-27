@@ -32,35 +32,35 @@ public interface ITkRom : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     string CanonicalToRelativePath(string canonical, TkFileAttributes attributes)
     {
-        string result = AddressTable.TryGetValue(canonical, out string? address)
+        var result = AddressTable.TryGetValue(canonical, out var address)
             ? address
             : canonical;
 
         var canon = result.AsSpan();
 
-        if (canon.Length > 3 && canon[..3] is AI_FOLDER && AiVersions.TryGetValue(canon, out string? aiVersionFile)) {
+        if (canon.Length > 3 && canon[..3] is AI_FOLDER && AiVersions.TryGetValue(canon, out var aiVersionFile)) {
             result = aiVersionFile;
             goto ProcessFlags;
         }
         
         if (canon.Length > 26 && canon[..15] is EVENT_FLOW_FOLDER && canon[16..^7] is var eventFlowName
-            && EventFlowVersions.TryGetValue(eventFlowName, out string? version)) {
+            && EventFlowVersions.TryGetValue(eventFlowName, out var version)) {
             result = $"{EVENT_FLOW_FOLDER}/{eventFlowName}.{version}{Path.GetExtension(canon)}";
             goto ProcessFlags;
         }
 
         if (attributes.HasFlag(TkFileAttributes.IsProductFile) && canon.Length > 37 && canon[..6] is EFFECT_FOLDER
-            && canon[7..^30] is var effectName && EffectVersions.TryGetValue(effectName, out string? effectFileName)) {
+            && canon[7..^30] is var effectName && EffectVersions.TryGetValue(effectName, out var effectFileName)) {
             result = $"{EFFECT_FOLDER}/{effectFileName}.Product.Nin_NX_NVN.esetb.byml";
             goto ProcessFlags;
         }
 
-        if (canon.Length > 9 && canon[..9] is SEQUENCE_FOLDER && SequenceVersions.TryGetValue(canon, out string? sequenceVersionFile)) {
+        if (canon.Length > 9 && canon[..9] is SEQUENCE_FOLDER && SequenceVersions.TryGetValue(canon, out var sequenceVersionFile)) {
             result = sequenceVersionFile;
             goto ProcessFlags;
         }
 
-        if (canon.Length > 6 && canon[..6] is LOGIC_FOLDER && LogicVersions.TryGetValue(canon, out string? logicVersionFile)) {
+        if (canon.Length > 6 && canon[..6] is LOGIC_FOLDER && LogicVersions.TryGetValue(canon, out var logicVersionFile)) {
             result = logicVersionFile;
         }
 

@@ -10,7 +10,7 @@ public static class BinaryExtensions
 {
     public static string? ReadString(this Stream input)
     {
-        int length = input.Read<int>();
+        var length = input.Read<int>();
 
         return length switch {
             -1 => null,
@@ -32,7 +32,7 @@ public static class BinaryExtensions
     
     public static string ReadString(this Stream input, Span<byte> dstBuffer)
     {
-        int read = input.Read(dstBuffer);
+        var read = input.Read(dstBuffer);
         Debug.Assert(read == dstBuffer.Length);
         return Encoding.UTF8.GetString(dstBuffer);
     }
@@ -55,7 +55,7 @@ public static class BinaryExtensions
 
     public static void WriteString(this Stream output, in ReadOnlySpan<char> value)
     {
-        int byteCount = Encoding.UTF8.GetByteCount(value);
+        var byteCount = Encoding.UTF8.GetByteCount(value);
         output.Write(byteCount);
 
         if (byteCount < 64) {

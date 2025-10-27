@@ -89,12 +89,12 @@ public sealed class TkMerger
 
     public void MergeTarget(TkChangelogEntry changelog, Either<(ITkMerger, Stream[]), Stream> target)
     {
-        string relativeFilePath = changelog.RuntimeArchiveCanonicals.Count > 0
+        var relativeFilePath = changelog.RuntimeArchiveCanonicals.Count > 0
             ? _rom.CanonicalToRelativePath(changelog.Canonical, TkFileAttributes.None)
             : _rom.CanonicalToRelativePath(changelog.Canonical, changelog.Attributes);
 
         if (target.Case is (ITkMerger _, Stream[] { Length: 0 }) or null) {
-            if (_rom.GetVanilla(relativeFilePath, out bool isFoundMissing) is { IsEmpty: false } vanilla) {
+            if (_rom.GetVanilla(relativeFilePath, out var isFoundMissing) is { IsEmpty: false } vanilla) {
                 CopyVanillaPlaceholderToOutput(vanilla, changelog);
                 vanilla.Dispose();
                 return;
@@ -115,7 +115,7 @@ public sealed class TkMerger
                 // TODO: It would be more efficient to avoid
                 // GetVanilla on nested files. Checking loaded
                 // pack files first would be optimal. 
-                using var vanilla = _rom.GetVanilla(relativeFilePath, out bool isFoundMissing);
+                using var vanilla = _rom.GetVanilla(relativeFilePath, out var isFoundMissing);
                 
                 if (isFoundMissing) {
                     TkLog.Instance.LogWarning(
@@ -135,7 +135,7 @@ public sealed class TkMerger
 
             }
             case (ITkMerger merger, Stream[] { Length: 1 } streams): {
-                using var vanilla = _rom.GetVanilla(relativeFilePath, out bool isFoundMissing);
+                using var vanilla = _rom.GetVanilla(relativeFilePath, out var isFoundMissing);
                 var single = streams[0];
                 
                 if (isFoundMissing) {
@@ -175,11 +175,11 @@ public sealed class TkMerger
 
         foreach (var cheats in allCheats) {
             TkCheat merged = new(cheats.Key);
-            foreach ((string key, uint[][] bin) in cheats.SelectMany(x => x.Select(cheat => (cheat.Key, cheat.Value)))) {
+            foreach ((var key, var bin) in cheats.SelectMany(x => x.Select(cheat => (cheat.Key, cheat.Value)))) {
                 merged[key] = bin;
             }
 
-            string outputFile = Path.Combine("cheats", $"{cheats.Key}.txt");
+            var outputFile = Path.Combine("cheats", $"{cheats.Key}.txt");
 
             try {
                 using var output = mergeOutput.OpenWrite(outputFile);
@@ -194,7 +194,7 @@ public sealed class TkMerger
 
     public static void MergeSubSdk(ITkModWriter mergeOutput, IEnumerable<TkChangelog> changelogs)
     {
-        int index = 0;
+        var index = 0;
 
         foreach (var changelog in changelogs.Reverse()) {
             if (changelog.Source is null) {
@@ -206,12 +206,12 @@ public sealed class TkMerger
 
             IEnumerable<(string, byte[])> subSkdFileContents = changelog.SubSdkFiles.Select(file => {
                 using var input = changelog.Source.OpenRead($"exefs/{file}");
-                byte[] buffer = new byte[input.Length];
+                var buffer = new byte[input.Length];
                 input.ReadExactly(buffer, 0, buffer.Length);
                 return (file, buffer);
             }).DistinctBy(x => x);
 
-            foreach ((string _, byte[] data) in subSkdFileContents) {
+            foreach ((var _, var data) in subSkdFileContents) {
                 if (index > 9) {
                     index++;
                     continue;
@@ -239,7 +239,7 @@ public sealed class TkMerger
                 continue;
             }
 
-            foreach (string inputOutput in changelog.ExeFiles.Select(exeFile => $"exefs/{exeFile}")) {
+            foreach (var inputOutput in changelog.ExeFiles.Select(exeFile => $"exefs/{exeFile}")) {
                 using var input = changelog.Source.OpenRead(inputOutput);
                 using var output = mergeOutput.OpenWrite(inputOutput);
                 input.CopyTo(output);
@@ -278,7 +278,7 @@ public sealed class TkMerger
         using var output = _output.OpenWrite(Path.Combine("romfs", relativePath));
 
         if (!TkResourceSizeCollector.RequiresDataForCalculation(relativePath)) {
-            int size = TkZstd.IsCompressed(input)
+            var size = TkZstd.IsCompressed(input)
                 ? TkZstd.GetDecompressedSize(input)
                 : (int)input.Length;
             _resourceSizeCollector.Collect(size, relativePath, []);
@@ -337,7 +337,7 @@ public sealed class TkMerger
         if (entryFileAttributes.HasFlag(TkFileAttributes.HasZsExtension)) {
             using var compressed = SpanOwner<byte>.Allocate(buffer.Count);
             var result = compressed.Span;
-            int compressedSize = _rom.Zstd.Compress(buffer, result, zsDictionaryId);
+            var compressedSize = _rom.Zstd.Compress(buffer, result, zsDictionaryId);
             output.Write(result[..compressedSize]);
             return;
         }
@@ -354,13 +354,13 @@ public sealed class TkMerger
         var merged = TkPatch.CreateWithDefaults(_rom.NsoBinaryId, shopParamLimit: 512);
 
         foreach (var patch in versionMatchedPatchFiles) {
-            foreach ((uint key, uint value) in patch.Entries) {
+            foreach ((var key, var value) in patch.Entries) {
                 merged.Entries[key] = value;
             }
         }
 
-        string ipsFileName = $"{_rom.NsoBinaryId.ToUpper()}.ips";
-        string outputFile = _ipsOutputFolderPath is not null
+        var ipsFileName = $"{_rom.NsoBinaryId.ToUpper()}.ips";
+        var outputFile = _ipsOutputFolderPath is not null
             ? Path.Combine(_ipsOutputFolderPath, ipsFileName)
             : Path.Combine("exefs", ipsFileName);
 
@@ -437,7 +437,7 @@ public sealed class TkMerger
             );
         }
 
-        string relativeFilePath = GetRelativeRomFsPath(last.Entry);
+        var relativeFilePath = GetRelativeRomFsPath(last.Entry);
         return (
             Changelog: group.Key,
             Target: last.Changelog.Source!.OpenRead(relativeFilePath)
@@ -489,7 +489,7 @@ public sealed class TkMerger
         // ReSharper disable once ConvertIfStatementToSwitchStatement
         if (canon.Length > 15 && canon[..15] is "Event/EventFlow") {
             var eventName = Path.GetFileNameWithoutExtension(canon);
-            int targetVersion = _rom.EventFlowVersions.TryGetValue(eventName, out string? version)
+            var targetVersion = _rom.EventFlowVersions.TryGetValue(eventName, out var version)
                 ? GetBestVersion(int.Parse(version), entry.Versions)
                 : entry.Versions[0];
             return Path.Combine("romfs", $"{entry.Canonical}{targetVersion}");
@@ -497,7 +497,7 @@ public sealed class TkMerger
 
         if (canon.Length > 8 && canon[..8] is "Sequence") {
             var sequenceName = Path.GetFileNameWithoutExtension(canon);
-            int targetVersion = _rom.SequenceVersions.TryGetValue(sequenceName, out string? version)
+            var targetVersion = _rom.SequenceVersions.TryGetValue(sequenceName, out var version)
                 ? GetBestVersion(int.Parse(version.AsSpan()[^3..]), entry.Versions)
                 : entry.Versions[0];
             return Path.Combine("romfs", $"{entry.Canonical}{targetVersion}");
@@ -505,7 +505,7 @@ public sealed class TkMerger
 
         if (canon.Length > 6 && canon[..6] is "Effect") {
             var effectName = Path.GetFileNameWithoutExtension(canon);
-            int targetVersion = _rom.EffectVersions.TryGetValue(effectName, out string? version)
+            var targetVersion = _rom.EffectVersions.TryGetValue(effectName, out var version)
                 ? GetBestVersion(int.Parse(version.AsSpan()[^3..]), entry.Versions)
                 : entry.Versions[0];
             return Path.Combine("romfs", $"{entry.Canonical}{targetVersion}");
@@ -513,7 +513,7 @@ public sealed class TkMerger
 
         if (canon.Length > 5 && canon[..5] is "Logic") {
             var logicName = Path.GetFileNameWithoutExtension(canon);
-            int targetVersion = _rom.LogicVersions.TryGetValue(logicName, out string? version)
+            var targetVersion = _rom.LogicVersions.TryGetValue(logicName, out var version)
                 ? GetBestVersion(int.Parse(version.AsSpan()[^3..]), entry.Versions)
                 : entry.Versions[0];
             return Path.Combine("romfs", $"{entry.Canonical}{targetVersion}");
@@ -521,7 +521,7 @@ public sealed class TkMerger
 
         if (canon.Length > 2 && canon[..2] is "AI") {
             var aiName = Path.GetFileNameWithoutExtension(canon);
-            int targetVersion = _rom.AiVersions.TryGetValue(aiName, out string? version)
+            var targetVersion = _rom.AiVersions.TryGetValue(aiName, out var version)
                 ? GetBestVersion(int.Parse(version.AsSpan()[^3..]), entry.Versions)
                 : entry.Versions[0];
             return Path.Combine("romfs", $"{entry.Canonical}{targetVersion}");

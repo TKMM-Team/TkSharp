@@ -13,7 +13,7 @@ public class BymlNameHashArrayChangelogBuilder : Singleton<BymlNameHashArrayChan
         BymlArrayChangelog changelog = [];
         using var vanillaRecordsFound = RentedBitArray.Create(vanilla.Count);
 
-        for (int i = 0; i < src.Count; i++) {
+        for (var i = 0; i < src.Count; i++) {
             var node = src[i];
 
             int vanillaIndex;
@@ -52,7 +52,7 @@ public class BymlNameHashArrayChangelogBuilder : Singleton<BymlNameHashArrayChan
             vanillaRecordsFound[i] = true;
         }
 
-        for (int i = 0; i < vanilla.Count; i++) {
+        for (var i = 0; i < vanilla.Count; i++) {
             if (vanillaRecordsFound[i]) {
                 continue;
             }
@@ -66,8 +66,8 @@ public class BymlNameHashArrayChangelogBuilder : Singleton<BymlNameHashArrayChan
 
     private static bool TryGetIndex<T>(BymlArray list, T element, out int index) where T : IEquatable<T>
     {
-        int len = list.Count;
-        for (int i = 0; i < len; i++) {
+        var len = list.Count;
+        for (var i = 0; i < len; i++) {
             if (list[i].Value is not BymlMap map || !map[KEY].Value?.Equals(element) is true) {
                 continue;
             }

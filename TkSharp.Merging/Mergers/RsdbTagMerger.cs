@@ -12,7 +12,7 @@ public sealed class RsdbTagMerger : Singleton<RsdbTagMerger>, ITkMerger
     public MergeResult Merge(TkChangelogEntry entry, RentedBuffers<byte> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
         RsdbTagTable tagTable = new(
-            Byml.FromBinary(vanillaData, out var endianness, out ushort version).GetMap());
+            Byml.FromBinary(vanillaData, out var endianness, out var version).GetMap());
 
         foreach (var input in inputs) {
             MergeEntry(tagTable, input.Segment);
@@ -27,7 +27,7 @@ public sealed class RsdbTagMerger : Singleton<RsdbTagMerger>, ITkMerger
     public MergeResult Merge(TkChangelogEntry entry, IEnumerable<ArraySegment<byte>> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
         RsdbTagTable tagTable = new(
-            Byml.FromBinary(vanillaData, out var endianness, out ushort version).GetMap());
+            Byml.FromBinary(vanillaData, out var endianness, out var version).GetMap());
 
         foreach (var input in inputs) {
             MergeEntry(tagTable, input);
@@ -42,7 +42,7 @@ public sealed class RsdbTagMerger : Singleton<RsdbTagMerger>, ITkMerger
     public MergeResult MergeSingle(TkChangelogEntry entry, ArraySegment<byte> input, ArraySegment<byte> @base, Stream output)
     {
         RsdbTagTable tagTable = new(
-            Byml.FromBinary(@base, out var endianness, out ushort version).GetMap());
+            Byml.FromBinary(@base, out var endianness, out var version).GetMap());
         
         MergeEntry(tagTable, input);
 
@@ -63,7 +63,7 @@ public sealed class RsdbTagMerger : Singleton<RsdbTagMerger>, ITkMerger
         }
         
         var entries = changelog["Entries"].GetArray();
-        for (int i = 0; i < entries.Count; i++) {
+        for (var i = 0; i < entries.Count; i++) {
             var key = (
                 entries[i].GetString(),
                 entries[++i].GetString(),

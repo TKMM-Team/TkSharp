@@ -10,13 +10,13 @@ public sealed class AsbResourceSizeCalculator : ITkResourceSizeCalculator
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static uint GetResourceSize(in Span<byte> data)
     {
-        uint nodeCount = data[0x10..0x14].Read<uint>();
-        int exbOffset = data[0x60..0x64].Read<int>();
-        uint size = 552 + 40 * nodeCount;
+        var nodeCount = data[0x10..0x14].Read<uint>();
+        var exbOffset = data[0x60..0x64].Read<int>();
+        var size = 552 + 40 * nodeCount;
 
         if (exbOffset != 0) {
-            int exbCountOffset = data[(exbOffset + 0x20)..].Read<int>();
-            uint exbSignatureCount = data[(exbOffset + exbCountOffset)..].Read<uint>();
+            var exbCountOffset = data[(exbOffset + 0x20)..].Read<int>();
+            var exbSignatureCount = data[(exbOffset + exbCountOffset)..].Read<uint>();
             size += 16 + (exbSignatureCount + 1) / 2 * 8;
         }
 

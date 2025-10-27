@@ -16,9 +16,9 @@ internal static class TkSdCardUtils
     public static bool CheckSdCard(KeySet keys, string sdCardFolderPath, out bool hasUpdate, SwitchFsContainer? switchFsContainer)
     {
         TkLog.Instance.LogDebug("[ROM *] [SD Card] Checking system");
-        bool result = CheckSwitchFolder(keys, sdCardFolderPath, out hasUpdate, switchFsContainer);
+        var result = CheckSwitchFolder(keys, sdCardFolderPath, out hasUpdate, switchFsContainer);
 
-        string emummcConfig = Path.Combine(sdCardFolderPath, "emuMMC", "emummc.ini");
+        var emummcConfig = Path.Combine(sdCardFolderPath, "emuMMC", "emummc.ini");
         if (!File.Exists(emummcConfig)) {
             goto CheckDumps;
         }
@@ -50,21 +50,21 @@ internal static class TkSdCardUtils
 
     ProcessEmummc:
         TkLog.Instance.LogDebug("[ROM *] [SD Card] Checking EmuMMC.");
-        bool emummcResult = CheckSwitchFolder(keys, emummcPath, out bool emummcHasUpdate, switchFsContainer) && hasUpdate;
+        var emummcResult = CheckSwitchFolder(keys, emummcPath, out var emummcHasUpdate, switchFsContainer) && hasUpdate;
         if (!result) result = emummcResult;
         if (!hasUpdate) hasUpdate = emummcHasUpdate;
 
     CheckDumps:
         TkLog.Instance.LogDebug("[ROM *] [SD Card] Checking DBI folder.");
-        string dbiFolder = Path.Combine(sdCardFolderPath, "switch", "DBI");
+        var dbiFolder = Path.Combine(sdCardFolderPath, "switch", "DBI");
         CheckForDumps(keys, dbiFolder, ref result, ref hasUpdate, switchFsContainer);
     
         TkLog.Instance.LogDebug("[ROM *] [SD Card] Checking legacy NxDumpTool folder.");
-        string legacyNxDumpToolFolder = Path.Combine(sdCardFolderPath, "switch", "nxdumptool");
+        var legacyNxDumpToolFolder = Path.Combine(sdCardFolderPath, "switch", "nxdumptool");
         CheckForDumps(keys, legacyNxDumpToolFolder, ref result, ref hasUpdate, switchFsContainer);
 
         TkLog.Instance.LogDebug("[ROM *] [SD Card] Checking new NxDumpTool dump folder.");
-        string nxDumpToolFolder = Path.Combine(sdCardFolderPath, "nxdt_rw_poc");
+        var nxDumpToolFolder = Path.Combine(sdCardFolderPath, "nxdt_rw_poc");
         CheckForDumps(keys, nxDumpToolFolder, ref result, ref hasUpdate, switchFsContainer);
 
         return result;
@@ -82,7 +82,7 @@ internal static class TkSdCardUtils
         UniqueRef<IAttributeFileSystem> fs = new(fatFileSystem);
 
         var switchFs = SwitchFs.OpenSdCard(keys, ref fs);
-        bool result = TkGameRomUtils.IsValid(switchFs, out hasUpdate);
+        var result = TkGameRomUtils.IsValid(switchFs, out hasUpdate);
 
         if (switchFsContainer is not null) {
             switchFsContainer.CleanupLater(fatFileSystem);
@@ -97,14 +97,14 @@ internal static class TkSdCardUtils
 
     private static void CheckForDumps(KeySet keys, string dumpFolder, ref bool result, ref bool hasUpdate, SwitchFsContainer? switchFsContainer)
     {
-        bool hasBaseGame = false;
-        bool dumpHasUpdate = false;
+        var hasBaseGame = false;
+        var dumpHasUpdate = false;
 
         if (!Directory.Exists(dumpFolder)) {
             return;
         }
 
-        foreach (string file in Directory.EnumerateFiles(dumpFolder, "*.*", SearchOption.AllDirectories)) {
+        foreach (var file in Directory.EnumerateFiles(dumpFolder, "*.*", SearchOption.AllDirectories)) {
             if (Path.GetExtension(file.AsSpan()) is not (".nsp" or ".xci")) {
                 continue;
             }
@@ -122,8 +122,8 @@ internal static class TkSdCardUtils
             }
         }
 
-        foreach (string folder in Directory.EnumerateDirectories(dumpFolder, "*", SearchOption.AllDirectories)) {
-            string folderName = Path.GetFileName(folder);
+        foreach (var folder in Directory.EnumerateDirectories(dumpFolder, "*", SearchOption.AllDirectories)) {
+            var folderName = Path.GetFileName(folder);
             if (!folderName.Contains("NSP", StringComparison.OrdinalIgnoreCase) && 
                 !folderName.Contains("XCI", StringComparison.OrdinalIgnoreCase)) {
                 continue;

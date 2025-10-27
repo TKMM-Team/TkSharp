@@ -39,9 +39,9 @@ public class TkPatch(string nsoBinaryId)
     {
         TkPatch result = new(nsoBinaryId);
         
-        if (_shopParamPatchAddresses.TryGetValue(nsoBinaryId, out uint shopParamPatchAddress)) {
-            uint beByteCode = MOV_W8_NO_VALUE_BE | (shopParamLimit << 5);
-            uint leByteCode = BinaryPrimitives.ReverseEndianness(beByteCode);
+        if (_shopParamPatchAddresses.TryGetValue(nsoBinaryId, out var shopParamPatchAddress)) {
+            var beByteCode = MOV_W8_NO_VALUE_BE | (shopParamLimit << 5);
+            var leByteCode = BinaryPrimitives.ReverseEndianness(beByteCode);
             result.Entries[shopParamPatchAddress] = leByteCode;
         }
         
@@ -57,7 +57,7 @@ public class TkPatch(string nsoBinaryId)
         output.Write(IPS32_MAGIC_PREFIX);
         output.Write(IPS32_MAGIC_SUFFIX);
 
-        foreach ((uint address, uint value) in Entries) {
+        foreach ((var address, var value) in Entries) {
             output.Write(address + NSO_HEADER_LENGTH, Endianness.Big);
             output.Write<short>(sizeof(uint), Endianness.Big);
             output.Write(value, Endianness.Big);
@@ -74,14 +74,14 @@ public class TkPatch(string nsoBinaryId)
 
         TkPatch patch = new(nsoBinaryId);
 
-        uint address = stream.Read<uint>(Endianness.Big);
+        var address = stream.Read<uint>(Endianness.Big);
         while (address is not EOF_MARK && stream.Position < stream.Length) {
             int valueSize = stream.Read<short>(Endianness.Big);
             if (valueSize is not 4) {
                 goto NextAddress;
             }
 
-            uint value = stream.Read<uint>(Endianness.Big);
+            var value = stream.Read<uint>(Endianness.Big);
             patch.Entries[address - NSO_HEADER_LENGTH] = value;
 
         NextAddress:
@@ -104,7 +104,7 @@ public class TkPatch(string nsoBinaryId)
             return null;
         }
 
-        if (!TryGetNsoBinaryId(firstLine, out string? nsoBinaryId)) {
+        if (!TryGetNsoBinaryId(firstLine, out var nsoBinaryId)) {
             return null;
         }
 
@@ -151,13 +151,13 @@ public class TkPatch(string nsoBinaryId)
 
     private static (uint Address, uint Value)? GetAddressAndValue(ReadOnlySpan<char> line)
     {
-        int addressEndIndex = GetValueEndIndex(line, 0);
-        if (!uint.TryParse(line[..addressEndIndex], NumberStyles.HexNumber, NumberFormatInfo.InvariantInfo, out uint address)) {
+        var addressEndIndex = GetValueEndIndex(line, 0);
+        if (!uint.TryParse(line[..addressEndIndex], NumberStyles.HexNumber, NumberFormatInfo.InvariantInfo, out var address)) {
             return null;
         }
 
-        int valueEndIndex = GetValueEndIndex(line, ++addressEndIndex);
-        if (!uint.TryParse(line[addressEndIndex..valueEndIndex], NumberStyles.HexNumber, NumberFormatInfo.InvariantInfo, out uint value)) {
+        var valueEndIndex = GetValueEndIndex(line, ++addressEndIndex);
+        if (!uint.TryParse(line[addressEndIndex..valueEndIndex], NumberStyles.HexNumber, NumberFormatInfo.InvariantInfo, out var value)) {
             return null;
         }
 
@@ -166,7 +166,7 @@ public class TkPatch(string nsoBinaryId)
 
     private static int GetValueEndIndex(ReadOnlySpan<char> chars, int startIndex)
     {
-        int endIndex = startIndex;
+        var endIndex = startIndex;
         while (endIndex < chars.Length && chars[endIndex] is >= 'A' and <= 'F' or >= 'a' and <= 'f' or >= '0' and <= '9') {
             endIndex++;
         }

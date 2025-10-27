@@ -21,8 +21,8 @@ public static class TkChangelogReader
             Source = source
         };
         
-        int changelogFileCount = input.Read<int>();
-        for (int i = 0; i < changelogFileCount; i++) {
+        var changelogFileCount = input.Read<int>();
+        for (var i = 0; i < changelogFileCount; i++) {
             TkChangelogEntry entry = new(
                 input.ReadString()!,
                 input.Read<ChangelogEntryType>(),
@@ -42,15 +42,15 @@ public static class TkChangelogReader
 
         ReadFileList(input, result.MalsFiles);
         
-        int patchFileCount = input.Read<int>();
-        for (int i = 0; i < patchFileCount; i++) {
+        var patchFileCount = input.Read<int>();
+        for (var i = 0; i < patchFileCount; i++) {
             result.PatchFiles.Add(
                 ReadTkPatch(input)
             );
         }
         
-        int cheatFileCount = input.Read<int>();
-        for (int i = 0; i < cheatFileCount; i++) {
+        var cheatFileCount = input.Read<int>();
+        for (var i = 0; i < cheatFileCount; i++) {
             result.CheatFiles.Add(
                 TkCheat.FromBinary(input)
             );
@@ -68,7 +68,7 @@ public static class TkChangelogReader
     {
         int count = input.Read<byte>();
         List<int> result = new(count);
-        for (int i = 0; i < count; i++) {
+        for (var i = 0; i < count; i++) {
             result.Add(input.Read<int>());
         }
 
@@ -77,11 +77,11 @@ public static class TkChangelogReader
 
     private static TkPatch ReadTkPatch(in Stream input)
     {
-        string nsoBinaryId = input.ReadString()!;
+        var nsoBinaryId = input.ReadString()!;
         var result = new TkPatch(nsoBinaryId);
         
-        int entryCount = input.Read<int>();
-        for (int i = 0; i < entryCount; i++) {
+        var entryCount = input.Read<int>();
+        for (var i = 0; i < entryCount; i++) {
             result.Entries[input.Read<uint>()] = input.Read<uint>();
         }
 
@@ -90,8 +90,8 @@ public static class TkChangelogReader
 
     private static void ReadFileList(in Stream input, IList<string> result)
     {
-        int count = input.Read<int>();
-        for (int i = 0; i < count; i++) {
+        var count = input.Read<int>();
+        for (var i = 0; i < count; i++) {
             result.Add(input.ReadString()!);
         }
     }

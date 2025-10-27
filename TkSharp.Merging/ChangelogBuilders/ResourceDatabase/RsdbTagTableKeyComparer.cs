@@ -6,7 +6,7 @@ public sealed class RsdbTagTableKeyComparer : IComparer<(string Prefix, string N
 
     public int Compare((string Prefix, string Name, string Suffix) x, (string Prefix, string Name, string Suffix) y)
     {
-        int prefixComparison = StringComparer.Ordinal.Compare(x.Prefix, y.Prefix);
+        var prefixComparison = StringComparer.Ordinal.Compare(x.Prefix, y.Prefix);
         int nameComparison;
 
         return prefixComparison switch {

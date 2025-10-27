@@ -60,7 +60,7 @@ public sealed class TkPackFileLookup(Stream pkcache, Stream? precompiled = null)
     private (string, TkFileAttributes)? GetPackFileName(string canonical, out RentedBuffer<byte> buffer)
     {
         if (_precompiled != null) {
-            SarcTools.JumpToEntry(_precompiled, canonical, out int size);
+            SarcTools.JumpToEntry(_precompiled, canonical, out var size);
             buffer = RentedBuffer<byte>.Allocate(size);
             _precompiled.ReadExactly(buffer.Span);
             return null;
@@ -86,19 +86,19 @@ public sealed class TkPackFileLookup(Stream pkcache, Stream? precompiled = null)
             throw new InvalidDataException("Invalid pkcache magic");
         }
 
-        int count = reader.Read<int>();
-        int stringTableOffset = reader.Read<int>();
-        int stringCount = reader.Read<int>();
+        var count = reader.Read<int>();
+        var stringTableOffset = reader.Read<int>();
+        var stringCount = reader.Read<int>();
         
         using var valuesOwner = SpanOwner<(string, TkFileAttributes)>.Allocate(stringCount);
         var values = valuesOwner.Span;
 
         reader.Seek(stringTableOffset);
         fixed (byte* ptr = &reader.Data[reader.Position]) {
-            byte* pos = ptr;
-            for (int i = 0; i < stringCount; i++, pos++) {
-                string str = Utf8StringMarshaller.ConvertToManaged(pos)
-                    ?? throw new InvalidDataException($"Invalid string in string table at: {i}");
+            var pos = ptr;
+            for (var i = 0; i < stringCount; i++, pos++) {
+                var str = Utf8StringMarshaller.ConvertToManaged(pos)
+                          ?? throw new InvalidDataException($"Invalid string in string table at: {i}");
                 pos += str.Length + 1;
                 values[i] = (str, (TkFileAttributes)(*pos));
             }
@@ -108,10 +108,10 @@ public sealed class TkPackFileLookup(Stream pkcache, Stream? precompiled = null)
 
         Dictionary<ulong, (string, TkFileAttributes)> result = [];
 
-        for (int i = 0; i < count; i++) {
-            ushort sectionKey = reader.Read<ushort>();
-            uint hash = reader.Read<uint>();
-            ushort index = reader.Read<ushort>();
+        for (var i = 0; i < count; i++) {
+            var sectionKey = reader.Read<ushort>();
+            var hash = reader.Read<uint>();
+            var index = reader.Read<ushort>();
             result.Add(GetKey(sectionKey, hash), values[index]);
         }
 
@@ -120,8 +120,8 @@ public sealed class TkPackFileLookup(Stream pkcache, Stream? precompiled = null)
 
     private static ulong GetKey(ReadOnlySpan<char> key)
     {
-        ushort sectionKey = (ushort)((byte)key[0] << 8 | (byte)key[^1]);
-        uint hash = XxHash32.HashToUInt32(key.Cast<char, byte>());
+        var sectionKey = (ushort)((byte)key[0] << 8 | (byte)key[^1]);
+        var hash = XxHash32.HashToUInt32(key.Cast<char, byte>());
         return GetKey(sectionKey, hash);
     }
 

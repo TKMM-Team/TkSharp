@@ -9,7 +9,7 @@ public sealed class FolderModWriter(string outputModFolder) : ITkModWriter
 
     public Stream OpenWrite(string filePath)
     {
-        string absolute = Path.Combine(_outputModFolder, _relativeRootFolder, filePath);
+        var absolute = Path.Combine(_outputModFolder, _relativeRootFolder, filePath);
 
         if (Path.GetDirectoryName(absolute) is { } folder) {
             Directory.CreateDirectory(folder);

@@ -12,7 +12,7 @@ public class FatArchiveDirectory(IDirectory baseDirectory) : IDirectory
     {
         var result = _baseDirectory.Read(out entriesRead, entryBuffer);
 
-        for (int i = 0; i < entriesRead; i++) {
+        for (var i = 0; i < entriesRead; i++) {
             ref var entry = ref entryBuffer[i];
             var fileName = entry.Name.AsReadOnlySpan();
             if (entry.Type is DirectoryEntryType.File || fileName.LastIndexOf((byte)'.') is not (var extSeparatorIndex and > -1)) {

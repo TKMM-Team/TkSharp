@@ -16,15 +16,15 @@ public readonly ref struct RentedBuffers<T> : IDisposable where T : unmanaged
 
     public static RentedBuffers<byte> Allocate(ReadOnlySpan<Stream> streams, bool disposeStreams = false)
     {
-        int totalBufferSize = 0;
+        var totalBufferSize = 0;
         var sections = ArrayPool<Range>.Shared.Rent(streams.Length);
-        for (int i = 0; i < streams.Length; i++) {
-            int size = Convert.ToInt32(streams[i].Length);
+        for (var i = 0; i < streams.Length; i++) {
+            var size = Convert.ToInt32(streams[i].Length);
             sections[i] = totalBufferSize..(totalBufferSize += size);
         }
         
         RentedBuffers<byte> buffers = new(totalBufferSize, sections, streams.Length);
-        for (int i = 0; i < streams.Length; i++) {
+        for (var i = 0; i < streams.Length; i++) {
             var stream = streams[i];
             _ = stream.Read(buffers[i].Span);
             
@@ -51,12 +51,12 @@ public readonly ref struct RentedBuffers<T> : IDisposable where T : unmanaged
     
     private RentedBuffers(ReadOnlySpan<int> sizes)
     {
-        int totalBufferSize = 0;
+        var totalBufferSize = 0;
         
         Count = sizes.Length;
         _sections = ArrayPool<Range>.Shared.Rent(sizes.Length);
-        for (int i = 0; i < sizes.Length; i++) {
-            int size = sizes[i];
+        for (var i = 0; i < sizes.Length; i++) {
+            var size = sizes[i];
             _sections[i] = totalBufferSize..(totalBufferSize += size);
         }
         
@@ -94,7 +94,7 @@ public readonly ref struct RentedBuffers<T> : IDisposable where T : unmanaged
         public ArraySegment<T> Segment {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get {
-                (int offset, int length) = _range.GetOffsetAndLength(_buffer.Length);
+                (var offset, var length) = _range.GetOffsetAndLength(_buffer.Length);
                 return new ArraySegment<T>(_buffer, offset, length);
             }
         }

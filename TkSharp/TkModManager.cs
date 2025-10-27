@@ -16,13 +16,13 @@ public sealed partial class TkModManager : ObservableObject, ITkSystemProvider
     
     public static TkModManager CreatePortable()
     {
-        string portableDataFolder = Path.Combine(AppContext.BaseDirectory, ".data");
+        var portableDataFolder = Path.Combine(AppContext.BaseDirectory, ".data");
         return Create(portableDataFolder);
     }
 
     public static TkModManager Create(string dataFolderPath)
     {
-        string portableManagerStateFile = Path.Combine(dataFolderPath, "state.db");
+        var portableManagerStateFile = Path.Combine(dataFolderPath, "state.db");
         if (!File.Exists(portableManagerStateFile)) {
             return new TkModManager(dataFolderPath) {
                 _isStateFrozen = false
@@ -35,7 +35,7 @@ public sealed partial class TkModManager : ObservableObject, ITkSystemProvider
 
     internal static TkModManager CreateLegacy(string dataFolderPath, string legacyDataFolderPath, TkSystemVersion systemVersion)
     {
-        string portableManagerStateFile = Path.Combine(legacyDataFolderPath, "state.db");
+        var portableManagerStateFile = Path.Combine(legacyDataFolderPath, "state.db");
         if (!File.Exists(portableManagerStateFile)) {
             return new TkModManager(dataFolderPath) {
                 _isStateFrozen = false
@@ -126,7 +126,7 @@ public sealed partial class TkModManager : ObservableObject, ITkSystemProvider
 
     public void Uninstall(TkMod target)
     {
-        string targetModFolder = Path.Combine(ModsFolderPath, target.Id.ToString());
+        var targetModFolder = Path.Combine(ModsFolderPath, target.Id.ToString());
         if (!Directory.Exists(targetModFolder)) {
             TkLog.Instance.LogDebug("Content for the mod '{TargetName}' could not be found in the system.",
                 target.Name);
@@ -167,8 +167,8 @@ public sealed partial class TkModManager : ObservableObject, ITkSystemProvider
     Retry:
         Directory.CreateDirectory(DataFolderPath);
 
-        string currentDbFile = Path.Combine(DataFolderPath, "state.db");
-        string backupDbFile = Path.Combine(DataFolderPath, "state.db.bak");
+        var currentDbFile = Path.Combine(DataFolderPath, "state.db");
+        var backupDbFile = Path.Combine(DataFolderPath, "state.db.bak");
 
         try {
             if (File.Exists(currentDbFile)) File.Copy(currentDbFile, backupDbFile, true);
@@ -216,7 +216,7 @@ public sealed partial class TkModManager : ObservableObject, ITkSystemProvider
     /// <param name="target"></param>
     private void AddOrUpdate(TkMod target)
     {
-        for (int i = 0; i < Mods.Count; i++) {
+        for (var i = 0; i < Mods.Count; i++) {
             if (Mods[i].Id == target.Id) {
                 Mods[i] = target;
                 goto UpdateProfiles;

@@ -29,23 +29,23 @@ public sealed class RsdbRowChangelogBuilder<TKey>(string keyName) : ITkChangelog
 
     public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
     {
-        ulong dbNameHash = GetDbNameHash(path);
+        var dbNameHash = GetDbNameHash(path);
 
         Dictionary<TKey, Byml> changelog = [];
         HashSet<TKey> foundKeys = [];
         
-        var root = Byml.FromBinary(srcBuffer, out var endianness, out ushort version);
+        var root = Byml.FromBinary(srcBuffer, out var endianness, out var version);
         var rows = root.GetArray();
 
         var vanillaRows = Byml.FromBinary(vanillaBuffer).GetArray();
 
         BymlTrackingInfo bymlTrackingInfo = new(path.Canonical, depth: 0);
 
-        for (int i = 0; i < rows.Count; i++) {
+        for (var i = 0; i < rows.Count; i++) {
             var rowEntry = rows[i];
             var entry = rowEntry.GetMap();
 
-            if (!TryGetKeyHash(entry, out ulong keyHash, out var key)) {
+            if (!TryGetKeyHash(entry, out var keyHash, out var key)) {
                 TkLog.Instance.LogWarning(
                     "RSDB file '{Canonical}' has an invalid entry at {Index}. The key field '{KeyName}' is missing.",
                     canonical, i, _keyName);
@@ -54,7 +54,7 @@ public sealed class RsdbRowChangelogBuilder<TKey>(string keyName) : ITkChangelog
             
             foundKeys.Add(key);
             
-            if (!RsdbRowIndex.TryGetIndex(dbNameHash, keyHash, out int index)) {
+            if (!RsdbRowIndex.TryGetIndex(dbNameHash, keyHash, out var index)) {
                 goto UpdateChangelog;
             }
 
@@ -71,11 +71,11 @@ public sealed class RsdbRowChangelogBuilder<TKey>(string keyName) : ITkChangelog
         }
 
         if (flags.TrackRemovedRsDbEntries) {
-            for (int i = 0; i < vanillaRows.Count; i++) {
+            for (var i = 0; i < vanillaRows.Count; i++) {
                 var rowEntry = vanillaRows[i];
                 var entry = rowEntry.GetMap();
                 
-                if (!TryGetKeyHash(entry, out ulong _, out var key)) {
+                if (!TryGetKeyHash(entry, out var _, out var key)) {
                     TkLog.Instance.LogWarning(
                         "Vanilla RSDB file '{Canonical}' has an invalid entry at {Index}. The key field '{KeyName}' is missing.",
                         canonical, i, _keyName);

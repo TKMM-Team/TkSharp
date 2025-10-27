@@ -21,15 +21,15 @@ public sealed class TkChecksums
             throw new InvalidDataException("Invalid magic");
         }
         
-        int version = stream.Read<int>();
-        int entryCount = stream.Read<int>();
+        var version = stream.Read<int>();
+        var entryCount = stream.Read<int>();
 
         Dictionary<ulong, Entry[]> entries = [];
-        for (int i = 0; i < entryCount; i++) {
-            ulong key = stream.Read<ulong>();
-            int count = stream.Read<int>();
+        for (var i = 0; i < entryCount; i++) {
+            var key = stream.Read<ulong>();
+            var count = stream.Read<int>();
             var versions = new Entry[count];
-            for (int j = 0; j < count; j++) {
+            for (var j = 0; j < count; j++) {
                 versions[j] = stream.Read<Entry>();
             }
 
@@ -72,7 +72,7 @@ public sealed class TkChecksums
 
     private bool Lookup(ReadOnlySpan<char> canonicalFileName, int version, out Entry entry)
     {
-        ulong key = GetNameHash(canonicalFileName);
+        var key = GetNameHash(canonicalFileName);
 
         if (_entries.TryGetValue(key, out var entries) == false) {
             entry = default;
@@ -84,7 +84,7 @@ public sealed class TkChecksums
             return true;
         }
 
-        for (int i = 1; i < entries.Length; i++) {
+        for (var i = 1; i < entries.Length; i++) {
             ref var next = ref entries[i];
             if (next.Version > version) {
                 break;

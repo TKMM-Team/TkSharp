@@ -23,15 +23,15 @@ public sealed class RsdbTagChangelogBuilder : Singleton<RsdbTagChangelogBuilder>
     {
         using RsdbTagIndex vanilla = new(vanillaBuffer);
 
-        var src = Byml.FromBinary(srcBuffer, out var endianness, out ushort version).GetMap();
+        var src = Byml.FromBinary(srcBuffer, out var endianness, out var version).GetMap();
         var paths = src[PATH_LIST].GetArray();
         var tags = src[TAG_LIST].GetArray();
-        byte[] bitTable = src[BIT_TABLE].GetBinary();
+        var bitTable = src[BIT_TABLE].GetBinary();
 
         BymlArray changelog = [];
-        for (int i = 0; i < paths.Count; i++) {
-            int entryIndex = i / 3;
-            bool isKeyVanilla = vanilla.HasEntry(paths, ref i, out int vanillaEntryIndex, out var entry);
+        for (var i = 0; i < paths.Count; i++) {
+            var entryIndex = i / 3;
+            var isKeyVanilla = vanilla.HasEntry(paths, ref i, out var vanillaEntryIndex, out var entry);
             var entryTags = GetEntryTags<List<string>>(entryIndex, tags, bitTable);
 
             if (!isKeyVanilla) {
@@ -72,8 +72,8 @@ public sealed class RsdbTagChangelogBuilder : Singleton<RsdbTagChangelogBuilder>
     {
         BymlArrayChangelog changelog = [];
 
-        int vi = 0;
-        int mi = 0;
+        var vi = 0;
+        var mi = 0;
 
         for (; mi < diff.Length; mi++) {
             if (vi >= vanilla.Count) {
@@ -81,9 +81,9 @@ public sealed class RsdbTagChangelogBuilder : Singleton<RsdbTagChangelogBuilder>
                 continue;
             }
 
-            string v = vanilla[vi];
-            string m = diff[mi];
-            int compare = StringComparer.Ordinal.Compare(v, m);
+            var v = vanilla[vi];
+            var m = diff[mi];
+            var compare = StringComparer.Ordinal.Compare(v, m);
 
             switch (compare) {
                 case 0:
@@ -111,7 +111,7 @@ public sealed class RsdbTagChangelogBuilder : Singleton<RsdbTagChangelogBuilder>
         removed = SpanOwner<string>.Allocate(vanillaEntryTags.Count);
         removedCount = 0;
 
-        foreach (string tag in vanillaEntryTags.Where(tag => !entryTags.Remove(tag))) {
+        foreach (var tag in vanillaEntryTags.Where(tag => !entryTags.Remove(tag))) {
             removed.Span[removedCount] = tag;
             removedCount++;
         }

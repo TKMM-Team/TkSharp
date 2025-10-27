@@ -14,9 +14,9 @@ public sealed class BymlChangelogBuilder : Singleton<BymlChangelogBuilder>, ITkC
     public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
     {
         var vanillaByml = Byml.FromBinary(vanillaBuffer);
-        var srcByml = Byml.FromBinary(srcBuffer, out var endianness, out ushort version);
+        var srcByml = Byml.FromBinary(srcBuffer, out var endianness, out var version);
         BymlTrackingInfo info = new(path.Canonical, depth: 0);
-        bool isVanilla = LogChangesInline(ref info, ref srcByml, vanillaByml);
+        var isVanilla = LogChangesInline(ref info, ref srcByml, vanillaByml);
 
         if (isVanilla) {
             return false;

@@ -57,7 +57,7 @@ public static class TkPathExtensions
         fileVersion = -1;
         attributes = TkFileAttributes.None;
 
-        int size = file.Length - romfs.Length - file[^3..] switch {
+        var size = file.Length - romfs.Length - file[^3..] switch {
             ".zs" => (int)(attributes |= TkFileAttributes.HasZsExtension) + 2,
             ".mc" => (int)(attributes |= TkFileAttributes.HasMcExtension) + 1,
             _ => 0
@@ -65,7 +65,7 @@ public static class TkPathExtensions
 
         // Make a copy to avoid
         // mutating the input string
-        string result = file[romfs.Length..(romfs.Length + size)].ToString();
+        var result = file[romfs.Length..(romfs.Length + size)].ToString();
 
         Span<char> canonical;
 
@@ -74,15 +74,15 @@ public static class TkPathExtensions
         }
 
         var state = State.Default;
-        for (int i = 0; i < size; i++) {
-            ref char @char = ref canonical[i];
+        for (var i = 0; i < size; i++) {
+            ref var @char = ref canonical[i];
 
             if (@char is '.') {
                 switch (size - i) {
                     case > 2 when canonical[i..(i + 2)] is ".1" && (canonical.Length < 5 || canonical[^5..] is not ".txtg"):
                         attributes |= TkFileAttributes.IsProductFile;
                         size -= 4;
-                        if (int.TryParse(canonical[(i + 1)..(i + 4)], out int version)) {
+                        if (int.TryParse(canonical[(i + 1)..(i + 4)], out var version)) {
                             fileVersion = version;
                             state = State.SkipVersion;
                         }

@@ -64,8 +64,8 @@ public sealed partial class TkProfile : TkItem
             return target;
         }
         
-        int currentIndex = Mods.IndexOf(target);
-        int newIndex = currentIndex + direction;
+        var currentIndex = Mods.IndexOf(target);
+        var newIndex = currentIndex + direction;
 
         if (newIndex < 0 || newIndex >= Mods.Count) {
             return target;
@@ -90,7 +90,7 @@ public sealed partial class TkProfile : TkItem
             return target;
         }
         
-        int currentIndex = Mods.IndexOf(target);
+        var currentIndex = Mods.IndexOf(target);
         Mods.RemoveAt(currentIndex);
         Mods.Insert(0, target);
         return Selected = target;
@@ -108,7 +108,7 @@ public sealed partial class TkProfile : TkItem
             return target;
         }
         
-        int currentIndex = Mods.IndexOf(target);
+        var currentIndex = Mods.IndexOf(target);
         Mods.RemoveAt(currentIndex);
         Mods.Add(target);
         return Selected = target;

@@ -19,7 +19,7 @@ public static class BymlExtensions
 
         Dictionary<BymlKey, int> indexCache = new();
 
-        for (int i = 0; i < array.Count; i++) {
+        for (var i = 0; i < array.Count; i++) {
             var entry = array[i];
             if (!keyName.TryGetKey(entry, out var key)) {
                 TkLog.Instance.LogWarning(

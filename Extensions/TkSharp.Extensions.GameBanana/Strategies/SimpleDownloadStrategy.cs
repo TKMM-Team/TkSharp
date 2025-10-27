@@ -15,7 +15,7 @@ public class SimpleDownloadStrategy(HttpClient client) : IDownloadStrategy
             response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
             
             if (!response.IsSuccessStatusCode) {
-                string errorMessage = response.StatusCode switch {
+                var errorMessage = response.StatusCode switch {
                     System.Net.HttpStatusCode.NotFound => 
                         "The requested file could not be found on the server.",
                     System.Net.HttpStatusCode.ServiceUnavailable => 
@@ -39,18 +39,18 @@ public class SimpleDownloadStrategy(HttpClient client) : IDownloadStrategy
                 }
             }
 
-            byte[] result = new byte[contentLength];
+            var result = new byte[contentLength];
             Memory<byte> buffer = result;
-            int bytesRead = 0;
+            var bytesRead = 0;
 
-            int bytesReadAtLastFrame = 0;
-            long startTime = Stopwatch.GetTimestamp();
+            var bytesReadAtLastFrame = 0;
+            var startTime = Stopwatch.GetTimestamp();
             await using var stream = await response.Content.ReadAsStreamAsync(ct);
             
             while (bytesRead < contentLength) {
                 try {
-                    int nextOffset = Math.Min(bytesRead + FRAME_BUFFER_SIZE, result.Length);
-                    int read = await stream.ReadAsync(buffer[bytesRead..nextOffset], ct);
+                    var nextOffset = Math.Min(bytesRead + FRAME_BUFFER_SIZE, result.Length);
+                    var read = await stream.ReadAsync(buffer[bytesRead..nextOffset], ct);
                     if (read == 0) {
                         if (bytesRead < contentLength) {
                             throw new IOException(

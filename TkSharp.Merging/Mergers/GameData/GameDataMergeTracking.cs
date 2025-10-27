@@ -28,7 +28,7 @@ public class GameDataMergeTracking(string canonical) : Dictionary<ulong, GameDat
         var baseEntry = entry.BaseEntry;
         var entries = CollectionsMarshal.AsSpan(entry.Changes);
         
-        for (int i = 0; i < entry.Changes.Count; i++) {
+        for (var i = 0; i < entry.Changes.Count; i++) {
             BymlChangelogBuilder.LogChangesInline(ref info, ref entries[i], baseEntry);
         }
 

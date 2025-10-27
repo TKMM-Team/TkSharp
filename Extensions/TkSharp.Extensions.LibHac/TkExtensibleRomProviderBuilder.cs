@@ -123,8 +123,8 @@ public class TkExtensibleRomProviderBuilder
 
         if (_root.ExtractedGameDumpFolderPath.Get(out var gameDumpPaths)) {
             const string infoKey = "Game Dump Path(s)";
-            foreach (string gameDumpPath in gameDumpPaths) {
-                bool hasBaseGame = TkGameDumpUtils.CheckGameDump(gameDumpPath, out bool hasUpdate);
+            foreach (var gameDumpPath in gameDumpPaths) {
+                var hasBaseGame = TkGameDumpUtils.CheckGameDump(gameDumpPath, out var hasUpdate);
                 report.SetHasBaseGame(hasBaseGame, infoKey);
                 report.SetHasUpdate(hasUpdate, infoKey);
             }
@@ -136,9 +136,9 @@ public class TkExtensibleRomProviderBuilder
         
         report.SetKeys(keys);
 
-        if (_root.SdCard.Get(out string? sdCardFolderPath)) {
+        if (_root.SdCard.Get(out var sdCardFolderPath)) {
             const string infoKey = "Installed or Dumped on SD Card";
-            bool hasBaseGameInSdCard = TkSdCardUtils.CheckSdCard(keys, sdCardFolderPath, out bool hasUpdateInSdCard);
+            var hasBaseGameInSdCard = TkSdCardUtils.CheckSdCard(keys, sdCardFolderPath, out var hasUpdateInSdCard);
             report.SetHasBaseGame(hasBaseGameInSdCard, infoKey);
             report.SetHasUpdate(hasUpdateInSdCard, infoKey);
         }
@@ -147,12 +147,12 @@ public class TkExtensibleRomProviderBuilder
             const string packagedInfoKey = "Packaged Base Game File(s)";
             const string splitFileInfoKey = "Packaged Base Game Split File(s)";
 
-            foreach (string packagedBaseGamePath in packagedBaseGamePaths) {
-                bool hasBaseGameAsFile = TkGameRomUtils.IsFileValid(keys, packagedBaseGamePath, out bool hasUpdateAsFile);
+            foreach (var packagedBaseGamePath in packagedBaseGamePaths) {
+                var hasBaseGameAsFile = TkGameRomUtils.IsFileValid(keys, packagedBaseGamePath, out var hasUpdateAsFile);
                 report.SetHasBaseGame(hasBaseGameAsFile, packagedInfoKey);
                 report.SetHasUpdate(hasUpdateAsFile, packagedInfoKey);
                 
-                bool hasBaseGameAsSplitFile = TkGameRomUtils.IsSplitFileValid(keys, packagedBaseGamePath, out bool hasUpdateAsSplitFile);
+                var hasBaseGameAsSplitFile = TkGameRomUtils.IsSplitFileValid(keys, packagedBaseGamePath, out var hasUpdateAsSplitFile);
                 report.SetHasBaseGame(hasBaseGameAsSplitFile, splitFileInfoKey);
                 report.SetHasUpdate(hasUpdateAsSplitFile, splitFileInfoKey);
             }
@@ -162,12 +162,12 @@ public class TkExtensibleRomProviderBuilder
             const string packagedInfoKey = "Packaged Update File(s)";
             const string splitFileInfoKey = "Packaged Update Split File(s)";
             
-            foreach (string packagedUpdatePath in packagedUpdatePaths) {
-                bool hasBaseGameAsFile = TkGameRomUtils.IsFileValid(keys, packagedUpdatePath, out bool hasUpdateAsFile);
+            foreach (var packagedUpdatePath in packagedUpdatePaths) {
+                var hasBaseGameAsFile = TkGameRomUtils.IsFileValid(keys, packagedUpdatePath, out var hasUpdateAsFile);
                 report.SetHasBaseGame(hasBaseGameAsFile, packagedInfoKey);
                 report.SetHasUpdate(hasUpdateAsFile, packagedInfoKey);
                 
-                bool hasBaseGameAsSplitFile = TkGameRomUtils.IsSplitFileValid(keys, packagedUpdatePath, out bool hasUpdateAsSplitFile);
+                var hasBaseGameAsSplitFile = TkGameRomUtils.IsSplitFileValid(keys, packagedUpdatePath, out var hasUpdateAsSplitFile);
                 report.SetHasBaseGame(hasBaseGameAsSplitFile, splitFileInfoKey);
                 report.SetHasUpdate(hasUpdateAsSplitFile, splitFileInfoKey);
             }
@@ -176,8 +176,8 @@ public class TkExtensibleRomProviderBuilder
         if (_root.NandFolders.Get(out var nandFolderPaths)) {
             const string infoKey = "Nand Folder(s)";
 
-            foreach (string nandFolderPath in nandFolderPaths) {
-                bool hasBaseGame = TkNandUtils.IsValid(keys, nandFolderPath, out bool hasUpdateAsFile);
+            foreach (var nandFolderPath in nandFolderPaths) {
+                var hasBaseGame = TkNandUtils.IsValid(keys, nandFolderPath, out var hasUpdateAsFile);
                 report.SetHasBaseGame(hasBaseGame, infoKey);
                 report.SetHasUpdate(hasUpdateAsFile, infoKey);
             }

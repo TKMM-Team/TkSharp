@@ -22,7 +22,7 @@ public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomPro
         }
 
         using var archive = ArchiveFactory.Open(context.Stream);
-        (string? root, var embeddedMod, bool hasValidRoot) = await LocateRoot(archive, readerProvider);
+        (var root, var embeddedMod, var hasValidRoot) = await LocateRoot(archive, readerProvider);
         if (!hasValidRoot) {
             return null;
         }

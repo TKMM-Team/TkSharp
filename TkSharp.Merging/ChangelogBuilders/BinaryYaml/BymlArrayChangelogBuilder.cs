@@ -17,9 +17,9 @@ public class BymlArrayChangelogBuilder : IBymlArrayChangelogBuilder
         using var vanillaRecordsFound = RentedBitArray.Create(vanilla.Count);
         using var srcRecordsThatAreVanilla = RentedBitArray.Create(src.Count); 
 
-        for (int i = 0; i < src.Count; i++) {
+        for (var i = 0; i < src.Count; i++) {
             var element = src[i];
-            if (!vanilla.TryGetIndex(element, Byml.ValueEqualityComparer.Default, vanillaRecordsFound, out int vanillaIndex)) {
+            if (!vanilla.TryGetIndex(element, Byml.ValueEqualityComparer.Default, vanillaRecordsFound, out var vanillaIndex)) {
                 additions.Enqueue(i);
                 continue;
             }
@@ -29,7 +29,7 @@ public class BymlArrayChangelogBuilder : IBymlArrayChangelogBuilder
             vanillaRecordsFound[vanillaIndex] = true;
         }
 
-        for (int i = 0; i < vanilla.Count; i++) {
+        for (var i = 0; i < vanilla.Count; i++) {
             // This vanilla entry has a 1:1 pair in
             // the modified array, so ignore this step
             if (vanillaRecordsFound[i]) {
@@ -56,8 +56,8 @@ public class BymlArrayChangelogBuilder : IBymlArrayChangelogBuilder
             );
         }
 
-        if (additions.TryPeek(out int index)) {
-            foreach (int i in additions) {
+        if (additions.TryPeek(out var index)) {
+            foreach (var i in additions) {
                 changelog.Add(
                     (index, BymlChangeType.Add, node: src[i])
                 );

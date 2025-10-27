@@ -33,7 +33,7 @@ public readonly ref struct TkPath(ReadOnlySpan<char> canonical, int fileVersion,
         
         isInvalid = false;
 
-        int rootFolderLength = rootFolderPath is "" ? 0 : rootFolderPath[^1] switch {
+        var rootFolderLength = rootFolderPath is "" ? 0 : rootFolderPath[^1] switch {
             '/' or '\\' => rootFolderPath.Length,
             _ => rootFolderPath.Length + 1
         };
@@ -50,7 +50,7 @@ public readonly ref struct TkPath(ReadOnlySpan<char> canonical, int fileVersion,
         Span<char> root = stackalloc char[6];
         relative[..6].ToLowerInvariant(root);
 
-        int rootLength = root[..5] switch {
+        var rootLength = root[..5] switch {
             "romfs" or "exefs" => 5,
             "cheat" or "extra" when root[^1] is 's' => 6,
             _ => -1
@@ -62,7 +62,7 @@ public readonly ref struct TkPath(ReadOnlySpan<char> canonical, int fileVersion,
         }
 
         var canonical = span[(rootFolderLength + rootLength + 1)..].GetCanonical(
-            out int fileVersion, out var attributes
+            out var fileVersion, out var attributes
         );
 
         return new TkPath(

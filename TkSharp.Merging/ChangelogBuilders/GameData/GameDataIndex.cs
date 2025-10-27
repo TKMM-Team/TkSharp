@@ -23,23 +23,23 @@ public class GameDataIndex
             throw new InvalidDataException("Invalid GameDataIndex magic");
         }
 
-        int versionCount = stream.Read<int>();
+        var versionCount = stream.Read<int>();
 
         _versions = new int[versionCount];
         Dictionary<int, Table> tables = new(versionCount);
 
-        for (int vi = 0; vi < versionCount; vi++) {
-            int version = _versions[vi] = stream.Read<int>();
+        for (var vi = 0; vi < versionCount; vi++) {
+            var version = _versions[vi] = stream.Read<int>();
 
             if (stream.Read<uint>() != STANDARD_TABLES_MAGIC) {
                 throw new InvalidDataException("Standard tables header not found.");
             }
 
-            int tableCount = stream.Read<int>();
+            var tableCount = stream.Read<int>();
             Dictionary<ulong, FrozenDictionary<uint, int>> standardLookups = new(tableCount);
 
-            for (int i = 0; i < tableCount; i++) {
-                var lookupTable = ReadTable<uint>(stream, out ulong lookupTableHash);
+            for (var i = 0; i < tableCount; i++) {
+                var lookupTable = ReadTable<uint>(stream, out var lookupTableHash);
                 standardLookups[lookupTableHash] = lookupTable;
             }
 
@@ -68,9 +68,9 @@ public class GameDataIndex
 
     private static int GetBestVersion(int version)
     {
-        int match = _versions[0];
+        var match = _versions[0];
         
-        foreach (int ver in _versions) {
+        foreach (var ver in _versions) {
             if (version < ver) {
                 return match;
             }
@@ -95,10 +95,10 @@ public class GameDataIndex
         }
 
         lookupTableHash = stream.Read<ulong>();
-        int entryCount = stream.Read<int>();
+        var entryCount = stream.Read<int>();
 
         Dictionary<T, int> entries = new(entryCount);
-        for (int e = 0; e < entryCount; e++) {
+        for (var e = 0; e < entryCount; e++) {
             entries[stream.Read<T>()] = stream.Read<int>();
         }
 

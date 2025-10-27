@@ -22,15 +22,15 @@ public sealed class RsdbTagIndex : IDisposable
     {
         var paths = table[RsdbTagTable.PATH_LIST].GetArray();
         var tags = table[RsdbTagTable.TAG_LIST].GetArray();
-        int entryCount = paths.Count / 3;
+        var entryCount = paths.Count / 3;
 
-        byte[] bitTable = table[RsdbTagTable.BIT_TABLE].GetBinary();
+        var bitTable = table[RsdbTagTable.BIT_TABLE].GetBinary();
 
         Dictionary<(string, string, string), int> entries = new(entryCount);
         EntryTags = ArrayPool<ImmutableSortedSet<string>>.Shared.Rent(entryCount);
 
-        for (int i = 0; i < paths.Count; i++) {
-            int entryIndex = i / 3;
+        for (var i = 0; i < paths.Count; i++) {
+            var entryIndex = i / 3;
             entries.Add(
                 (paths[i].GetString(), paths[++i].GetString(), paths[++i].GetString()), entryIndex
             );

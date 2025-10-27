@@ -25,7 +25,7 @@ public sealed class MsbtChangelogBuilder : Singleton<MsbtChangelogBuilder>, ITkC
         Msbt changelog = [];
         var src = Msbt.FromBinary(srcBuffer, _options);
 
-        foreach ((string key, var entry) in src) {
+        foreach ((var key, var entry) in src) {
             if (!vanilla.TryGetValue(key, out var vanillaEntry)) {
                 goto UpdateChangelog;
             }

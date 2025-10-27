@@ -29,7 +29,7 @@ public class BymlMergeTracking(string canonical)
             Type = type
         };
 
-        foreach ((var map, object entry) in _maps) {
+        foreach ((var map, var entry) in _maps) {
             switch (map) {
                 case IDictionary<uint, Byml> hashMap32:
                     ApplyMapEntry(hashMap32, entry);
@@ -50,7 +50,7 @@ public class BymlMergeTracking(string canonical)
 
     public BymlMergeTrackingMapEntry<TKey> GetMapTrackingEntry<TKey>(ICollection<KeyValuePair<TKey, Byml>> @base) where TKey : notnull
     {
-        ref object? entry = ref CollectionsMarshal.GetValueRefOrAddDefault(_maps, @base, out bool hasEntry);
+        ref var entry = ref CollectionsMarshal.GetValueRefOrAddDefault(_maps, @base, out var hasEntry);
         if (!hasEntry || Unsafe.IsNullRef(ref entry) || entry is null) {
             entry = new BymlMergeTrackingMapEntry<TKey>();
         }
@@ -60,7 +60,7 @@ public class BymlMergeTracking(string canonical)
 
     public void RemoveMapTrackingEntry<TKey>(ICollection<KeyValuePair<TKey, Byml>> @base, TKey key) where TKey : notnull
     {
-        if (!_maps.TryGetValue(@base, out object? entry) || entry is not BymlMergeTrackingMapEntry<TKey> mapTrackingEntry) {
+        if (!_maps.TryGetValue(@base, out var entry) || entry is not BymlMergeTrackingMapEntry<TKey> mapTrackingEntry) {
             return;
         }
 
@@ -82,13 +82,13 @@ public class BymlMergeTracking(string canonical)
     {
         info.Depth = entry.Depth;
 
-        int newEntryOffset = 0;
+        var newEntryOffset = 0;
 
-        foreach (int i in entry.Removals.Where(i => @base.Count > i)) {
+        foreach (var i in entry.Removals.Where(i => @base.Count > i)) {
             @base[i] = BymlChangeType.Remove;
         }
         
-        foreach ((_, int i) in entry.KeyedRemovals.Where(i => @base.Count > i.Value)) {
+        foreach ((_, var i) in entry.KeyedRemovals.Where(i => @base.Count > i.Value)) {
             @base[i] = BymlChangeType.Remove;
         }
 
@@ -100,11 +100,11 @@ public class BymlMergeTracking(string canonical)
 
         Dictionary<BymlKey, int> keyedAdditions = new();
 
-        foreach ((int insertIndex, var entries) in additions) {
+        foreach ((var insertIndex, var entries) in additions) {
             ProcessAdditions(ref newEntryOffset, @base, entry, insertIndex, entries, ref info, keyedAdditions);
         }
 
-        for (int i = 0; i < @base.Count; i++) {
+        for (var i = 0; i < @base.Count; i++) {
             if (@base[i].Value is not BymlChangeType.Remove) {
                 continue;
             }
@@ -152,9 +152,9 @@ public class BymlMergeTracking(string canonical)
                 continue;
             }
 
-            if (keyedAdditions.TryGetValue(key, out int oldIndex)) {
+            if (keyedAdditions.TryGetValue(key, out var oldIndex)) {
                 ref var existingEntry = ref @base.AsSpan()[oldIndex];
-                int index = MergeKeyedAdditions(existingEntry, entries, ref newEntryOffset, @base, insertIndex, ref info);
+                var index = MergeKeyedAdditions(existingEntry, entries, ref newEntryOffset, @base, insertIndex, ref info);
                 existingEntry = BymlChangeType.Remove;
                 keyedAdditions[key] = index;
                 continue;
@@ -175,7 +175,7 @@ public class BymlMergeTracking(string canonical)
 
     private int MergeKeyedAdditions(Byml @base, Span<Byml> entries, ref int newEntryOffset, BymlArray baseArray, int insertIndex, ref BymlTrackingInfo info)
     {
-        for (int i = 0; i < entries.Length; i++) {
+        for (var i = 0; i < entries.Length; i++) {
             BymlChangelogBuilder.LogChangesInline(ref info, ref entries[i], @base);
         }
 
@@ -199,7 +199,7 @@ public class BymlMergeTracking(string canonical)
 
     private static int InsertAddition(ref int newEntryOffset, BymlArray @base, int insertIndex, Byml addition)
     {
-        int relativeIndex = insertIndex + newEntryOffset;
+        var relativeIndex = insertIndex + newEntryOffset;
         newEntryOffset++;
 
         if (@base.Count > relativeIndex) {

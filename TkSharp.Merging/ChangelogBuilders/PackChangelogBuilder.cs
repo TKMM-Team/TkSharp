@@ -27,7 +27,7 @@ public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBu
         var vanilla = Sarc.FromBinary(vanillaBuffer);
         Sarc changelog = [];
 
-        foreach ((string name, var data) in sarc) {
+        foreach ((var name, var data) in sarc) {
             var nested = new TkPath(
                 name,
                 fileVersion: path.FileVersion,
@@ -62,7 +62,7 @@ public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBu
             inlineOut.Write(data);
         }
 
-        foreach ((string key, _) in vanilla) {
+        foreach ((var key, _) in vanilla) {
             if (!sarc.ContainsKey(key)) {
                 changelog[key] = _deletedFileMark;
             }
@@ -79,7 +79,7 @@ public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBu
 
     private void ExtractCustom(Sarc sarc, string canonical, in TkPath path, in TkChangelogBuilderFlags flags, OpenWriteChangelog openWrite)
     {
-        foreach ((string name, var data) in sarc) {
+        foreach ((var name, var data) in sarc) {
             var nested = new TkPath(
                 name,
                 fileVersion: path.FileVersion,

@@ -78,7 +78,7 @@ public partial class TkProjectManager
 
     private static void LoadProjectMetadataFromFolder(TkProject project)
     {
-        string projectFilePath = Path.Combine(project.FolderPath, ".tkproj");
+        var projectFilePath = Path.Combine(project.FolderPath, ".tkproj");
         FileInfo projectFile = new(projectFilePath);
 
         if (!projectFile.Exists || projectFile.Length == 0) {
@@ -102,12 +102,12 @@ public partial class TkProjectManager
 
     public static void LoadProjectOptionsFromFolder(TkProject project)
     {
-        string optionsFolderPath = Path.Combine(project.FolderPath, "options");
+        var optionsFolderPath = Path.Combine(project.FolderPath, "options");
         if (!Directory.Exists(optionsFolderPath)) {
             return;
         }
 
-        foreach (string optionGroupFolderPath in Directory.EnumerateDirectories(optionsFolderPath)) {
+        foreach (var optionGroupFolderPath in Directory.EnumerateDirectories(optionsFolderPath)) {
             LoadOptionGroupFolder(project, optionGroupFolderPath);
         }
     }
@@ -116,7 +116,7 @@ public partial class TkProjectManager
     {
         TkModOptionGroup group;
 
-        string metadataFilePath = Path.Combine(optionGroupFolderPath, "info.json");
+        var metadataFilePath = Path.Combine(optionGroupFolderPath, "info.json");
         FileInfo metadataFile = new(metadataFilePath);
 
         if (metadataFile is { Exists: true, Length: > 0 }) {
@@ -131,7 +131,7 @@ public partial class TkProjectManager
         };
 
     CollectOptions:
-        foreach (string optionFolderPath in Directory.EnumerateDirectories(optionGroupFolderPath)) {
+        foreach (var optionFolderPath in Directory.EnumerateDirectories(optionGroupFolderPath)) {
             LoadOptionFolder(project, group, optionFolderPath);
         }
 
@@ -143,7 +143,7 @@ public partial class TkProjectManager
     {
         TkModOption option;
 
-        string metadataFilePath = Path.Combine(optionFolderPath, "info.json");
+        var metadataFilePath = Path.Combine(optionFolderPath, "info.json");
         FileInfo metadataFile = new(metadataFilePath);
 
         if (metadataFile is { Exists: true, Length: > 0 }) {
@@ -167,7 +167,7 @@ public partial class TkProjectManager
             goto Default;
         }
 
-        for (int i = 0; i < RecentProjects.Count; i++) {
+        for (var i = 0; i < RecentProjects.Count; i++) {
             if (RecentProjects[i].FolderPath != project.FolderPath) {
                 continue;
             }

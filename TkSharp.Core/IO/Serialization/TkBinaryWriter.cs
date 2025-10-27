@@ -26,7 +26,7 @@ public static class TkBinaryWriter
 
         output.Write(mod.OptionGroups.Count);
         
-        for (int i = 0; i < mod.OptionGroups.Count; i++) {
+        for (var i = 0; i < mod.OptionGroups.Count; i++) {
             var optionGroup = mod.OptionGroups[i];
             WriteTkModOptionGroup(output, optionGroup, context);
             context.Groups[optionGroup] = i;
@@ -46,7 +46,7 @@ public static class TkBinaryWriter
         output.Write(optionGroup.Priority);
         
         output.Write(optionGroup.Options.Count);
-        for (int i = 0; i < optionGroup.Options.Count; i++) {
+        for (var i = 0; i < optionGroup.Options.Count; i++) {
             var option = optionGroup.Options[i];
             WriteTkModOption(output, option);
             context.Options[option] = i;
@@ -128,7 +128,7 @@ public static class TkBinaryWriter
 
     public static void WriteTkThumbnail(in Stream output, in TkThumbnail? thumbnail)
     {
-        bool writeThumbnail = !(thumbnail is null || thumbnail.IsDefault);
+        var writeThumbnail = !(thumbnail is null || thumbnail.IsDefault);
         
         output.Write(writeThumbnail);
         if (writeThumbnail) {

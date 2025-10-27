@@ -31,7 +31,7 @@ public static class RsdbRowCache
 
         var entry = result[0];
 
-        for (int i = 1; i < result.Length; i++) {
+        for (var i = 1; i < result.Length; i++) {
             var next = result[i];
             if (next.Version > dbFileVersion) {
                 break;
@@ -48,12 +48,12 @@ public static class RsdbRowCache
         using var stream = typeof(RsdbRowCache).Assembly
             .GetManifestResourceStream("TkSharp.Merging.Resources.RsdbCache.bpcc")!;
 
-        int count = stream.Read<int>();
+        var count = stream.Read<int>();
         MutableOverflowMap overflow = new(count);
 
-        for (int i = 0; i < count; i++) {
-            ulong hash = stream.Read<ulong>();
-            int entryCount = stream.Read<int>();
+        for (var i = 0; i < count; i++) {
+            var hash = stream.Read<ulong>();
+            var entryCount = stream.Read<int>();
             overflow.Add(hash,
                 ReadEntries(stream, entryCount)
             );
@@ -66,9 +66,9 @@ public static class RsdbRowCache
     {
         MutableOverflowMapEntries entries = [];
 
-        for (int i = 0; i < count; i++) {
-            ulong rowId = stream.Read<ulong>();
-            int versionCount = stream.Read<int>();
+        for (var i = 0; i < count; i++) {
+            var rowId = stream.Read<ulong>();
+            var versionCount = stream.Read<int>();
             entries.Add(rowId, ReadVersionEntries(stream, versionCount));
         }
 
@@ -79,12 +79,12 @@ public static class RsdbRowCache
     {
         var entries = new OverflowMapEntry[count];
 
-        for (int i = 0; i < count; i++) {
-            int version = stream.Read<int>();
-            int bymlBufferSize = stream.Read<int>();
+        for (var i = 0; i < count; i++) {
+            var version = stream.Read<int>();
+            var bymlBufferSize = stream.Read<int>();
 
             using var buffer = SpanOwner<byte>.Allocate(bymlBufferSize);
-            int read = stream.Read(buffer.Span);
+            var read = stream.Read(buffer.Span);
             Debug.Assert(read == buffer.Length);
 
             entries[i] = (

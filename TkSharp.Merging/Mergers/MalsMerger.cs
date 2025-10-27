@@ -31,13 +31,13 @@ public static class MalsMerger
         }
 
         var localeAsBytes = locale.Cast<char, byte>();
-        int localeRegion = BitConverter.ToInt32(localeAsBytes[..4]);
-        int localeLang = BitConverter.ToInt32(localeAsBytes[4..]);
+        var localeRegion = BitConverter.ToInt32(localeAsBytes[..4]);
+        var localeLang = BitConverter.ToInt32(localeAsBytes[4..]);
 
-        int level = 1;
+        var level = 1;
         string? best = null;
 
-        foreach (string target in targets) {
+        foreach (var target in targets) {
             if (target.Length < 9) {
                 TkLog.Instance.LogWarning("Invalid mals file name: {FileName}", target);
                 continue;
@@ -46,8 +46,8 @@ public static class MalsMerger
             var targetLocale = target.AsSpan()[5..9]
                 .Cast<char, byte>();
             
-            int region = BitConverter.ToInt32(targetLocale[..4]);
-            int lang = BitConverter.ToInt32(targetLocale[4..]);
+            var region = BitConverter.ToInt32(targetLocale[..4]);
+            var lang = BitConverter.ToInt32(targetLocale[4..]);
 
             if (localeLang == lang && localeRegion == region) {
                 return target;

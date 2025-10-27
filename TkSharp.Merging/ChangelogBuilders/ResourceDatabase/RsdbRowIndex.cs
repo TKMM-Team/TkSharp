@@ -15,10 +15,10 @@ public static class RsdbRowIndex
 
         Dictionary<ulong, FrozenDictionary<ulong, int>> lookup = [];
 
-        int count = stream.Read<int>();
-        for (int i = 0; i < count; i++) {
-            ulong hash = stream.Read<ulong>();
-            int entryCount = stream.Read<int>();
+        var count = stream.Read<int>();
+        for (var i = 0; i < count; i++) {
+            var hash = stream.Read<ulong>();
+            var entryCount = stream.Read<int>();
             lookup.Add(hash,
                 ReadEntries(stream, entryCount)
             );
@@ -36,7 +36,7 @@ public static class RsdbRowIndex
     private static FrozenDictionary<ulong, int> ReadEntries(Stream stream, int count)
     {
         Dictionary<ulong, int> entries = [];
-        for (int i = 0; i < count; i++) {
+        for (var i = 0; i < count; i++) {
             entries.Add(stream.Read<ulong>(), stream.Read<int>());
         }
 

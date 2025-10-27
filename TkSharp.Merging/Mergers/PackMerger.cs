@@ -17,7 +17,7 @@ public sealed class PackMerger(TkPackFileCollector packFileCollector) : ITkMerge
         var merged = Sarc.FromBinary(vanillaData.ToArray());
         var changelogs = new Sarc[inputs.Count];
 
-        for (int i = 0; i < inputs.Count; i++) {
+        for (var i = 0; i < inputs.Count; i++) {
             var input = inputs[i];
             changelogs[i] = Sarc.FromBinary(input.Segment);
         }
@@ -58,7 +58,7 @@ public sealed class PackMerger(TkPackFileCollector packFileCollector) : ITkMerge
             .GroupBy(x => x.Key, x => x.Value)
             .Select(x => (x.Key, x.ToArray()));
         
-        foreach ((string name, var buffers) in groups) {
+        foreach ((var name, var buffers) in groups) {
             var data = buffers[^1];
             if (IsRemovedEntry(data)) {
                 merged.Remove(name);
@@ -68,7 +68,7 @@ public sealed class PackMerger(TkPackFileCollector packFileCollector) : ITkMerge
 
     private static void MergeSingle(in Sarc merged, Sarc changelog)
     {
-        foreach ((string name, var data) in changelog) {
+        foreach ((var name, var data) in changelog) {
             if (IsRemovedEntry(data)) {
                 merged.Remove(name);
             }

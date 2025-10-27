@@ -17,7 +17,7 @@ public static class TkGameRomUtils
     
     public static bool IsValid(KeySet keys, string target, out bool hasUpdate)
     {
-        bool result = IsValid(keys, target, out hasUpdate, switchFsContainer: null);
+        var result = IsValid(keys, target, out hasUpdate, switchFsContainer: null);
         return result;
     }
 
@@ -37,7 +37,7 @@ public static class TkGameRomUtils
 
     public static bool IsFileValid(KeySet keys, string target, out bool hasUpdate)
     {
-        bool result = IsFileValid(keys, target, out hasUpdate, switchFsContainer: null);
+        var result = IsFileValid(keys, target, out hasUpdate, switchFsContainer: null);
         return result;
     }
 
@@ -50,7 +50,7 @@ public static class TkGameRomUtils
 
         LocalStorage storage = new(target, FileAccess.Read);
         var nx = storage.GetSwitchFs(target, keys);
-        bool result = IsValid(nx, out hasUpdate);
+        var result = IsValid(nx, out hasUpdate);
 
         if (switchFsContainer is null) {
             nx.Dispose();
@@ -65,7 +65,7 @@ public static class TkGameRomUtils
 
     public static bool IsSplitFileValid(KeySet keys, string target, out bool hasUpdate)
     {
-        bool result = IsSplitFileValid(keys, target, out hasUpdate, switchFsContainer: null);
+        var result = IsSplitFileValid(keys, target, out hasUpdate, switchFsContainer: null);
         return result;
     }
 
@@ -84,7 +84,7 @@ public static class TkGameRomUtils
 
         ConcatenationStorage storage = new(splitFiles, true);
         var nx = storage.GetSwitchFs(target, keys);
-        bool result = IsValid(nx, out hasUpdate);
+        var result = IsValid(nx, out hasUpdate);
         
         if (switchFsContainer is null) {
             nx.Dispose();
@@ -104,7 +104,7 @@ public static class TkGameRomUtils
             return false;
         }
 
-        bool result = totk.Main is not null;
+        var result = totk.Main is not null;
         hasUpdate = totk.DisplayVersion is not "1.0.0";
         return result;
     }
@@ -122,7 +122,7 @@ public static class TkGameRomUtils
             yield break;
         }
         
-        foreach (string file in Directory.EnumerateFiles(target, "*.*", SearchOption.AllDirectories)) {
+        foreach (var file in Directory.EnumerateFiles(target, "*.*", SearchOption.AllDirectories)) {
             var ext = Path.GetExtension(file.AsSpan());
             if (ext is not (".xci" or ".nsp")) {
                 continue;

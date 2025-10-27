@@ -7,8 +7,8 @@ public static class RegionLangMaskParser
     public static int ParseVersion(ReadOnlySpan<byte> src, out string nsoBinaryId)
     {
         StringBuilder sb = new();
-        for (int i = src.Length - 1; i > -1; i--) {
-            byte @char = src[i];
+        for (var i = src.Length - 1; i > -1; i--) {
+            var @char = src[i];
             if (@char != '\n') {
                 sb.Insert(0, (char)@char);
                 continue;

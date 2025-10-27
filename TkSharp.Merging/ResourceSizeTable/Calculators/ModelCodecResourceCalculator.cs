@@ -10,8 +10,8 @@ public sealed class ModelCodecResourceCalculator : ITkResourceSizeCalculator
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static uint GetResourceSize(in Span<byte> data)
     {
-        int flags = data[0x8..0xC].Read<int>();
-        int size = (flags >> 5) << (flags & 0xF);
+        var flags = data[0x8..0xC].Read<int>();
+        var size = (flags >> 5) << (flags & 0xF);
         return (uint)(size * 2.55);
     }
 }

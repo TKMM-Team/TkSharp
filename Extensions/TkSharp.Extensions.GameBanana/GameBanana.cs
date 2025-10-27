@@ -16,7 +16,7 @@ internal static class GameBanana
     
     public static async ValueTask<Stream> Get(string url, CancellationToken ct = default)
     {
-        int attempts = 0;
+        var attempts = 0;
         
     Retry:
         try {
@@ -52,7 +52,7 @@ internal static class GameBanana
     {
         page *= 2;
 
-        for (int i = 0; i < 2; i++) {
+        for (var i = 0; i < 2; i++) {
             var response = await Get<GameBananaFeed>(
                 GetEndpoint(gameId, page + i + 1, sort, searchTerm),
                 GameBananaFeedJsonContext.Default.GameBananaFeed, ct

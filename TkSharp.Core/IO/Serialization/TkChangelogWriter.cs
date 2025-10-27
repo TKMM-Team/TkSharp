@@ -45,7 +45,7 @@ public static class TkChangelogWriter
             output.WriteString(patch.NsoBinaryId);
 
             output.Write(patch.Entries.Count);
-            foreach ((uint key, uint value) in patch.Entries) {
+            foreach ((var key, var value) in patch.Entries) {
                 output.Write(key);
                 output.Write(value);
             }
@@ -64,7 +64,7 @@ public static class TkChangelogWriter
     {
         output.Write(files.Count);
 
-        foreach (string file in files) {
+        foreach (var file in files) {
             output.WriteString(file);
         }
     }
@@ -73,7 +73,7 @@ public static class TkChangelogWriter
     {
         output.Write((byte)list.Count);
 
-        foreach (int fileVersion in list) {
+        foreach (var fileVersion in list) {
             output.Write(fileVersion);
         }
     }

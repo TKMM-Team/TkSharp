@@ -9,11 +9,11 @@ public readonly struct RentedBitArray : IDisposable
 
     public static RentedBitArray Create(int size)
     {
-        int arrayLength = (int)Math.Ceiling(size / 32d);
-        int[] rented = ArrayPool<int>.Shared.Rent(arrayLength);
+        var arrayLength = (int)Math.Ceiling(size / 32d);
+        var rented = ArrayPool<int>.Shared.Rent(arrayLength);
 
         // Clear buffer
-        for (int i = 0; i < rented.Length; i++) {
+        for (var i = 0; i < rented.Length; i++) {
             rented[i] = 0;
         }
         
@@ -37,8 +37,8 @@ public readonly struct RentedBitArray : IDisposable
             throw new IndexOutOfRangeException();
         }
         
-        int bitMask = 1 << index;
-        ref int segment = ref _rented[index >> 5];
+        var bitMask = 1 << index;
+        ref var segment = ref _rented[index >> 5];
 
         if (value) {
             segment |= bitMask;

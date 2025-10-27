@@ -17,7 +17,7 @@ public sealed class SarcChangelogBuilder : Singleton<SarcChangelogBuilder>, ITkC
         Sarc changelog = [];
         var sarc = Sarc.FromBinary(srcBuffer);
 
-        foreach ((string name, var data) in sarc) {
+        foreach ((var name, var data) in sarc) {
             if (!vanilla.TryGetValue(name, out var vanillaData)) {
                 // Custom file, use entire content
                 goto MoveContent;
@@ -51,7 +51,7 @@ public sealed class SarcChangelogBuilder : Singleton<SarcChangelogBuilder>, ITkC
             changelog[name] = data;
         }
 
-        foreach ((string key, _) in vanilla) {
+        foreach ((var key, _) in vanilla) {
             if (!sarc.ContainsKey(key)) {
                 changelog[key] = _deletedFileMark;
             }

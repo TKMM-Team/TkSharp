@@ -12,7 +12,7 @@ public static class TkBinaryReader
     {
         context.EnsureId(input.Read<Ulid>());
         
-        string relativeModFolderPath = context.Id.ToString();
+        var relativeModFolderPath = context.Id.ToString();
         var source = systemProvider.GetSystemSource(relativeModFolderPath);
         
         var result = new TkMod {
@@ -25,8 +25,8 @@ public static class TkBinaryReader
             Author = input.ReadString()!
         };
         
-        int contributorCount = input.Read<int>();
-        for (int i = 0; i < contributorCount; i++) {
+        var contributorCount = input.Read<int>();
+        for (var i = 0; i < contributorCount; i++) {
             result.Contributors.Add(
                 new TkModContributor(
                     input.ReadString()!,
@@ -35,15 +35,15 @@ public static class TkBinaryReader
             );
         }
 
-        int optionGroupCount = input.Read<int>();
-        for (int i = 0; i < optionGroupCount; i++) {
+        var optionGroupCount = input.Read<int>();
+        for (var i = 0; i < optionGroupCount; i++) {
             result.OptionGroups.Add(
                 ReadTkModOptionGroup(input, systemProvider, relativeModFolderPath)
             );
         }
 
-        int dependencyCount = input.Read<int>();
-        for (int i = 0; i < dependencyCount; i++) {
+        var dependencyCount = input.Read<int>();
+        for (var i = 0; i < dependencyCount; i++) {
             result.Dependencies.Add(
                 ReadTkModDependency(input)
             );
@@ -64,23 +64,23 @@ public static class TkBinaryReader
             Priority = input.Read<int>()
         };
         
-        int optionCount = input.Read<int>();
-        for (int i = 0; i < optionCount; i++) {
+        var optionCount = input.Read<int>();
+        for (var i = 0; i < optionCount; i++) {
             result.Options.Add(
                 ReadTkModOption(input, systemProvider, parentModFolderPath)
             );
         }
         
-        int defaultSelectedOptionCount = input.Read<int>();
-        for (int i = 0; i < defaultSelectedOptionCount; i++) {
-            int index = input.Read<int>();
+        var defaultSelectedOptionCount = input.Read<int>();
+        for (var i = 0; i < defaultSelectedOptionCount; i++) {
+            var index = input.Read<int>();
             result.DefaultSelectedOptions.Add(
                 result.Options[index]
             );
         }
         
-        int dependencyCount = input.Read<int>();
-        for (int i = 0; i < dependencyCount; i++) {
+        var dependencyCount = input.Read<int>();
+        for (var i = 0; i < dependencyCount; i++) {
             result.Dependencies.Add(
                 ReadTkModDependency(input)
             );
@@ -92,7 +92,7 @@ public static class TkBinaryReader
     public static TkModOption ReadTkModOption(in Stream input, ITkSystemProvider systemProvider, string parentModFolderPath)
     {
         var id = input.Read<Ulid>();
-        string changelogFolderPath = Path.Combine(parentModFolderPath, id.ToString());
+        var changelogFolderPath = Path.Combine(parentModFolderPath, id.ToString());
         var source = systemProvider.GetSystemSource(changelogFolderPath);
         
         return new TkModOption {
@@ -122,13 +122,13 @@ public static class TkBinaryReader
             Thumbnail = ReadTkThumbnail(input),
         };
         
-        int modCount = input.Read<int>();
-        for (int i = 0; i < modCount; i++) {
-            int index = input.Read<int>();
+        var modCount = input.Read<int>();
+        for (var i = 0; i < modCount; i++) {
+            var index = input.Read<int>();
             result.Mods.Add(ReadTkProfileMod(input, mods[index]));
         }
         
-        int selectedIndex = input.Read<int>();
+        var selectedIndex = input.Read<int>();
         if (selectedIndex > -1) {
             result.Selected = result.Mods[selectedIndex];
         }
@@ -143,15 +143,15 @@ public static class TkBinaryReader
             IsEditingOptions = input.Read<bool>(),
         };
         
-        int selectionGroupCount = input.Read<int>();
+        var selectionGroupCount = input.Read<int>();
 
-        for (int i = 0; i < selectionGroupCount; i++) {
-            int groupKeyIndex = input.Read<int>();
-            int indexCount = input.Read<int>();
+        for (var i = 0; i < selectionGroupCount; i++) {
+            var groupKeyIndex = input.Read<int>();
+            var indexCount = input.Read<int>();
             var group = mod.OptionGroups[groupKeyIndex];
             HashSet<TkModOption> selection = result.SelectedOptions[group] = [];
 
-            for (int _ = 0; _ < indexCount; _++) {
+            for (var _ = 0; _ < indexCount; _++) {
                 selection.Add(group.Options[input.Read<int>()]);
             }
         }

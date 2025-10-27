@@ -19,7 +19,7 @@ public class ThreadedDownloadStrategy(HttpClient client) : IDownloadStrategy
             response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
 
             if (!response.IsSuccessStatusCode) {
-                string errorMessage = response.StatusCode switch {
+                var errorMessage = response.StatusCode switch {
                     System.Net.HttpStatusCode.NotFound => 
                         "The requested file could not be found on the server.",
                     System.Net.HttpStatusCode.ServiceUnavailable => 
@@ -43,15 +43,15 @@ public class ThreadedDownloadStrategy(HttpClient client) : IDownloadStrategy
                 }
             }
 
-            byte[] result = new byte[contentLength];
+            var result = new byte[contentLength];
             var downloadQueue = new ConcurrentQueue<(long start, long end)>();
             
-            int segments = GetSegmentCount(contentLength);
-            long segmentSize = (long)Math.Ceiling((double)contentLength / segments);
+            var segments = GetSegmentCount(contentLength);
+            var segmentSize = (long)Math.Ceiling((double)contentLength / segments);
             long currentPosition = 0;
 
-            for (int i = 0; i < segments && currentPosition < contentLength; i++) {
-                long end = Math.Min(currentPosition + segmentSize - 1, contentLength - 1);
+            for (var i = 0; i < segments && currentPosition < contentLength; i++) {
+                var end = Math.Min(currentPosition + segmentSize - 1, contentLength - 1);
                 downloadQueue.Enqueue((currentPosition, end));
                 currentPosition += segmentSize;
             }
@@ -62,11 +62,11 @@ public class ThreadedDownloadStrategy(HttpClient client) : IDownloadStrategy
             long bytesDownloadedInInterval = 0;
 
             await using var speedReportTimer = new Timer(_ => {
-                double elapsedSeconds = speedTimer.Elapsed.TotalSeconds;
+                var elapsedSeconds = speedTimer.Elapsed.TotalSeconds;
                 if (elapsedSeconds > 0) {
-                    long bytesInInterval = Interlocked.Exchange(ref bytesDownloadedInInterval, 0);
-                    double bytesPerSecond = (bytesInInterval / elapsedSeconds);
-                    double megabytesPerSecond = bytesPerSecond / MB;
+                    var bytesInInterval = Interlocked.Exchange(ref bytesDownloadedInInterval, 0);
+                    var bytesPerSecond = (bytesInInterval / elapsedSeconds);
+                    var megabytesPerSecond = bytesPerSecond / MB;
                     reporter?.ReportSpeed(megabytesPerSecond);
                     speedTimer.Restart();
                 }
@@ -75,24 +75,24 @@ public class ThreadedDownloadStrategy(HttpClient client) : IDownloadStrategy
             var failures = new ConcurrentDictionary<int, string>();
             var downloadTasks = new Task[segments];
 
-            for (int i = 0; i < segments; i++) {
-                int segmentIndex = i;
+            for (var i = 0; i < segments; i++) {
+                var segmentIndex = i;
                 downloadTasks[i] = Task.Run<Task>(async () => {
                     while (downloadQueue.TryDequeue(out var segment)) {
-                        long start = segment.start;
-                        long end = segment.end;
-                        long expectedBytes = end - start + 1;
+                        var start = segment.start;
+                        var end = segment.end;
+                        var expectedBytes = end - start + 1;
 
-                        int attempt = 0;
+                        var attempt = 0;
                         const int maxRetry = 5;
-                        bool success = false;
-                        int consecutiveTimeouts = 0;
+                        var success = false;
+                        var consecutiveTimeouts = 0;
 
                         while (attempt < maxRetry && !success) {
                             try {
                                 long segmentBytesRead = 0;
                                 using var request = new HttpRequestMessage(HttpMethod.Get, url);
-                                long resumePosition = start + segmentBytesRead;
+                                var resumePosition = start + segmentBytesRead;
                                 request.Headers.Range = new RangeHeaderValue(resumePosition, end);
 
                                 using var segmentResponse = await client.SendAsync(
@@ -111,13 +111,13 @@ public class ThreadedDownloadStrategy(HttpClient client) : IDownloadStrategy
                                 }
 
                                 await using var responseStream = await segmentResponse.Content.ReadAsStreamAsync(ct);
-                                byte[] buffer = new byte[Math.Min(BUFFER_SIZE, expectedBytes - segmentBytesRead)];
+                                var buffer = new byte[Math.Min(BUFFER_SIZE, expectedBytes - segmentBytesRead)];
 
                                 while (segmentBytesRead < expectedBytes) {
                                     using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                                     timeoutCts.CancelAfter(TIMEOUT_MS);
 
-                                    int bytesRead = await responseStream.ReadAsync(
+                                    var bytesRead = await responseStream.ReadAsync(
                                         buffer.AsMemory(0, (int)Math.Min(buffer.Length, expectedBytes - segmentBytesRead)),
                                         timeoutCts.Token);
 
@@ -141,7 +141,7 @@ public class ThreadedDownloadStrategy(HttpClient client) : IDownloadStrategy
                                         Interlocked.Add(ref bytesDownloadedInInterval, bytesRead);
                                         segmentBytesRead += bytesRead;
 
-                                        double currentProgress = (double)totalBytesDownloaded / contentLength;
+                                        var currentProgress = (double)totalBytesDownloaded / contentLength;
                                         reporter?.ReportProgress(currentProgress);
                                     }
                                 }

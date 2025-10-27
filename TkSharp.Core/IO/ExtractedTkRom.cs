@@ -18,19 +18,19 @@ public sealed class ExtractedTkRom : ITkRom
         _packFileLookup = packFileLookup;
 
         {
-            string regionLangMaskPath = Path.Combine(gamePath, "System", "RegionLangMask.txt");
+            var regionLangMaskPath = Path.Combine(gamePath, "System", "RegionLangMask.txt");
             if (!File.Exists(regionLangMaskPath)) {
                 throw new GameRomException("RegionLangMask file not found.");
             }
 
             using Stream regionLangMaskFs = File.OpenRead(regionLangMaskPath);
             using var regionLangMask = RentedBuffer<byte>.Allocate(regionLangMaskFs);
-            GameVersion = RegionLangMaskParser.ParseVersion(regionLangMask.Span, out string nsoBinaryId);
+            GameVersion = RegionLangMaskParser.ParseVersion(regionLangMask.Span, out var nsoBinaryId);
             NsoBinaryId = nsoBinaryId;
         }
 
         {
-            string zsDicPath = Path.Combine(gamePath, "Pack", "ZsDic.pack.zs");
+            var zsDicPath = Path.Combine(gamePath, "Pack", "ZsDic.pack.zs");
             if (!File.Exists(zsDicPath)) {
                 throw new GameRomException("ZsDic file not found.");
             }
@@ -40,7 +40,7 @@ public sealed class ExtractedTkRom : ITkRom
         }
 
         {
-            string addressTablePath = Path.Combine(gamePath, "System", "AddressTable", $"Product.{GameVersion}.Nin_NX_NVN.atbl.byml.zs");
+            var addressTablePath = Path.Combine(gamePath, "System", "AddressTable", $"Product.{GameVersion}.Nin_NX_NVN.atbl.byml.zs");
             if (!File.Exists(addressTablePath)) {
                 throw new GameRomException("System address table file not found.");
             }
@@ -51,7 +51,7 @@ public sealed class ExtractedTkRom : ITkRom
         }
 
         {
-            string eventFlowFileEntryPath = Path.Combine(gamePath, $"{AddressTable["Event/EventFlow/EventFlowFileEntry.Product.byml"]}.zs");
+            var eventFlowFileEntryPath = Path.Combine(gamePath, $"{AddressTable["Event/EventFlow/EventFlowFileEntry.Product.byml"]}.zs");
             if (!File.Exists(eventFlowFileEntryPath)) {
                 throw new GameRomException("Event flow file entry file not found.");
             }
@@ -62,7 +62,7 @@ public sealed class ExtractedTkRom : ITkRom
         }
 
         {
-            string effectInfoPath = Path.Combine(gamePath, $"{AddressTable["Effect/EffectFileInfo.Product.Nin_NX_NVN.byml"]}.zs");
+            var effectInfoPath = Path.Combine(gamePath, $"{AddressTable["Effect/EffectFileInfo.Product.Nin_NX_NVN.byml"]}.zs");
             if (!File.Exists(effectInfoPath)) {
                 throw new GameRomException("Effect info file entry file not found.");
             }
@@ -73,7 +73,7 @@ public sealed class ExtractedTkRom : ITkRom
         }
 
         {
-            string ainbFileEntryPath = Path.Combine(gamePath, $"{AddressTable["AI/FileEntry/FileEntry.Product.byml"]}.zs");
+            var ainbFileEntryPath = Path.Combine(gamePath, $"{AddressTable["AI/FileEntry/FileEntry.Product.byml"]}.zs");
             if (!File.Exists(ainbFileEntryPath)) {
                 throw new GameRomException("AI file entry file not found.");
             }
@@ -84,7 +84,7 @@ public sealed class ExtractedTkRom : ITkRom
         }
 
         {
-            string logicFileEntryPath = Path.Combine(gamePath, $"{AddressTable["Logic/FileEntry/FileEntry.Product.byml"]}.zs");
+            var logicFileEntryPath = Path.Combine(gamePath, $"{AddressTable["Logic/FileEntry/FileEntry.Product.byml"]}.zs");
             if (!File.Exists(logicFileEntryPath)) {
                 throw new GameRomException("Logic file entry file not found.");
             }
@@ -95,7 +95,7 @@ public sealed class ExtractedTkRom : ITkRom
         }
 
         {
-            string sequenceFileEntryPath = Path.Combine(gamePath, $"{AddressTable["Sequence/FileEntry/FileEntry.Product.byml"]}.zs");
+            var sequenceFileEntryPath = Path.Combine(gamePath, $"{AddressTable["Sequence/FileEntry/FileEntry.Product.byml"]}.zs");
             if (!File.Exists(sequenceFileEntryPath)) {
                 throw new GameRomException("Sequence file entry file not found.");
             }
@@ -127,7 +127,7 @@ public sealed class ExtractedTkRom : ITkRom
     public RentedBuffer<byte> GetVanilla(string relativeFilePath, out bool isFoundMissing)
     {
         isFoundMissing = false;
-        string absolute = Path.Combine(_gamePath, relativeFilePath);
+        var absolute = Path.Combine(_gamePath, relativeFilePath);
         if (!File.Exists(absolute)) {
             // Nested files have the relative and canonical
             // file paths, so this is a valid call

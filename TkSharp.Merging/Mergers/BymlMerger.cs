@@ -15,7 +15,7 @@ public sealed class BymlMerger : Singleton<BymlMerger>, ITkMerger
 {
     public MergeResult Merge(TkChangelogEntry entry, RentedBuffers<byte> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
-        var merged = Byml.FromBinary(vanillaData, out var endianness, out ushort version);
+        var merged = Byml.FromBinary(vanillaData, out var endianness, out var version);
         BymlMergeTracking tracking = new(entry.Canonical);
 
         foreach (var input in inputs) {
@@ -31,7 +31,7 @@ public sealed class BymlMerger : Singleton<BymlMerger>, ITkMerger
 
     public MergeResult Merge(TkChangelogEntry entry, IEnumerable<ArraySegment<byte>> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
-        var merged = Byml.FromBinary(vanillaData, out var endianness, out ushort version);
+        var merged = Byml.FromBinary(vanillaData, out var endianness, out var version);
         BymlMergeTracking tracking = new(entry.Canonical);
 
         foreach (var input in inputs) {
@@ -47,7 +47,7 @@ public sealed class BymlMerger : Singleton<BymlMerger>, ITkMerger
 
     public MergeResult MergeSingle(TkChangelogEntry entry, ArraySegment<byte> input, ArraySegment<byte> @base, Stream output)
     {
-        var merged = Byml.FromBinary(@base, out var endianness, out ushort version);
+        var merged = Byml.FromBinary(@base, out var endianness, out var version);
         var changelog = Byml.FromBinary(input);
         BymlMergeTracking tracking = new(entry.Canonical);
 
@@ -128,7 +128,7 @@ public sealed class BymlMerger : Singleton<BymlMerger>, ITkMerger
             keyName = bymlKeyName;
         }
         
-        foreach ((int i, var change, var entry, var keyPrimary, var keySecondary) in changelog) {
+        foreach ((var i, var change, var entry, var keyPrimary, var keySecondary) in changelog) {
             switch (change) {
                 case BymlChangeType.Add: {
                     if (!tracking.Arrays.TryGetValue(@base, out var trackingEntry)) {

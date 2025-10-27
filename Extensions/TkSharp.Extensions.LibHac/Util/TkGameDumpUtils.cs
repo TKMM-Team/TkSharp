@@ -15,18 +15,18 @@ public static class TkGameDumpUtils
         version = 0;
         hasUpdate = false;
         
-        string regionLangMaskFilePath = Path.Combine(gameDumpFolder, "System", "RegionLangMask.txt");
+        var regionLangMaskFilePath = Path.Combine(gameDumpFolder, "System", "RegionLangMask.txt");
         if (!File.Exists(regionLangMaskFilePath)) {
             return false;
         }
         
         using var fs = File.OpenRead(regionLangMaskFilePath);
-        int size = (int)fs.Length;
+        var size = (int)fs.Length;
         
         using var buffer = SpanOwner<byte>.Allocate(size);
         fs.ReadExactly(buffer.Span);
 
-        version = RegionLangMaskParser.ParseVersion(buffer.Span, out string nsoBinaryId);
+        version = RegionLangMaskParser.ParseVersion(buffer.Span, out var nsoBinaryId);
         hasUpdate = nsoBinaryId != BASE_GAME_NSO_ID; 
         return true;
     }
