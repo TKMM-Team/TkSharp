@@ -60,7 +60,6 @@ public sealed class BymlMergerKeyNameProvider : Singleton<BymlMergerKeyNameProvi
                 or "Rewards" => "ActorName",
             "SharpInfoBowList" => "ActorNameHash",
             "PictureBookParamArray" => "ActorNameShort",
-            "WeakPointActorArray" => "ActorPath",
             "NavMeshObjects" => "Alias",
             "AliasEntityList" => "AliasEntity",
             "AliasSensorList" => "AliasSensor",

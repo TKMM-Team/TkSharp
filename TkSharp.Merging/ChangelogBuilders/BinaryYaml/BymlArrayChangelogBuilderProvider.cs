@@ -58,7 +58,6 @@ public class BymlArrayChangelogBuilderProvider : Singleton<BymlArrayChangelogBui
                 or "Rewards" => new BymlKeyedArrayChangelogBuilder("ActorName"),
             "SharpInfoList" or "SharpInfoBowList" or "SharpInfoShieldList" => new BymlKeyedArrayChangelogBuilder("ActorNameHash"),
             "PictureBookParamArray" => new BymlKeyedArrayChangelogBuilder("ActorNameShort"),
-            "WeakPointActorArray" => new BymlKeyedArrayChangelogBuilder("ActorPath"),
             "NavMeshObjects" => new BymlKeyedArrayChangelogBuilder("Alias"),
             "AliasEntityList" => new BymlKeyedArrayChangelogBuilder("AliasEntity"),
             "AliasSensorList" => new BymlKeyedArrayChangelogBuilder("AliasSensor"),
@@ -171,8 +170,8 @@ public class BymlArrayChangelogBuilderProvider : Singleton<BymlArrayChangelogBui
             "ConditionList" => new BymlKeyedArrayChangelogBuilder("WeaponEssence"),
             "WeaponTypeAndSubModelMapping" => new BymlKeyedArrayChangelogBuilder("WeaponType"),
             "Translate" or "Rotate" or "Scale" or "MarginNegative" or "MarginPositive" or "Rot" or "Trans"
-                or "Pivot" or "PlayerPosOnClearEvent" or "EnokidaCameraPos"
-                or "NearWoodStoragePos" => BymlDirectIndexArrayChangelogBuilder.Instance,
+                or "Pivot" or "PlayerPosOnClearEvent" or "EnokidaCameraPos" or "WeakPointActorArray"
+                or "WeakPointUser" or "NearWoodStoragePos" => BymlDirectIndexArrayChangelogBuilder.Instance,
             "StaffRollSetArray" => BymlDirectIndexArrayChangelogBuilder.Instance,
             "ArmorCategory" or "ArmorDyeColor" or "ArmorSeries" or "BowEffect" or "FoodEffect"
                 or "MaterialBowAttachmentTag" or "MaterialCategory" or "ShieldEffect" or "WeaponCategory"
