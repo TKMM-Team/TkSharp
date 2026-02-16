@@ -42,6 +42,19 @@ public class RsdbTagTable
         var paths = CollectPaths(entries);
         Tags.Sort(StringComparer.Ordinal);
 
+        // Distinct inline
+        string prevTag = Tags[0];
+        for (int i = 1; i < Tags.Count; i++) {
+            var tag = Tags[i];
+            
+            if (prevTag == tag) {
+                Tags.RemoveAt(i);
+                i--;
+            }
+            
+            prevTag = tag;
+        }
+
         return new BymlMap {
             { BIT_TABLE, CompileBitTable(entries) },
             { PATH_LIST, paths },
