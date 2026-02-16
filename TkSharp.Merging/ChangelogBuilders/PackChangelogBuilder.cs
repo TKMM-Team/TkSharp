@@ -35,6 +35,10 @@ public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBu
                 root: "romfs",
                 name
             );
+
+            if (data.SequenceEqual(_deletedFileMark)) {
+                throw new InvalidDataException($"Invalid mod file: {name} in {canonical}. Unexpected deleted mark in source file.");
+            }
             
             if (!vanilla.TryGetValue(name, out var vanillaData)) {
                 // Custom file, use entire content
