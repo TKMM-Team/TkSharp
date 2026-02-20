@@ -39,31 +39,51 @@ public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBu
             if (data.SequenceEqual(_deletedFileMark)) {
                 throw new InvalidDataException($"Invalid mod file: {name} in {canonical}. Unexpected deleted mark in source file.");
             }
-            
-            if (!vanilla.TryGetValue(name, out var vanillaData)) {
-                // Custom file, use entire content
-                goto MoveContent;
-            }
 
-            if (data.AsSpan().SequenceEqual(vanillaData)) {
-                // Vanilla file, ignore
+            RentedBuffer<byte> vanillaRented = default;
+
+            try {
+                if (!vanilla.TryGetValue(name, out var vanillaData)) {
+                    vanillaRented = _tk.GetVanilla(name, TkFileAttributes.None);
+
+                    if (vanillaRented.IsEmpty) {
+                        // Custom file, use entire content
+                        goto MoveContent;
+                    }
+
+                    vanillaData = vanillaRented.Segment;
+                }
+
+                if (data.AsSpan().SequenceEqual(vanillaData)) {
+                    if (vanillaRented.IsEmpty) {
+                        // Vanilla file existing in archive, ignore
+                        continue;
+                    }
+                    
+                    // Vanilla file, but not normally in this archive
+                    WritePlaceholder(nested, name, canonical, openWrite);
+                }
+
+                if (TkChangelogBuilder.GetChangelogBuilder(nested) is not { } builder) {
+                    goto MoveContent;
+                }
+
+                builder.Build(name, nested, flags, data, vanillaData,
+                    (tkPath, canon, _, _) => openWrite(tkPath, canon, archiveCanonical: canonical));
+                builder.Dispose();
+
                 continue;
+
+            MoveContent:
+                changelog[name] = [];
+                using var inlineOut = openWrite(nested, name, archiveCanonical: canonical);
+                inlineOut.Write(data);
             }
-
-            if (TkChangelogBuilder.GetChangelogBuilder(nested) is not { } builder) {
-                goto MoveContent;
+            finally {
+                if (!vanillaRented.IsEmpty) {
+                    vanillaRented.Dispose();
+                }
             }
-
-            builder.Build(name, nested, flags, data, vanillaData,
-                (tkPath, canon, _, _) => openWrite(tkPath, canon, archiveCanonical: canonical));
-            builder.Dispose();
-
-            continue;
-
-        MoveContent:
-            changelog[name] = [];
-            using var inlineOut = openWrite(nested, name, archiveCanonical: canonical);
-            inlineOut.Write(data);
         }
 
         foreach ((var key, _) in vanilla) {
