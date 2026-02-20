@@ -5,7 +5,7 @@ using TkSharp.Extensions.GameBanana.Helpers;
 
 namespace TkSharp.Extensions.GameBanana;
 
-internal static class GameBanana
+public static class GameBanana
 {
     private const int MAX_RETRIES = 5;
     
