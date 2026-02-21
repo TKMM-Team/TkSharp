@@ -18,7 +18,7 @@ public sealed class SevenZipModReader(ITkSystemProvider systemProvider, ITkRomPr
             return null;
         }
         
-        using var archive = SevenZipArchive.OpenArchive(context.Stream);
+        using var archive = SevenZipArchive.Open(context.Stream);
         var (root, embeddedMod, hasValidRoot) = await ArchiveModReader.LocateRoot(archive, readerProvider);
         if (!hasValidRoot) {
             return null;

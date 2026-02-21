@@ -13,7 +13,7 @@
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.3" />
       <PackageReference Include="Revrs" Version="2.1.1" />
       <PackageReference Include="SarcLibrary" Version="3.3.4" />
-      <PackageReference Include="SharpCompress" Version="0.46.2" />
+      <PackageReference Include="SharpCompress" Version="0.40.0" />
       <PackageReference Include="System.IO.Hashing" Version="10.0.3" />
       <PackageReference Include="Tkmm.BymlLibrary" Version="1.2.3" />
       <PackageReference Include="Ulid" Version="1.4.1" />
