@@ -18,7 +18,7 @@ public sealed class MsbtMerger : Singleton<MsbtMerger>, ITkMerger
 
         foreach (var input in inputs) {
             var changelog = Msbt.FromBinary(input);
-            foreach ((var key, var value) in changelog) {
+            foreach (var (key, value) in changelog) {
                 baseMsbt[key] = value;
             }
         }
@@ -33,7 +33,7 @@ public sealed class MsbtMerger : Singleton<MsbtMerger>, ITkMerger
         var baseMsbt = Msbt.FromBinary(@base);
         var changelog = Msbt.FromBinary(input);
 
-        foreach ((var key, var value) in changelog) {
+        foreach (var (key, value) in changelog) {
             baseMsbt[key] = value;
         }
         

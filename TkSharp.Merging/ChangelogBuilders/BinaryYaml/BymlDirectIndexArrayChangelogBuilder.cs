@@ -9,7 +9,7 @@ public class BymlDirectIndexArrayChangelogBuilder : IBymlArrayChangelogBuilder
     
     public bool LogChanges(ref BymlTrackingInfo info, ref Byml root, BymlArray src, BymlArray vanilla)
     {
-        (var isVanillaSmaller, var larger, var smaller) = (vanilla.Count < src.Count)
+        var (isVanillaSmaller, larger, smaller) = (vanilla.Count < src.Count)
             ? (true, src, vanilla)
             : (false, vanilla, src);
 

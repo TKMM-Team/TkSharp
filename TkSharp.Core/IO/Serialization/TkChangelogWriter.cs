@@ -45,7 +45,7 @@ public static class TkChangelogWriter
             output.WriteString(patch.NsoBinaryId);
 
             output.Write(patch.Entries.Count);
-            foreach ((var key, var value) in patch.Entries) {
+            foreach (var (key, value) in patch.Entries) {
                 output.Write(key);
                 output.Write(value);
             }

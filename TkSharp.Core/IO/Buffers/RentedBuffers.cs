@@ -94,7 +94,7 @@ public readonly ref struct RentedBuffers<T> : IDisposable where T : unmanaged
         public ArraySegment<T> Segment {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get {
-                (var offset, var length) = _range.GetOffsetAndLength(_buffer.Length);
+                var (offset, length) = _range.GetOffsetAndLength(_buffer.Length);
                 return new ArraySegment<T>(_buffer, offset, length);
             }
         }

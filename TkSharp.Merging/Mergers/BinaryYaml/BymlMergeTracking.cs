@@ -29,7 +29,7 @@ public class BymlMergeTracking(string canonical)
             Type = type
         };
 
-        foreach ((var map, var entry) in _maps) {
+        foreach (var (map, entry) in _maps) {
             switch (map) {
                 case IDictionary<uint, Byml> hashMap32:
                     ApplyMapEntry(hashMap32, entry);
@@ -88,7 +88,7 @@ public class BymlMergeTracking(string canonical)
             @base[i] = BymlChangeType.Remove;
         }
         
-        foreach ((_, var i) in entry.KeyedRemovals.Where(i => @base.Count > i.Value)) {
+        foreach (var (_, i) in entry.KeyedRemovals.Where(i => @base.Count > i.Value)) {
             @base[i] = BymlChangeType.Remove;
         }
 
@@ -100,7 +100,7 @@ public class BymlMergeTracking(string canonical)
 
         Dictionary<BymlKey, int> keyedAdditions = new();
 
-        foreach ((var insertIndex, var entries) in additions) {
+        foreach (var (insertIndex, entries) in additions) {
             ProcessAdditions(ref newEntryOffset, @base, entry, insertIndex, entries, ref info, keyedAdditions);
         }
 

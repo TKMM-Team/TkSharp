@@ -128,7 +128,7 @@ public sealed class BymlMerger : Singleton<BymlMerger>, ITkMerger
             keyName = bymlKeyName;
         }
         
-        foreach ((var i, var change, var entry, var keyPrimary, var keySecondary) in changelog) {
+        foreach (var (i, change, entry, keyPrimary, keySecondary) in changelog) {
             switch (change) {
                 case BymlChangeType.Add: {
                     if (!tracking.Arrays.TryGetValue(@base, out var trackingEntry)) {

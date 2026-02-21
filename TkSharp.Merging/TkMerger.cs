@@ -175,7 +175,7 @@ public sealed class TkMerger
 
         foreach (var cheats in allCheats) {
             TkCheat merged = new(cheats.Key);
-            foreach ((var key, var bin) in cheats.SelectMany(x => x.Select(cheat => (cheat.Key, cheat.Value)))) {
+            foreach (var (key, bin) in cheats.SelectMany(x => x.Select(cheat => (cheat.Key, cheat.Value)))) {
                 merged[key] = bin;
             }
 
@@ -211,7 +211,7 @@ public sealed class TkMerger
                 return (file, buffer);
             }).DistinctBy(x => x);
 
-            foreach ((var _, var data) in subSkdFileContents) {
+            foreach (var (_, data) in subSkdFileContents) {
                 if (index > 9) {
                     index++;
                     continue;
@@ -354,7 +354,7 @@ public sealed class TkMerger
         var merged = TkPatch.CreateWithDefaults(_rom.NsoBinaryId, shopParamLimit: 512);
 
         foreach (var patch in versionMatchedPatchFiles) {
-            foreach ((var key, var value) in patch.Entries) {
+            foreach (var (key, value) in patch.Entries) {
                 merged.Entries[key] = value;
             }
         }

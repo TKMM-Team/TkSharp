@@ -103,7 +103,7 @@ public class TkCheat(string name) : Dictionary<string, uint[][]>
     {
         var isFirst = true;
         
-        foreach ((var key, var values) in this) {
+        foreach (var (key, values) in this) {
             if (!isFirst) {
                 output.WriteLine();
             }
@@ -131,7 +131,7 @@ public class TkCheat(string name) : Dictionary<string, uint[][]>
         output.WriteString(Name);
         output.Write(Count);
 
-        foreach ((var key, var values) in this) {
+        foreach (var (key, values) in this) {
             output.WriteString(key);
             output.Write(values.Length);
 

@@ -21,8 +21,8 @@ public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomPro
             return null;
         }
 
-        using var archive = ArchiveFactory.Open(context.Stream);
-        (var root, var embeddedMod, var hasValidRoot) = await LocateRoot(archive, readerProvider);
+        using var archive = ArchiveFactory.OpenArchive(context.Stream);
+        var (root, embeddedMod, hasValidRoot) = await LocateRoot(archive, readerProvider);
         if (!hasValidRoot) {
             return null;
         }
@@ -64,7 +64,7 @@ public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomPro
             if (entry.Key is not null
                 && Path.GetExtension(entry.Key.AsSpan()) is ".tkcl"
                 && readerProvider.GetReader(entry.Key) is { } reader) {
-                await using var entryStream = entry.OpenEntryStream();
+                await using var entryStream = await entry.OpenEntryStreamAsync();
                 result.Embedded = await reader.ReadMod(entry.Key, entryStream);
             }
 

@@ -122,7 +122,7 @@ public static class SaveDataWriter
 
     private static int CalculateEntrySize(string tableName, BymlMap entry, bool isArrayTable)
     {
-        (var entryCount, var entrySize, var tableTypeMask) = isArrayTable switch {
+        var (entryCount, entrySize, tableTypeMask) = isArrayTable switch {
             true => (GetArrayCount(tableName, entry), 0xC, ..^5),
             false => (1, 0x8, ..)
         };

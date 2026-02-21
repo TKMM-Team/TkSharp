@@ -162,7 +162,7 @@ public class TkExtensibleRomProvider : ITkRomProvider
             return null;
         }
 
-        foreach ((var label, var switchFs) in collected) {
+        foreach (var (label, switchFs) in collected) {
             if (!switchFs.Applications.TryGetValue(TkGameRomUtils.EX_KING_APP_ID, out var totk)) {
                 TkLog.Instance.LogDebug("[ROM *] TotK missing in {Label}", label);
                 continue;

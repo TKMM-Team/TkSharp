@@ -58,7 +58,7 @@ public sealed class PackMerger(TkPackFileCollector packFileCollector) : ITkMerge
             .GroupBy(x => x.Key, x => x.Value)
             .Select(x => (x.Key, x.ToArray()));
         
-        foreach ((var name, var buffers) in groups) {
+        foreach (var (name, buffers) in groups) {
             var data = buffers[^1];
             if (IsRemovedEntry(data)) {
                 merged.Remove(name);
@@ -68,7 +68,7 @@ public sealed class PackMerger(TkPackFileCollector packFileCollector) : ITkMerge
 
     private static void MergeSingle(in Sarc merged, Sarc changelog)
     {
-        foreach ((var name, var data) in changelog) {
+        foreach (var (name, data) in changelog) {
             if (IsRemovedEntry(data)) {
                 merged.Remove(name);
             }

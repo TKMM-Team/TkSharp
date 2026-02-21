@@ -65,7 +65,7 @@ public class TkChangelogBuilder(
 
     public TkChangelog Build()
     {
-        foreach ((var file, var entry) in _source.Files) {
+        foreach (var (file, entry) in _source.Files) {
             BuildTarget(file, entry);
         }
 

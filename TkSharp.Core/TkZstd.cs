@@ -39,7 +39,7 @@ public class TkZstd : IDisposable
             _compressionLevel = value;
             _defaultCompressor.Level = _compressionLevel;
 
-            foreach ((var _, var compressor) in _compressors) {
+            foreach (var (_, compressor) in _compressors) {
                 compressor.Level = value;
             }
         }
@@ -220,7 +220,7 @@ public class TkZstd : IDisposable
 
         RevrsReader reader = new(data);
         ImmutableSarc sarc = new(ref reader);
-        foreach ((var _, var sarcFileData) in sarc) {
+        foreach (var (_, sarcFileData) in sarc) {
             TryLoadDictionary(sarcFileData);
         }
 

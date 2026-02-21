@@ -22,7 +22,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
 
         BymlTrackingInfo bymlTrackingInfo = new(path.Canonical, 0);
 
-        foreach ((var tableName, var srcEntry) in src) {
+        foreach (var (tableName, srcEntry) in src) {
             var entries = srcEntry.GetArray();
             var vanillaEntries = vanilla[tableName].GetArray();
 

@@ -57,7 +57,7 @@ public class TkPatch(string nsoBinaryId)
         output.Write(IPS32_MAGIC_PREFIX);
         output.Write(IPS32_MAGIC_SUFFIX);
 
-        foreach ((var address, var value) in Entries) {
+        foreach (var (address, value) in Entries) {
             output.Write(address + NSO_HEADER_LENGTH, Endianness.Big);
             output.Write<short>(sizeof(uint), Endianness.Big);
             output.Write(value, Endianness.Big);

@@ -37,7 +37,7 @@ public sealed class TkPackReader(ITkSystemProvider systemProvider) : ITkModReade
 
         var result = TkBinaryReader.ReadTkMod(context, stream, _systemProvider);
 
-        var reader = ZipReader.Open(stream);
+        var reader = ZipReader.OpenReader(stream);
         
         var writer = _systemProvider.GetSystemWriter(context);
         while (reader.MoveToNextEntry()) {

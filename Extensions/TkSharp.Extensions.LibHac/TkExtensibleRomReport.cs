@@ -37,7 +37,7 @@ public readonly ref struct TkExtensibleRomReport(
         sb.AppendLine(HasGame ? "Found" : "Missing");
         sb.AppendLine();
 
-        foreach ((var source, var state) in BaseGameSources) {
+        foreach (var (source, state) in BaseGameSources) {
             sb.AppendLine($"- `[{(state ? "x" : " ")}]` {source}");
         }
 
@@ -46,7 +46,7 @@ public readonly ref struct TkExtensibleRomReport(
         sb.AppendLine(HasUpdate ? "Found" : "Missing");
         sb.AppendLine();
         
-        foreach ((var source, var state) in UpdateSources) {
+        foreach (var (source, state) in UpdateSources) {
             sb.AppendLine($"- `[{(state ? "x" : " ")}]` {source}");
         }
         

@@ -62,7 +62,7 @@ public sealed class SarcMerger(TkMerger masterMerger, TkResourceSizeCollector re
             TkFileAttributes.None,
             zsDictionaryId: -1);
         
-        foreach ((var name, var buffers) in groups) {
+        foreach (var (name, buffers) in groups) {
             var last = buffers[^1];
             
             if (!merged.TryGetValue(name, out var vanillaData)) {
@@ -109,7 +109,7 @@ public sealed class SarcMerger(TkMerger masterMerger, TkResourceSizeCollector re
             TkFileAttributes.None,
             zsDictionaryId: -1);
         
-        foreach ((var name, var data) in changelog) {
+        foreach (var (name, data) in changelog) {
             if (!merged.TryGetValue(name, out var vanillaData)) {
                 merged[name] = data;
                 continue;
