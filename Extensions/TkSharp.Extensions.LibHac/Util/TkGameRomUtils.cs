@@ -116,13 +116,18 @@ public static class TkGameRomUtils
         );
     }
 
-    public static IEnumerable<(Application TotK, string FilePath)> ScanFolder(string target, KeySet keys)
+    private static IEnumerable<(Application TotK, string FilePath)> ScanFolder(string target, KeySet keys)
     {
         if (!Directory.Exists(target)) {
             yield break;
         }
         
-        foreach (var file in Directory.EnumerateFiles(target, "*.*", SearchOption.AllDirectories)) {
+        EnumerationOptions options = new() {
+            RecurseSubdirectories = true,
+            IgnoreInaccessible = true
+        };
+
+        foreach (var file in Directory.EnumerateFiles(target, "*.*", options)) {
             var ext = Path.GetExtension(file.AsSpan());
             if (ext is not (".xci" or ".nsp")) {
                 continue;
