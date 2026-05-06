@@ -1,3 +1,4 @@
+using Humanizer;
 using LibHac;
 using LibHac.Common;
 using LibHac.Common.Keys;
@@ -162,8 +163,9 @@ internal static class TkSwitchFs
 
             lock (_totkLock) {
                 TkLog.Instance.LogDebug(
-                    "[ROM *] [SD Card] TotK CNMT allowlist build complete. Found {TotkCnmtCount} TotK CNMT(s), {TotkNcaIdCount} TotK NCA id(s).",
-                    totkCnmtCount, _totkNcaIds.Count);
+                    "[ROM *] [SD Card] TotK CNMT allowlist build complete. Found {TotkCnmt}, {TotkNcaIds}.",
+                    "TotK CNMT".ToQuantity(totkCnmtCount),
+                    "TotK NCA ID".ToQuantity(_totkNcaIds.Count));
             }
         }
 
@@ -200,8 +202,8 @@ internal static class TkSwitchFs
             }
 
             TkLog.Instance.LogDebug(
-                "[ROM *] [SD Card] Registered TotK CNMT {MetaNcaId} with {ContentCount} content entrie(s).",
-                metaNcaId, metadata.ContentEntries.Length);
+                "[ROM *] [SD Card] Registered TotK CNMT {MetaNcaId} with {ContentEntries}.",
+                metaNcaId, "content entry".ToQuantity(metadata.ContentEntries.Length));
             return true;
         }
 
