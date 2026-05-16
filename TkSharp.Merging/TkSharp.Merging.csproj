@@ -12,6 +12,7 @@
       <PackageReference Include="MessageStudio" Version="1.1.1" />
       <PackageReference Include="Revrs" Version="2.1.1" />
       <PackageReference Include="RstbLibrary" Version="1.0.2" />
+      <PackageReference Include="BfresLibrary" Version="1.6.0" />
     </ItemGroup>
 
     <ItemGroup>

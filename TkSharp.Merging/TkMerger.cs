@@ -28,6 +28,7 @@ public sealed class TkMerger
     private readonly PackMerger _packMerger;
     private readonly string? _ipsOutputFolderPath;
     private readonly TkPackFileCollector _packFileCollector;
+    private readonly BfresMcMerger _bfresMcMerger;
 
     public TkMerger(ITkModWriter output, ITkRom rom, string locale = "USen", string? ipsOutputFolderPath = null)
     {
@@ -39,6 +40,7 @@ public sealed class TkMerger
         _ipsOutputFolderPath = ipsOutputFolderPath;
         _packFileCollector = new TkPackFileCollector(this, _resourceSizeCollector, _rom);
         _packMerger = new PackMerger(_packFileCollector);
+        _bfresMcMerger = new BfresMcMerger(rom);
     }
 
     public async ValueTask MergeAsync(IEnumerable<TkChangelog> changelogs, CancellationToken ct = default)
@@ -87,7 +89,7 @@ public sealed class TkMerger
         _resourceSizeCollector.Write();
     }
 
-    public void MergeTarget(TkChangelogEntry changelog, Either<(ITkMerger, Stream[]), Stream> target)
+    private void MergeTarget(TkChangelogEntry changelog, Either<(ITkMerger, Stream[]), Stream> target)
     {
         var relativeFilePath = changelog.RuntimeArchiveCanonicals.Count > 0
             ? _rom.CanonicalToRelativePath(changelog.Canonical, TkFileAttributes.None)
@@ -117,14 +119,14 @@ public sealed class TkMerger
                 // pack files first would be optimal. 
                 using var vanilla = _rom.GetVanilla(relativeFilePath, out var isFoundMissing);
                 
-                if (isFoundMissing) {
+                if (isFoundMissing && merger is not BfresMcMerger) {
                     TkLog.Instance.LogWarning(
                         "The changelog for '{Canonical}' could not be merged because the vanilla file could not be found",
                         changelog.Canonical);
                     return;
                 }
                 
-                if (vanilla.IsEmpty) {
+                if (vanilla.IsEmpty && merger is not BfresMcMerger) {
                     MergeCustomTarget(merger, streams[0], streams.AsSpan(1..), changelog, output);
                     break;
                 }
@@ -138,14 +140,14 @@ public sealed class TkMerger
                 using var vanilla = _rom.GetVanilla(relativeFilePath, out var isFoundMissing);
                 var single = streams[0];
                 
-                if (isFoundMissing) {
+                if (isFoundMissing && merger is not BfresMcMerger) {
                     TkLog.Instance.LogWarning(
                         "The changelog for '{Canonical}' could not be merged because the vanilla file could not be found",
                         changelog.Canonical);
                     return;
                 }
                 
-                if (vanilla.IsEmpty) {
+                if (vanilla.IsEmpty && merger is not BfresMcMerger) {
                     CopyToOutput(single, relativeFilePath, changelog);
                     return;
                 }
@@ -247,13 +249,13 @@ public sealed class TkMerger
         }
     }
 
-    internal void MergeCustomTarget(ITkMerger merger, Stream @base, ReadOnlySpan<Stream> targets, TkChangelogEntry changelog, Stream output)
+    private void MergeCustomTarget(ITkMerger merger, Stream @base, ReadOnlySpan<Stream> targets, TkChangelogEntry changelog, Stream output)
     {
         using var fakeVanilla = _rom.Zstd.Decompress(@base);
         MergeCustomTarget(merger, fakeVanilla.Segment, targets, changelog, output);
     }
 
-    internal static void MergeCustomTarget(ITkMerger merger, ArraySegment<byte> @base, ReadOnlySpan<Stream> targets, TkChangelogEntry changelog, Stream output)
+    private static void MergeCustomTarget(ITkMerger merger, ArraySegment<byte> @base, ReadOnlySpan<Stream> targets, TkChangelogEntry changelog, Stream output)
     {
         using var targetsBuffer = RentedBuffers<byte>.Allocate(targets, disposeStreams: true);
         var changelogs = TkChangelogBuilder.CreateChangelogsExternal(
@@ -412,7 +414,7 @@ public sealed class TkMerger
         // every archive requesting this file
         group.Key.RuntimeArchiveCanonicals = group.SelectMany(x => x.Entry.ArchiveCanonicals).ToList();
 
-        if (GetMerger(group.Key.Canonical) is { } merger) {
+        if (GetMerger(group.Key.Canonical, group.Key.Attributes) is { } merger) {
             return (
                 Changelog: group.Key,
                 Target: (Merger: merger,
@@ -444,7 +446,7 @@ public sealed class TkMerger
         );
     }
 
-    public ITkMerger? GetMerger(ReadOnlySpan<char> canonical)
+    public ITkMerger? GetMerger(ReadOnlySpan<char> canonical, TkFileAttributes attributes = default)
     {
         return canonical switch {
             "GameData/GameDataList.Product.byml" => GameDataMerger.Instance,
@@ -473,6 +475,7 @@ public sealed class TkMerger
                 ".bfarc" or ".bkres" or ".blarc" or ".genvb" or ".ta" => _sarcMerger,
                 ".byml" or ".bgyml" => BymlMerger.Instance,
                 ".msbt" => MsbtMerger.Instance,
+                ".bfres" => attributes.HasFlag(TkFileAttributes.HasMcExtension) ? _bfresMcMerger : null,
                 _ => null
             }
         };
