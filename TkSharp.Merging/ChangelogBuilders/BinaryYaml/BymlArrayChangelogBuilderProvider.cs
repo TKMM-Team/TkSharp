@@ -63,7 +63,7 @@ public class BymlArrayChangelogBuilderProvider : Singleton<BymlArrayChangelogBui
             "AliasSensorList" => new BymlKeyedArrayChangelogBuilder("AliasSensor"),
             "Anchors" => new BymlKeyedArrayChangelogBuilder("AnchorName"),
             "ArmorEffect" => new BymlKeyedArrayChangelogBuilder("ArmorEffectType"),
-            "HornTypeAndAttachmentMapping" => new BymlKeyedArrayChangelogBuilder("AttachmentName"),
+            "HornTypeAndAttachmentMapping" => new BymlKeyedArrayChangelogBuilder("AttachmentName", "HornBoneName"),
             "AttackParams" => new BymlKeyedArrayChangelogBuilder("AttackType"),
             "BlackboardParamBoolArray" or "BlackboardParamCustomTypeArray" or "BlackboardParamF32Array"
                 or "BlackboardParamMtx33fArray" or "BlackboardParamMtx34fArray" or "BlackboardParamPtrArray"

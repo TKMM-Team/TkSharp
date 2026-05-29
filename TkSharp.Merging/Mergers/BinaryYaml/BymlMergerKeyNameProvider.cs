@@ -65,7 +65,7 @@ public sealed class BymlMergerKeyNameProvider : Singleton<BymlMergerKeyNameProvi
             "AliasSensorList" => "AliasSensor",
             "Anchors" => "AnchorName",
             "ArmorEffect" => "ArmorEffectType",
-            "HornTypeAndAttachmentMapping" => "AttachmentName",
+            "HornTypeAndAttachmentMapping" => ("AttachmentName", "HornBoneName"),
             "AttackParams" => "AttackType",
             "BlackboardParamBoolArray" or "BlackboardParamCustomTypeArray" or "BlackboardParamF32Array"
                 or "BlackboardParamMtx33fArray" or "BlackboardParamMtx34fArray" or "BlackboardParamPtrArray"
