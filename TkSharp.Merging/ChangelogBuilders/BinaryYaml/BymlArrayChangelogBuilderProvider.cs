@@ -113,9 +113,10 @@ public class BymlArrayChangelogBuilderProvider : Singleton<BymlArrayChangelogBui
             "OverwriteParam" => new BymlKeyedArrayChangelogBuilder("InstanceId"),
             "Interests" => new BymlKeyedArrayChangelogBuilder("InterestType"),
             "StrongInterests" => new BymlKeyedArrayChangelogBuilder("InterestType"),
-            "ConditionArray" or "OverrideASEvReactVerbSettings" or "OverrideASEventReactSettings" or "SwitchParam"
+            "ConditionArray" or "OverrideASEvReactVerbSettings" or "SwitchParam"
                 or "TriggerParams" or "Triggers" => new BymlKeyedArrayChangelogBuilder("Key"),
-            "OverrideReactionVerbSettings" => new BymlKeyedArrayChangelogBuilder("KeyActionVerb"),
+            "OverrideASEventReactSettings" => new BymlKeyedArrayChangelogBuilder("Key", "Intensity"),
+            "OverrideReactionVerbSettings" => new BymlKeyedArrayChangelogBuilder("KeyActionVerb", "OverrideActionVerb"),
             "ShootableActorSettings" => new BymlKeyedArrayChangelogBuilder("KeyHash", "Actor"),
             "AttachmentGroupList" or "EnemyGroupList" => new BymlKeyedArrayChangelogBuilder("Label"),
             "ShopWeaponGroupList" or "WeaponGroupList" => new BymlKeyedArrayChangelogBuilder("Label", "EquipmentType"),
