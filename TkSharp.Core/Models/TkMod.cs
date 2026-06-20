@@ -12,7 +12,7 @@ public sealed partial class TkMod : TkStoredItem
     /// </summary>
     [ObservableProperty]
     private string _version = "1.0.0";
-    
+
     /// <summary>
     /// The author of this mod.
     /// </summary>
@@ -34,6 +34,11 @@ public sealed partial class TkMod : TkStoredItem
     /// The dependencies of this mod.
     /// </summary>
     public ObservableCollection<TkModDependency> Dependencies { get; init; } = [];
+
+    public bool HasXlink => Changelog.ChangelogFiles.Concat(
+            OptionGroups.SelectMany(grp => grp.Options)
+                .SelectMany(option => option.Changelog.ChangelogFiles))
+        .Any(x => x.Canonical.EndsWith(".belnk") || x.Canonical.EndsWith(".bslnk"));
 
     [RelayCommand]
     [property: JsonIgnore]
