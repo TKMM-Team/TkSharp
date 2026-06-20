@@ -21,7 +21,7 @@ public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomPro
             return null;
         }
 
-        using var archive = ArchiveFactory.Open(context.Stream);
+        using var archive = ArchiveFactory.OpenArchive(context.Stream);
         var (root, embeddedMod, hasValidRoot) = await LocateRoot(archive, readerProvider);
         if (!hasValidRoot) {
             return null;
