@@ -1,4 +1,3 @@
-using SharpCompress.Archives;
 using SharpCompress.Archives.SevenZip;
 using TkSharp.Core;
 using TkSharp.Core.IO.ModSources;
@@ -19,7 +18,7 @@ public sealed class SevenZipModReader(ITkSystemProvider systemProvider, ITkRomPr
         }
         
         using var archive = SevenZipArchive.OpenArchive(context.Stream);
-        var (root, embeddedMod, hasValidRoot) = await ArchiveModReader.LocateRoot(archive, readerProvider);
+        var (root, embeddedMod, hasValidRoot) = await ArchiveModReader.LocateRoot(archive, readerProvider, ct);
         if (!hasValidRoot) {
             return null;
         }

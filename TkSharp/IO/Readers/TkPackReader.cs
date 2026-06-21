@@ -1,5 +1,4 @@
 using Revrs.Extensions;
-using SharpCompress.Common.Zip;
 using SharpCompress.Readers.Zip;
 using TkSharp.Core;
 using TkSharp.Core.IO.Serialization;

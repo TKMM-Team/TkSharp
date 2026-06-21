@@ -9,7 +9,7 @@ namespace TkSharp.IO.Readers;
 
 public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomProvider romProvider, ITkModReaderProvider readerProvider) : ITkModReader
 {
-    private static readonly SearchValues<string> _validFoldersSearchValues = SearchValues.Create(
+    private static readonly SearchValues<string> ValidFoldersSearchValues = SearchValues.Create(
         ["romfs", "exefs", "cheats", "extras"], StringComparison.OrdinalIgnoreCase);
 
     private readonly ITkSystemProvider _systemProvider = systemProvider;
@@ -22,7 +22,7 @@ public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomPro
         }
 
         using var archive = ArchiveFactory.OpenArchive(context.Stream);
-        var (root, embeddedMod, hasValidRoot) = await LocateRoot(archive, readerProvider);
+        var (root, embeddedMod, hasValidRoot) = await LocateRoot(archive, readerProvider, ct);
         if (!hasValidRoot) {
             return null;
         }
@@ -56,7 +56,8 @@ public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomPro
                Path.GetExtension(path.AsSpan()) is ".zip" or ".rar";
     }
 
-    internal static async ValueTask<(string? root, TkMod? embeddedMod, bool result)> LocateRoot(IArchive archive, ITkModReaderProvider readerProvider)
+    internal static async ValueTask<(string? root, TkMod? embeddedMod, bool result)> LocateRoot(
+        IArchive archive, ITkModReaderProvider readerProvider, CancellationToken ct = default)
     {
         (string? Root, TkMod? Embedded, bool Result) result = (null, null, false);
 
@@ -65,7 +66,10 @@ public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomPro
                 && Path.GetExtension(entry.Key.AsSpan()) is ".tkcl"
                 && readerProvider.GetReader(entry.Key) is { } reader) {
                 await using var entryStream = entry.OpenEntryStream();
-                result.Embedded = await reader.ReadMod(entry.Key, entryStream);
+                await using MemoryStream tkclBuffer = new();
+                await entryStream.CopyToAsync(tkclBuffer, ct);
+                tkclBuffer.Position = 0;
+                result.Embedded = await reader.ReadMod(entry.Key, tkclBuffer, ct: ct);
             }
 
             if (result.Embedded is not null) {
@@ -103,7 +107,7 @@ public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomPro
                 continue;
             }
 
-            if (normalizedKeyLowercase.IndexOfAny(_validFoldersSearchValues) is var index && index is -1) {
+            if (normalizedKeyLowercase.IndexOfAny(ValidFoldersSearchValues) is var index && index is -1) {
                 continue;
             }
 
