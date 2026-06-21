@@ -11,14 +11,15 @@ public class AinbResourceSizeCalculator : ITkResourceSizeCalculator
     public static uint GetResourceSize(in Span<byte> data)
     {
         uint size = 392;
-        var exbOffset = data[0x44..].Read<int>();
+        uint signatureCount = 0;
+        var exbOffset = data[0x44..].Read<uint>();
 
         if (exbOffset != 0) {
-            var exbCountOffset = data[(exbOffset + 0x20)..].Read<int>();
-            var exbSignatureCount = data[(exbOffset + exbCountOffset)..].Read<uint>();
-            size += 16 + (exbSignatureCount + 1) / 2 * 8;
+            var exbCountOffset = data[(int)(exbOffset + 0x20)..].Read<uint>();
+            signatureCount = data[(int)(exbOffset + exbCountOffset)..].Read<uint>();
         }
 
+        size += 16 + (signatureCount + 1) / 2 * 8;
         return size;
     }
 }
