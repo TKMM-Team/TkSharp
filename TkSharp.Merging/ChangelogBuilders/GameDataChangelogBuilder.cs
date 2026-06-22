@@ -3,7 +3,6 @@ using BymlLibrary;
 using BymlLibrary.Nodes.Containers;
 using BymlLibrary.Nodes.Containers.HashMap;
 using CommunityToolkit.HighPerformance;
-using Revrs;
 using TkSharp.Core;
 using TkSharp.Merging.ChangelogBuilders.BinaryYaml;
 using TkSharp.Merging.ChangelogBuilders.GameData;
@@ -16,9 +15,15 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
 
     public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
     {
+        ArraySegment<byte> vanillaData = vanillaBuffer;
+
+        if (path.FileVersion != -1 && GameDataCache.TryGet(path.FileVersion, out var cachedVanilla)) {
+            vanillaData = cachedVanilla;
+        }
+
         BymlMap changelog = [];
         var src = Byml.FromBinary(srcBuffer).GetMap()["Data"].GetMap();
-        var vanilla = Byml.FromBinary(vanillaBuffer, out var endianness, out var version).GetMap()["Data"].GetMap();
+        var vanilla = Byml.FromBinary(vanillaData, out var endianness, out var version).GetMap()["Data"].GetMap();
 
         BymlTrackingInfo bymlTrackingInfo = new(path.Canonical, 0);
 
