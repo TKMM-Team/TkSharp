@@ -81,17 +81,28 @@ internal static class TkSdCardUtils
             .ThrowIfFailure();
         UniqueRef<IAttributeFileSystem> fs = new(fatFileSystem);
 
-        var switchFs = SwitchFs.OpenSdCard(keys, ref fs);
+        if (!TkSwitchFs.TryOpenSdCard(keys, ref fs, target, out var switchFs, out var filteredCleanup)
+            || switchFs is null) {
+            hasUpdate = false;
+            fatFileSystem.Dispose();
+            filteredCleanup?.Dispose();
+            return false;
+        }
+
         var result = TkGameRomUtils.IsValid(switchFs, out hasUpdate);
 
         if (switchFsContainer is not null) {
             switchFsContainer.CleanupLater(fatFileSystem);
+            if (filteredCleanup is not null) {
+                switchFsContainer.CleanupLater(filteredCleanup);
+            }
             switchFsContainer.Add((target, switchFs));
             return result;
         }
 
-        fatFileSystem.Dispose();
         switchFs.Dispose();
+        filteredCleanup?.Dispose();
+        fatFileSystem.Dispose();
         return result;
     }
 

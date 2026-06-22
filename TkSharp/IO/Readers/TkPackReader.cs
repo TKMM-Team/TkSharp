@@ -1,5 +1,4 @@
 using Revrs.Extensions;
-using SharpCompress.Common.Zip;
 using SharpCompress.Readers.Zip;
 using TkSharp.Core;
 using TkSharp.Core.IO.Serialization;
@@ -37,7 +36,7 @@ public sealed class TkPackReader(ITkSystemProvider systemProvider) : ITkModReade
 
         var result = TkBinaryReader.ReadTkMod(context, stream, _systemProvider);
 
-        var reader = ZipReader.Open(stream);
+        var reader = ZipReader.OpenReader(stream);
         
         var writer = _systemProvider.GetSystemWriter(context);
         while (reader.MoveToNextEntry()) {

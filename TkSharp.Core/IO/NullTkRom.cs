@@ -8,7 +8,7 @@ namespace TkSharp.Core.IO;
 /// </summary>
 public class NullTkRom : ITkRom
 {
-    public int GameVersion => 142;
+    public int GameVersion => 143;
 
     public string NsoBinaryId => string.Empty;
 
@@ -37,6 +37,8 @@ public class NullTkRom : ITkRom
     }
 
     public bool IsVanilla(ReadOnlySpan<char> canonical, Span<byte> src, int fileVersion) => false;
+
+    public bool IsVanillaAnyVersion(ReadOnlySpan<char> canonical, Span<byte> src) => false;
 
     public void Dispose()
     {

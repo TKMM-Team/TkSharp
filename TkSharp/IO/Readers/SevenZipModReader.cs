@@ -1,9 +1,6 @@
-using SharpCompress.Archives;
 using SharpCompress.Archives.SevenZip;
 using TkSharp.Core;
-using TkSharp.Core.IO.ModSources;
 using TkSharp.Core.Models;
-using TkSharp.Merging;
 
 namespace TkSharp.IO.Readers;
 
@@ -18,31 +15,9 @@ public sealed class SevenZipModReader(ITkSystemProvider systemProvider, ITkRomPr
             return null;
         }
         
-        using var archive = SevenZipArchive.Open(context.Stream);
-        var (root, embeddedMod, hasValidRoot) = await ArchiveModReader.LocateRoot(archive, readerProvider);
-        if (!hasValidRoot) {
-            return null;
-        }
-
-        if (embeddedMod is not null) {
-            return embeddedMod;
-        }
-
-        context.EnsureId();
-        
-        ArchiveModSource source = new(archive, root);
-        var writer = _systemProvider.GetSystemWriter(context);
-
-        TkChangelogBuilder builder = new(source, writer, _romProvider.GetRom(),
-            _systemProvider.GetSystemSource(context.Id.ToString())
-        );
-        var changelog = await builder.BuildAsync(ct);
-
-        return new TkMod {
-            Id = context.Id,
-            Name = Path.GetFileNameWithoutExtension(fileName),
-            Changelog = changelog
-        };
+        using var archive = SevenZipArchive.OpenArchive(context.Stream);
+        return await ArchiveModReader.ReadArchiveMod(archive, fileName, context, _systemProvider, _romProvider, readerProvider, ct)
+            .ConfigureAwait(false);
     }
 
     public bool IsKnownInput(object? input)

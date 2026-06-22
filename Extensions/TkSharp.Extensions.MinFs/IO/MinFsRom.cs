@@ -102,6 +102,11 @@ public sealed class MinFsRom : ITkRom
     {
         return _checksums.IsFileVanilla(canonical, src, fileVersion);
     }
+
+    public bool IsVanillaAnyVersion(ReadOnlySpan<char> canonical, Span<byte> src)
+    {
+        return _checksums.IsFileVanillaAnyVersion(canonical, src);
+    }
     
     
     public void Dispose()

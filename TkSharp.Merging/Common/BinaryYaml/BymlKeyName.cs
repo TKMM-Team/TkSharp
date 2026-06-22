@@ -53,8 +53,29 @@ public readonly struct BymlKeyName(string? primary)
         }
         
         return IsPair 
-            ? new BymlKey(map!.GetValueOrDefault(Primary), map!.GetValueOrDefault(Secondary))
-            : new BymlKey(map!.GetValueOrDefault(Primary));
+            ? new BymlKey(GetValue(map, Primary), GetValue(map, Secondary))
+            : new BymlKey(GetValue(map, Primary));
+    }
+
+    private static Byml? GetValue(IReadOnlyDictionary<string, Byml> map, string? key)
+    {
+        if (key is null) {
+            return null;
+        }
+
+        return key.Contains('.') ? GetValueByPath(map, key) : map.GetValueOrDefault(key);
+    }
+
+    private static Byml? GetValueByPath(IReadOnlyDictionary<string, Byml> map, string path)
+    {
+        var dot = path.IndexOf('.');
+        if (!map.TryGetValue(dot >= 0 ? path[..dot] : path, out var node)) {
+            return null;
+        }
+
+        return dot < 0
+            ? node
+            : node.Value is BymlMap nested ? GetValueByPath(nested, path[(dot + 1)..]) : null;
     }
 
     public override string ToString()

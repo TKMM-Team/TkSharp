@@ -117,7 +117,7 @@ public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBu
                 goto WriteRaw;
             }
 
-            if (data.SequenceEqual(vanilla.Segment)) {
+            if (data.SequenceEqual(vanilla.Segment) || _tk.IsVanillaAnyVersion(name, data.AsSpan())) {
                 WritePlaceholder(nested, name, canonical, openWrite);
                 continue;
             }

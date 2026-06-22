@@ -63,7 +63,7 @@ public class BymlArrayChangelogBuilderProvider : Singleton<BymlArrayChangelogBui
             "AliasSensorList" => new BymlKeyedArrayChangelogBuilder("AliasSensor"),
             "Anchors" => new BymlKeyedArrayChangelogBuilder("AnchorName"),
             "ArmorEffect" => new BymlKeyedArrayChangelogBuilder("ArmorEffectType"),
-            "HornTypeAndAttachmentMapping" => new BymlKeyedArrayChangelogBuilder("AttachmentName"),
+            "HornTypeAndAttachmentMapping" => new BymlKeyedArrayChangelogBuilder("AttachmentName", "HornBoneName"),
             "AttackParams" => new BymlKeyedArrayChangelogBuilder("AttackType"),
             "BlackboardParamBoolArray" or "BlackboardParamCustomTypeArray" or "BlackboardParamF32Array"
                 or "BlackboardParamMtx33fArray" or "BlackboardParamMtx34fArray" or "BlackboardParamPtrArray"
@@ -113,9 +113,10 @@ public class BymlArrayChangelogBuilderProvider : Singleton<BymlArrayChangelogBui
             "OverwriteParam" => new BymlKeyedArrayChangelogBuilder("InstanceId"),
             "Interests" => new BymlKeyedArrayChangelogBuilder("InterestType"),
             "StrongInterests" => new BymlKeyedArrayChangelogBuilder("InterestType"),
-            "ConditionArray" or "OverrideASEvReactVerbSettings" or "OverrideASEventReactSettings" or "SwitchParam"
+            "ConditionArray" or "OverrideASEvReactVerbSettings" or "SwitchParam"
                 or "TriggerParams" or "Triggers" => new BymlKeyedArrayChangelogBuilder("Key"),
-            "OverrideReactionVerbSettings" => new BymlKeyedArrayChangelogBuilder("KeyActionVerb"),
+            "OverrideASEventReactSettings" => new BymlKeyedArrayChangelogBuilder("Key", "Intensity"),
+            "OverrideReactionVerbSettings" => new BymlKeyedArrayChangelogBuilder("KeyActionVerb", "Setting.OverrideActionVerb"),
             "ShootableActorSettings" => new BymlKeyedArrayChangelogBuilder("KeyHash", "Actor"),
             "AttachmentGroupList" or "EnemyGroupList" => new BymlKeyedArrayChangelogBuilder("Label"),
             "ShopWeaponGroupList" or "WeaponGroupList" => new BymlKeyedArrayChangelogBuilder("Label", "EquipmentType"),
