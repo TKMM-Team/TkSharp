@@ -38,6 +38,8 @@ public class NullTkRom : ITkRom
 
     public bool IsVanilla(ReadOnlySpan<char> canonical, Span<byte> src, int fileVersion) => false;
 
+    public bool IsVanillaAnyVersion(ReadOnlySpan<char> canonical, Span<byte> src) => false;
+
     public void Dispose()
     {
         GC.SuppressFinalize(this);

@@ -57,13 +57,6 @@ public sealed class TkResourceSizeCollector
             return;
         }
 
-        if (!data.IsEmpty) {
-            var checksumCanonical = path.GetCanonical(out var fileVersion, out _);
-            if (_rom.IsVanilla(checksumCanonical, data, fileVersion)) {
-                return;
-            }
-        }
-
         fileSize += fileSize.AlignUp(0x20);
         
         var size = GetResourceSize(

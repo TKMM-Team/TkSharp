@@ -90,4 +90,6 @@ public interface ITkRom : IDisposable
     RentedBuffer<byte> GetVanilla(string relativeFilePath, out bool isFoundMissing);
 
     bool IsVanilla(ReadOnlySpan<char> canonical, Span<byte> src, int fileVersion);
+
+    bool IsVanillaAnyVersion(ReadOnlySpan<char> canonical, Span<byte> src);
 }
