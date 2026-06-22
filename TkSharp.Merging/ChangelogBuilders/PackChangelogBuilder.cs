@@ -64,10 +64,6 @@ public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBu
                     WritePlaceholder(nested, name, canonical, openWrite);
                 }
 
-                if (_tk.IsVanillaAnyVersion(name, data.AsSpan())) {
-                    continue;
-                }
-
                 if (TkChangelogBuilder.GetChangelogBuilder(nested) is not { } builder) {
                     goto MoveContent;
                 }
@@ -121,7 +117,7 @@ public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBu
                 goto WriteRaw;
             }
 
-            if (data.SequenceEqual(vanilla.Segment)) {
+            if (data.SequenceEqual(vanilla.Segment) || _tk.IsVanillaAnyVersion(name, data.AsSpan())) {
                 WritePlaceholder(nested, name, canonical, openWrite);
                 continue;
             }
