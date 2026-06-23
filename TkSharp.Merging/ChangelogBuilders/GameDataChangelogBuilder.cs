@@ -3,7 +3,6 @@ using BymlLibrary;
 using BymlLibrary.Nodes.Containers;
 using BymlLibrary.Nodes.Containers.HashMap;
 using CommunityToolkit.HighPerformance;
-using Revrs;
 using TkSharp.Core;
 using TkSharp.Merging.ChangelogBuilders.BinaryYaml;
 using TkSharp.Merging.ChangelogBuilders.GameData;
@@ -67,19 +66,19 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
         for (var i = 0; i < src.Count; i++) {
             var srcEntry = src[i];
             var entry = srcEntry.GetMap();
+            
             if (!entry.TryGetValue("Hash", out var hashEntry) || hashEntry.Value is not uint hash) {
+                // TODO: Warn | Invalid GDL entry: Missing Hash
                 continue;
             }
 
             if (!GameDataIndex.TryGetIndex(gameDataListFileVersion, tableNameHash, hash, out var index)) {
-                src.RemoveAt(i);
-                i--;
+                src.RemoveAt(i--);
                 goto UpdateChangelog;
             }
 
-            // Vanilla entry [hash] accounted for
-
             if (BymlChangelogBuilder.LogChangesInline(ref bymlTrackingInfo, ref srcEntry, vanilla[index], changelogBuilderProvider)) {
+                // Skip 1:1 vanilla entry
                 continue;
             }
 
