@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using BymlLibrary;
+using BymlLibrary.Nodes.Containers;
 using TkSharp.Merging.ChangelogBuilders;
 using TkSharp.Merging.ChangelogBuilders.BinaryYaml;
 using TkSharp.Merging.Mergers.BinaryYaml;
@@ -10,12 +11,18 @@ public class GameDataMergeTracking(string canonical) : Dictionary<ulong, GameDat
 {
     private readonly string _canonical = canonical;
 
+    public Dictionary<ulong, (BymlArray Table, Byml Entry)> Drop { get; } = [];
+
     public void Apply()
     {
         BymlTrackingInfo info = new();
         
         foreach (var entry in Values) {
             ApplyEntry(entry, ref info);
+        }
+
+        foreach (var (table, entry) in Drop.Values) {
+            table.Remove(entry);
         }
     }
 
