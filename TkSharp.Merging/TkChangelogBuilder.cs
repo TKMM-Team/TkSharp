@@ -178,7 +178,7 @@ public class TkChangelogBuilder(
                     archiveCanon, archiveCanon is not null ? parentAttributes : null);
                 var outputFile = Path.Combine(path.Root.ToString(), canon);
                 return _writer.OpenWrite(outputFile);
-            });
+            }, _tk.GameVersion);
         builder.Dispose();
 
         if (isVanilla) {
@@ -187,7 +187,8 @@ public class TkChangelogBuilder(
         }
     }
 
-    public static ArraySegment<ArraySegment<byte>> CreateChangelogsExternal(string canonical, TkChangelogBuilderFlags flags, ArraySegment<byte> @base, RentedBuffers<byte> changelogs, TkFileAttributes attributes)
+    public static ArraySegment<ArraySegment<byte>> CreateChangelogsExternal(string canonical, TkChangelogBuilderFlags flags,
+        ArraySegment<byte> @base, RentedBuffers<byte> changelogs, TkFileAttributes attributes, int gameVersion)
     {
         TkPath path = new(canonical, 100, attributes, "romfs", "");
 
@@ -204,7 +205,7 @@ public class TkChangelogBuilder(
             TkPath pathIteratorStackInstance = new(canonical, 100, attributes, "romfs", "");
 
             // ReSharper disable once AccessToDisposedClosure
-            if (builder.Build(canonical, pathIteratorStackInstance, flags, entry.Segment, @base, (_, _, _, _) => output)) {
+            if (builder.Build(canonical, pathIteratorStackInstance, flags, entry.Segment, @base, (_, _, _, _) => output, gameVersion)) {
                 // Copy the buffer because output
                 // is disposed before this is used
                 result[++index] = output.ToArray();

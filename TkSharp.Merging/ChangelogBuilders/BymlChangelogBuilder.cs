@@ -11,7 +11,8 @@ public sealed class BymlChangelogBuilder : Singleton<BymlChangelogBuilder>, ITkC
 {
     public bool CanProcessWithoutVanilla => false;
 
-    public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
+    public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer,
+        ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite, int gameVersion)
     {
         var vanillaByml = Byml.FromBinary(vanillaBuffer);
         var srcByml = Byml.FromBinary(srcBuffer, out var endianness, out var version);

@@ -13,7 +13,7 @@ public interface ITkChangelogBuilder : IDisposable
     /// a changelog without a vanilla file buffer.
     /// </summary>
     public bool CanProcessWithoutVanilla { get; }
-    
+
     /// <summary>
     /// Builds a changelog of the provided target.
     /// </summary>
@@ -23,7 +23,8 @@ public interface ITkChangelogBuilder : IDisposable
     /// <param name="srcBuffer"></param>
     /// <param name="vanillaBuffer"></param>
     /// <param name="openWrite"></param>
+    /// <param name="gameVersion"></param>
     /// <returns>False if no changes were detected in the target</returns>
     bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer,
-        OpenWriteChangelog openWrite);
+        OpenWriteChangelog openWrite, int gameVersion);
 }

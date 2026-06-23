@@ -9,8 +9,8 @@ public sealed class SarcChangelogBuilder : Singleton<SarcChangelogBuilder>, ITkC
     
     public bool CanProcessWithoutVanilla => false;
 
-    public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags,
-        ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
+    public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer,
+        ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite, int gameVersion)
     {
         var vanilla = Sarc.FromBinary(vanillaBuffer);
 
@@ -41,7 +41,7 @@ public sealed class SarcChangelogBuilder : Singleton<SarcChangelogBuilder>, ITkC
             }
 
             builder.Build(name, nested, flags, data, vanillaData,
-                (_, canon, _, _) => changelog.OpenWrite(canon)
+                (_, canon, _, _) => changelog.OpenWrite(canon), gameVersion
             );
             builder.Dispose();
 
