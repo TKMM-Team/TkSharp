@@ -63,6 +63,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
         ulong tableNameHash, BymlArray src, BymlArray vanilla, IBymlArrayChangelogBuilderProvider changelogBuilderProvider)
     {
         BymlHashMap32 changelog = [];
+        HashSet<uint> expectedInVanilla = [];
 
         for (var i = 0; i < src.Count; i++) {
             var srcEntry = src[i];
@@ -78,6 +79,8 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
                 goto UpdateChangelog;
             }
 
+            expectedInVanilla.Add(hash);
+            
             if (BymlChangelogBuilder.LogChangesInline(ref bymlTrackingInfo, ref srcEntry, vanilla[index], changelogBuilderProvider)) {
                 // Skip 1:1 vanilla entry
                 continue;
@@ -90,8 +93,15 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
         if (src.Count == vanilla.Count) {
             return changelog;
         }
+        
+        // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
+        foreach (var node in vanilla) {
+            uint hash = (uint)node.GetMap()["Hash"].Value!;
+            if (!expectedInVanilla.Remove(hash)) {
+                changelog[hash] = BymlChangeType.Remove;
+            }
+        }
 
-        // TODO: Handle removed entries
         return changelog;
     }
 
