@@ -108,24 +108,43 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
     private static BymlHashMap64 LogUInt64Entries(ref BymlTrackingInfo bymlTrackingInfo, int gameVersion, BymlArray src, BymlArray vanilla)
     {
         BymlHashMap64 changelog = [];
+        HashSet<ulong> expectedInVanilla = [];
 
-        foreach (var srcEntry in src) {
-            var srcEntryVar = srcEntry;
-            var entry = srcEntryVar.GetMap();
+        for (var i = 0; i < src.Count; i++) {
+            var srcEntry = src[i];
+            var entry = srcEntry.GetMap();
+            
             if (!entry.TryGetValue("Hash", out var hashEntry) || hashEntry.Value is not ulong hash) {
+                // TODO: Warn | Invalid GDL entry: Missing Hash
                 continue;
             }
 
             if (!GameDataIndex.TryGetIndex(gameVersion, hash, out var index)) {
+                src.RemoveAt(i--);
                 goto UpdateChangelog;
             }
+            
+            expectedInVanilla.Add(hash);
 
-            if (BymlChangelogBuilder.LogChangesInline(ref bymlTrackingInfo, ref srcEntryVar, vanilla[index])) {
+            if (BymlChangelogBuilder.LogChangesInline(ref bymlTrackingInfo, ref srcEntry, vanilla[index])) {
+                // Skip 1:1 vanilla entry
                 continue;
             }
 
         UpdateChangelog:
             changelog[hash] = entry;
+        }
+
+        if (src.Count == vanilla.Count) {
+            return changelog;
+        }
+        
+        // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
+        foreach (var node in vanilla) {
+            uint hash = (uint)node.GetMap()["Hash"].Value!;
+            if (!expectedInVanilla.Remove(hash)) {
+                changelog[hash] = BymlChangeType.Remove;
+            }
         }
 
         return changelog;
