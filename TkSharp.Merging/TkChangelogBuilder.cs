@@ -4,6 +4,7 @@ using TkSharp.Core;
 using TkSharp.Core.IO.Buffers;
 using TkSharp.Core.Models;
 using TkSharp.Merging.ChangelogBuilders;
+using TkSharp.Merging.ChangelogBuilders.GameData;
 
 namespace TkSharp.Merging;
 
@@ -65,6 +66,8 @@ public class TkChangelogBuilder(
 
     public TkChangelog Build()
     {
+        GameDataCache.Cache(_tk);
+        
         foreach (var (file, entry) in _source.Files) {
             BuildTarget(file, entry);
         }

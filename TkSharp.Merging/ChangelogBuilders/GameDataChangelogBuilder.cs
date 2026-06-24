@@ -18,7 +18,12 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
     {
         BymlMap changelog = [];
         var src = Byml.FromBinary(srcBuffer).GetMap()["Data"].GetMap();
-        var vanilla = Byml.FromBinary(vanillaBuffer, out var endianness, out var version).GetMap()["Data"].GetMap();
+
+        // Load correct GDL version from runtime cache
+        bool hasMatchingGameDataFile = path.FileVersion == GameDataCache.GetNearestGameDataVersion(gameVersion);
+        var vanilla = Byml.FromBinary(
+            hasMatchingGameDataFile ? vanillaBuffer : GameDataCache.GetCachedFor(path.FileVersion),
+            out var endianness, out var version).GetMap()["Data"].GetMap();
 
         BymlTrackingInfo bymlTrackingInfo = new(path.Canonical, 0);
 
@@ -68,7 +73,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
         for (var i = 0; i < src.Count; i++) {
             var srcEntry = src[i];
             var entry = srcEntry.GetMap();
-            
+
             if (!entry.TryGetValue("Hash", out var hashEntry) || hashEntry.Value is not uint hash) {
                 // TODO: Warn | Invalid GDL entry: Missing Hash
                 continue;
@@ -80,7 +85,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
             }
 
             expectedInVanilla.Add(hash);
-            
+
             if (BymlChangelogBuilder.LogChangesInline(ref bymlTrackingInfo, ref srcEntry, vanilla[index], changelogBuilderProvider)) {
                 // Skip 1:1 vanilla entry
                 continue;
@@ -93,7 +98,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
         if (src.Count == vanilla.Count) {
             return changelog;
         }
-        
+
         // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
         foreach (var node in vanilla) {
             uint hash = (uint)node.GetMap()["Hash"].Value!;
@@ -113,7 +118,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
         for (var i = 0; i < src.Count; i++) {
             var srcEntry = src[i];
             var entry = srcEntry.GetMap();
-            
+
             if (!entry.TryGetValue("Hash", out var hashEntry) || hashEntry.Value is not ulong hash) {
                 // TODO: Warn | Invalid GDL entry: Missing Hash
                 continue;
@@ -123,7 +128,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
                 src.RemoveAt(i--);
                 goto UpdateChangelog;
             }
-            
+
             expectedInVanilla.Add(hash);
 
             if (BymlChangelogBuilder.LogChangesInline(ref bymlTrackingInfo, ref srcEntry, vanilla[index])) {
@@ -138,7 +143,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
         if (src.Count == vanilla.Count) {
             return changelog;
         }
-        
+
         // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
         foreach (var node in vanilla) {
             uint hash = (uint)node.GetMap()["Hash"].Value!;
