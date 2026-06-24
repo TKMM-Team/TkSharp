@@ -20,7 +20,9 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
         var src = Byml.FromBinary(srcBuffer).GetMap()["Data"].GetMap();
 
         // Load correct GDL version from runtime cache
-        bool hasMatchingGameDataFile = path.FileVersion == GameDataCache.GetNearestGameDataVersion(gameVersion);
+        var romGameDataVersion = GameDataCache.GetRomGameDataVersion(gameVersion);
+        var hasMatchingGameDataFile = path.FileVersion == romGameDataVersion;
+        var vanillaFileVersion = hasMatchingGameDataFile ? romGameDataVersion : path.FileVersion;
         var vanilla = Byml.FromBinary(
             hasMatchingGameDataFile ? vanillaBuffer : GameDataCache.GetCachedFor(path.FileVersion),
             out var endianness, out var version).GetMap()["Data"].GetMap();
@@ -32,7 +34,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
             var vanillaEntries = vanilla[tableName].GetArray();
 
             if (tableName is "Bool64bitKey") {
-                if (LogUInt64Entries(ref bymlTrackingInfo, gameVersion, entries, vanillaEntries) is { Count: > 0 } u64LogResult) {
+                if (LogUInt64Entries(ref bymlTrackingInfo, vanillaFileVersion, entries, vanillaEntries) is { Count: > 0 } u64LogResult) {
                     changelog[tableName] = u64LogResult;
                 }
 
@@ -46,7 +48,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
 
             var tableNameHash = XxHash3.HashToUInt64(
                 tableName.AsSpan().Cast<char, byte>());
-            if (LogEntries(ref bymlTrackingInfo, gameVersion, tableNameHash, entries, vanillaEntries, arrayChangelogBuilderProvider) is { Count: > 0 } logResult) {
+            if (LogEntries(ref bymlTrackingInfo, vanillaFileVersion, tableNameHash, entries, vanillaEntries, arrayChangelogBuilderProvider) is { Count: > 0 } logResult) {
                 changelog[tableName] = logResult;
             }
         }
@@ -64,7 +66,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
         return true;
     }
 
-    private static BymlHashMap32 LogEntries(ref BymlTrackingInfo bymlTrackingInfo, int gameVersion,
+    private static BymlHashMap32 LogEntries(ref BymlTrackingInfo bymlTrackingInfo, int vanillaFileVersion,
         ulong tableNameHash, BymlArray src, BymlArray vanilla, IBymlArrayChangelogBuilderProvider changelogBuilderProvider)
     {
         BymlHashMap32 changelog = [];
@@ -79,7 +81,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
                 continue;
             }
 
-            if (!GameDataIndex.TryGetIndex(gameVersion, tableNameHash, hash, out var index)) {
+            if (!GameDataIndex.TryGetIndex(vanillaFileVersion, tableNameHash, hash, out var index)) {
                 src.RemoveAt(i--);
                 goto UpdateChangelog;
             }
@@ -110,7 +112,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
         return changelog;
     }
 
-    private static BymlHashMap64 LogUInt64Entries(ref BymlTrackingInfo bymlTrackingInfo, int gameVersion, BymlArray src, BymlArray vanilla)
+    private static BymlHashMap64 LogUInt64Entries(ref BymlTrackingInfo bymlTrackingInfo, int vanillaFileVersion, BymlArray src, BymlArray vanilla)
     {
         BymlHashMap64 changelog = [];
         HashSet<ulong> expectedInVanilla = [];
@@ -124,7 +126,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
                 continue;
             }
 
-            if (!GameDataIndex.TryGetIndex(gameVersion, hash, out var index)) {
+            if (!GameDataIndex.TryGetIndex(vanillaFileVersion, hash, out var index)) {
                 src.RemoveAt(i--);
                 goto UpdateChangelog;
             }

@@ -16,7 +16,7 @@ public static class GameDataCache
     {
         Directory.CreateDirectory(_cacheFolderPath);
 
-        if (_gameDataVersions.All(version => File.Exists(GetGameDataCaheFilePath(version)))) {
+        if (_gameDataVersions.All(version => File.Exists(GetGameDataCacheFilePath(version)))) {
             return;
         }
 
@@ -24,40 +24,42 @@ public static class GameDataCache
         using var ms = new MemoryStream(vanilla.Segment.Array ?? [], 0, vanilla.Segment.Count);
 
         int gameVersion = GetNearestGameDataVersion(tk.GameVersion);
-        File.WriteAllBytes(GetGameDataCaheFilePath(gameVersion), vanilla.Span);
+        File.WriteAllBytes(GetGameDataCacheFilePath(gameVersion), vanilla.Span);
 
         int startIndex = _gameDataVersions.IndexOf(gameVersion);
 
         // Create all higher GDL versions
         for (int i = startIndex + 1; i < _gameDataVersions.Length; i++) {
             var targetVersion = _gameDataVersions[i];
-            using var fs = File.Create(GetGameDataCaheFilePath(targetVersion));
+            using var fs = File.Create(GetGameDataCacheFilePath(targetVersion));
             MakeGameDataFile(_gameDataVersions[i - 1], targetVersion, fs);
         }
 
         // Create all lower GDL versions
         for (int i = startIndex - 1; i >= 0; i--) {
             var targetVersion = _gameDataVersions[i];
-            using var fs = File.Create(GetGameDataCaheFilePath(targetVersion));
+            using var fs = File.Create(GetGameDataCacheFilePath(targetVersion));
             MakeGameDataFile(_gameDataVersions[i + 1], targetVersion, fs);
         }
     }
 
     public static byte[] GetCachedFor(int fileVersion)
-        => File.ReadAllBytes(GetGameDataCaheFilePath(fileVersion));
+        => File.ReadAllBytes(GetGameDataCacheFilePath(fileVersion));
 
     private static void MakeGameDataFile(int sourceVersion, int targetVersion, Stream output)
         => BinaryPatch.Apply(GetGameDataFile(sourceVersion), () => GetGameDataDelta(sourceVersion, targetVersion), output);
 
     private static FileStream GetGameDataFile(int version)
-        => File.OpenRead(GetGameDataCaheFilePath(version));
+        => File.OpenRead(GetGameDataCacheFilePath(version));
 
     private static Stream GetGameDataDelta(int sourceVersion, int targetVersion)
         => typeof(GameDataCache).Assembly.GetManifestResourceStream(
             $"TkSharp.Merging.Resources.GameDataDelta.GameDataDelta.{sourceVersion}-{targetVersion}.gdldelta")!;
 
-    private static string GetGameDataCaheFilePath(int version)
+    private static string GetGameDataCacheFilePath(int version)
         => Path.Combine(_cacheFolderPath, $"{version}.gdcache");
 
-    public static int GetNearestGameDataVersion(int gameVersion) => _gameDataVersions.Last(ver => ver < gameVersion);
+    private static int GetNearestGameDataVersion(int gameVersion) => _gameDataVersions.Last(ver => ver < gameVersion);
+
+    public static int GetRomGameDataVersion(int gameVersion) => _gameDataVersions.Last(ver => ver <= gameVersion);
 }
