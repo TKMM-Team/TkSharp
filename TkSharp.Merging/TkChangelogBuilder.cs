@@ -149,7 +149,7 @@ public class TkChangelogBuilder(
             _tk.Zstd.Decompress(raw.Span, decompressed.Span, out zsDictionaryId);
         }
 
-        if (_tk.IsVanillaAnyVersion(path.Canonical, decompressed.Span)) {
+        if (_tk.IsVanillaAnyVersion(path.Canonical, isZsCompressed ? decompressed.Span : raw.Span)) {
             TkLog.Instance.LogTrace(
                 "The target '{FileName}' was skipped because the file is byte-perfect with the vanilla file", canonical);
             return;
