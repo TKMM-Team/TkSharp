@@ -27,7 +27,8 @@ public sealed class RsdbRowChangelogBuilder<TKey>(string keyName) : ITkChangelog
     
     public bool CanProcessWithoutVanilla => false;
 
-    public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
+    public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer,
+        ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite, int gameVersion)
     {
         var dbNameHash = GetDbNameHash(path);
 

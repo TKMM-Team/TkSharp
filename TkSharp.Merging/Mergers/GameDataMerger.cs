@@ -104,13 +104,24 @@ public sealed class GameDataMerger : Singleton<GameDataMerger>, ITkMerger
         foreach (var baseEntry in @base) {
             if (baseEntry.Value is not IDictionary<string, Byml> map ||
                 !map.TryGetValue("Hash", out var hashEntry) || hashEntry.Value is not uint hash) {
-                // Invalid vanilla GDL entry
+                // TODO: Warn | Invalid Vanilla GDL entry: Missing Hash
                 continue;
             }
 
+            // Attempt to fetch and remove a changelog
+            // matching the vanilla hash
             if (!changelog.Remove(hash, out var changelogEntry)) {
                 continue;
             }
+
+            if (changelogEntry.Value is BymlChangeType.Remove) {
+                gameDataTracking.Drop[hash] = (Table: @base, baseEntry);
+                continue;
+            }
+
+            // If any edits are applied to this
+            // node, forget that it was dropped
+            gameDataTracking.Drop.Remove(hash);
 
             if (gameDataTracking.TryGetValue(hash, out var entry)) {
                 entry.Changes.Add(changelogEntry);

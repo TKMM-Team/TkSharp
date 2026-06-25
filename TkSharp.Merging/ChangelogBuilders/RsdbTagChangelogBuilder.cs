@@ -19,7 +19,8 @@ public sealed class RsdbTagChangelogBuilder : Singleton<RsdbTagChangelogBuilder>
 {
     public bool CanProcessWithoutVanilla => false;
 
-    public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
+    public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer,
+        ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite, int gameVersion)
     {
         using RsdbTagIndex vanilla = new(vanillaBuffer);
 

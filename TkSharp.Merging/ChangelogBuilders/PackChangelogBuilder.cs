@@ -14,13 +14,13 @@ public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBu
 
     public bool CanProcessWithoutVanilla => true;
 
-    public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags,
-        ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
+    public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer,
+        ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite, int gameVersion)
     {
         var sarc = Sarc.FromBinary(srcBuffer);
         
         if (vanillaBuffer.Count == 0) {
-            ExtractCustom(sarc, canonical, path, flags, openWrite);
+            ExtractCustom(sarc, canonical, path, flags, openWrite, gameVersion);
             return true;
         }
         
@@ -69,7 +69,7 @@ public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBu
                 }
 
                 builder.Build(name, nested, flags, data, vanillaData,
-                    (tkPath, canon, _, _) => openWrite(tkPath, canon, archiveCanonical: canonical));
+                    (tkPath, canon, _, _) => openWrite(tkPath, canon, archiveCanonical: canonical), gameVersion);
                 builder.Dispose();
 
                 continue;
@@ -101,7 +101,7 @@ public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBu
         return true;
     }
 
-    private void ExtractCustom(Sarc sarc, string canonical, in TkPath path, in TkChangelogBuilderFlags flags, OpenWriteChangelog openWrite)
+    private void ExtractCustom(Sarc sarc, string canonical, in TkPath path, in TkChangelogBuilderFlags flags, OpenWriteChangelog openWrite, int gameVersion)
     {
         foreach (var (name, data) in sarc) {
             var nested = new TkPath(
@@ -127,7 +127,7 @@ public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBu
             }
 
             var hasChanges = builder.Build(name, nested, flags, data, vanilla.Segment,
-                (tkPath, canon, _, _) => openWrite(tkPath, canon, archiveCanonical: canonical));
+                (tkPath, canon, _, _) => openWrite(tkPath, canon, archiveCanonical: canonical), gameVersion);
             builder.Dispose();
             
             if (!hasChanges) {

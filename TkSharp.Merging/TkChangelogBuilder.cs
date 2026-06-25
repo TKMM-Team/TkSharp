@@ -4,6 +4,7 @@ using TkSharp.Core;
 using TkSharp.Core.IO.Buffers;
 using TkSharp.Core.Models;
 using TkSharp.Merging.ChangelogBuilders;
+using TkSharp.Merging.ChangelogBuilders.GameData;
 
 namespace TkSharp.Merging;
 
@@ -65,6 +66,8 @@ public class TkChangelogBuilder(
 
     public TkChangelog Build()
     {
+        GameDataCache.Cache(_tk);
+        
         foreach (var (file, entry) in _source.Files) {
             BuildTarget(file, entry);
         }
@@ -132,17 +135,6 @@ public class TkChangelogBuilder(
             goto Copy;
         }
 
-        if (path.Canonical.StartsWith("GameData/") && path.FileVersion != -1) {
-            var versionedPath = $"GameData/GameDataList.Product.{path.FileVersion}.byml";
-            using var testVanilla = _tk.GetVanilla(versionedPath, path.Attributes);
-            
-            if (testVanilla.IsEmpty) {
-                TkLog.Instance.LogTrace(
-                    "The target '{FileName}' was skipped because its version {FileVersion} does not correspond to the provided dump.", versionedPath, path.FileVersion);
-                return;
-            }
-        }
-
         using var raw = RentedBuffer<byte>.Allocate(content);
         _ = content.Read(raw.Span);
 
@@ -189,7 +181,7 @@ public class TkChangelogBuilder(
                     archiveCanon, archiveCanon is not null ? parentAttributes : null);
                 var outputFile = Path.Combine(path.Root.ToString(), canon);
                 return _writer.OpenWrite(outputFile);
-            });
+            }, _tk.GameVersion);
         builder.Dispose();
 
         if (isVanilla) {
@@ -198,7 +190,8 @@ public class TkChangelogBuilder(
         }
     }
 
-    public static ArraySegment<ArraySegment<byte>> CreateChangelogsExternal(string canonical, TkChangelogBuilderFlags flags, ArraySegment<byte> @base, RentedBuffers<byte> changelogs, TkFileAttributes attributes)
+    public static ArraySegment<ArraySegment<byte>> CreateChangelogsExternal(string canonical, TkChangelogBuilderFlags flags,
+        ArraySegment<byte> @base, RentedBuffers<byte> changelogs, TkFileAttributes attributes, int gameVersion)
     {
         TkPath path = new(canonical, 100, attributes, "romfs", "");
 
@@ -215,7 +208,7 @@ public class TkChangelogBuilder(
             TkPath pathIteratorStackInstance = new(canonical, 100, attributes, "romfs", "");
 
             // ReSharper disable once AccessToDisposedClosure
-            if (builder.Build(canonical, pathIteratorStackInstance, flags, entry.Segment, @base, (_, _, _, _) => output)) {
+            if (builder.Build(canonical, pathIteratorStackInstance, flags, entry.Segment, @base, (_, _, _, _) => output, gameVersion)) {
                 // Copy the buffer because output
                 // is disposed before this is used
                 result[++index] = output.ToArray();

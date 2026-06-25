@@ -127,7 +127,7 @@ public sealed class TkMerger
                 }
                 
                 if (vanilla.IsEmpty && merger is not BfresMcMerger) {
-                    MergeCustomTarget(merger, streams[0], streams.AsSpan(1..), changelog, output);
+                    MergeCustomTarget(merger, streams[0], streams.AsSpan(1..), changelog, output, _rom.GameVersion);
                     break;
                 }
 
@@ -249,17 +249,17 @@ public sealed class TkMerger
         }
     }
 
-    private void MergeCustomTarget(ITkMerger merger, Stream @base, ReadOnlySpan<Stream> targets, TkChangelogEntry changelog, Stream output)
+    private void MergeCustomTarget(ITkMerger merger, Stream @base, ReadOnlySpan<Stream> targets, TkChangelogEntry changelog, Stream output, int gameVersion)
     {
         using var fakeVanilla = _rom.Zstd.Decompress(@base);
-        MergeCustomTarget(merger, fakeVanilla.Segment, targets, changelog, output);
+        MergeCustomTarget(merger, fakeVanilla.Segment, targets, changelog, output, gameVersion);
     }
 
-    private static void MergeCustomTarget(ITkMerger merger, ArraySegment<byte> @base, ReadOnlySpan<Stream> targets, TkChangelogEntry changelog, Stream output)
+    private static void MergeCustomTarget(ITkMerger merger, ArraySegment<byte> @base, ReadOnlySpan<Stream> targets, TkChangelogEntry changelog, Stream output, int gameVersion)
     {
         using var targetsBuffer = RentedBuffers<byte>.Allocate(targets, disposeStreams: true);
         var changelogs = TkChangelogBuilder.CreateChangelogsExternal(
-            changelog.Canonical, flags: default, @base, targetsBuffer, changelog.Attributes
+            changelog.Canonical, flags: default, @base, targetsBuffer, changelog.Attributes, gameVersion 
         );
 
         if (changelogs.Count == 0) {

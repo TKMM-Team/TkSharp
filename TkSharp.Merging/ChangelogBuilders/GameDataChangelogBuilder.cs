@@ -3,7 +3,6 @@ using BymlLibrary;
 using BymlLibrary.Nodes.Containers;
 using BymlLibrary.Nodes.Containers.HashMap;
 using CommunityToolkit.HighPerformance;
-using Revrs;
 using TkSharp.Core;
 using TkSharp.Merging.ChangelogBuilders.BinaryYaml;
 using TkSharp.Merging.ChangelogBuilders.GameData;
@@ -14,11 +13,19 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
 {
     public bool CanProcessWithoutVanilla => false;
 
-    public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite)
+    public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer,
+        ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite, int gameVersion)
     {
         BymlMap changelog = [];
         var src = Byml.FromBinary(srcBuffer).GetMap()["Data"].GetMap();
-        var vanilla = Byml.FromBinary(vanillaBuffer, out var endianness, out var version).GetMap()["Data"].GetMap();
+
+        // Load correct GDL version from runtime cache
+        var romGameDataVersion = GameDataCache.GetRomGameDataVersion(gameVersion);
+        var hasMatchingGameDataFile = path.FileVersion == romGameDataVersion;
+        var vanillaFileVersion = hasMatchingGameDataFile ? romGameDataVersion : path.FileVersion;
+        var vanilla = Byml.FromBinary(
+            hasMatchingGameDataFile ? vanillaBuffer : GameDataCache.GetCachedFor(path.FileVersion),
+            out var endianness, out var version).GetMap()["Data"].GetMap();
 
         BymlTrackingInfo bymlTrackingInfo = new(path.Canonical, 0);
 
@@ -27,7 +34,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
             var vanillaEntries = vanilla[tableName].GetArray();
 
             if (tableName is "Bool64bitKey") {
-                if (LogUInt64Entries(ref bymlTrackingInfo, path.FileVersion, entries, vanillaEntries) is { Count: > 0 } u64LogResult) {
+                if (LogUInt64Entries(ref bymlTrackingInfo, vanillaFileVersion, entries, vanillaEntries) is { Count: > 0 } u64LogResult) {
                     changelog[tableName] = u64LogResult;
                 }
 
@@ -41,7 +48,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
 
             var tableNameHash = XxHash3.HashToUInt64(
                 tableName.AsSpan().Cast<char, byte>());
-            if (LogEntries(ref bymlTrackingInfo, path.FileVersion, tableNameHash, entries, vanillaEntries, arrayChangelogBuilderProvider) is { Count: > 0 } logResult) {
+            if (LogEntries(ref bymlTrackingInfo, vanillaFileVersion, tableNameHash, entries, vanillaEntries, arrayChangelogBuilderProvider) is { Count: > 0 } logResult) {
                 changelog[tableName] = logResult;
             }
         }
@@ -59,27 +66,30 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
         return true;
     }
 
-    private static BymlHashMap32 LogEntries(ref BymlTrackingInfo bymlTrackingInfo, int gameDataListFileVersion,
+    private static BymlHashMap32 LogEntries(ref BymlTrackingInfo bymlTrackingInfo, int vanillaFileVersion,
         ulong tableNameHash, BymlArray src, BymlArray vanilla, IBymlArrayChangelogBuilderProvider changelogBuilderProvider)
     {
         BymlHashMap32 changelog = [];
+        HashSet<uint> expectedInVanilla = [];
 
         for (var i = 0; i < src.Count; i++) {
             var srcEntry = src[i];
             var entry = srcEntry.GetMap();
+
             if (!entry.TryGetValue("Hash", out var hashEntry) || hashEntry.Value is not uint hash) {
+                // TODO: Warn | Invalid GDL entry: Missing Hash
                 continue;
             }
 
-            if (!GameDataIndex.TryGetIndex(gameDataListFileVersion, tableNameHash, hash, out var index)) {
-                src.RemoveAt(i);
-                i--;
+            if (!GameDataIndex.TryGetIndex(vanillaFileVersion, tableNameHash, hash, out var index)) {
+                src.RemoveAt(i--);
                 goto UpdateChangelog;
             }
 
-            // Vanilla entry [hash] accounted for
+            expectedInVanilla.Add(hash);
 
             if (BymlChangelogBuilder.LogChangesInline(ref bymlTrackingInfo, ref srcEntry, vanilla[index], changelogBuilderProvider)) {
+                // Skip 1:1 vanilla entry
                 continue;
             }
 
@@ -91,31 +101,57 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
             return changelog;
         }
 
-        // TODO: Handle removed entries
+        // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
+        foreach (var node in vanilla) {
+            uint hash = (uint)node.GetMap()["Hash"].Value!;
+            if (!expectedInVanilla.Remove(hash)) {
+                changelog[hash] = BymlChangeType.Remove;
+            }
+        }
+
         return changelog;
     }
 
-    private static BymlHashMap64 LogUInt64Entries(ref BymlTrackingInfo bymlTrackingInfo, int gameDataListFileVersion, BymlArray src, BymlArray vanilla)
+    private static BymlHashMap64 LogUInt64Entries(ref BymlTrackingInfo bymlTrackingInfo, int vanillaFileVersion, BymlArray src, BymlArray vanilla)
     {
         BymlHashMap64 changelog = [];
+        HashSet<ulong> expectedInVanilla = [];
 
-        foreach (var srcEntry in src) {
-            var srcEntryVar = srcEntry;
-            var entry = srcEntryVar.GetMap();
+        for (var i = 0; i < src.Count; i++) {
+            var srcEntry = src[i];
+            var entry = srcEntry.GetMap();
+
             if (!entry.TryGetValue("Hash", out var hashEntry) || hashEntry.Value is not ulong hash) {
+                // TODO: Warn | Invalid GDL entry: Missing Hash
                 continue;
             }
 
-            if (!GameDataIndex.TryGetIndex(gameDataListFileVersion, hash, out var index)) {
+            if (!GameDataIndex.TryGetIndex(vanillaFileVersion, hash, out var index)) {
+                src.RemoveAt(i--);
                 goto UpdateChangelog;
             }
 
-            if (BymlChangelogBuilder.LogChangesInline(ref bymlTrackingInfo, ref srcEntryVar, vanilla[index])) {
+            expectedInVanilla.Add(hash);
+
+            if (BymlChangelogBuilder.LogChangesInline(ref bymlTrackingInfo, ref srcEntry, vanilla[index])) {
+                // Skip 1:1 vanilla entry
                 continue;
             }
 
         UpdateChangelog:
             changelog[hash] = entry;
+        }
+
+        if (src.Count == vanilla.Count) {
+            return changelog;
+        }
+
+        // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
+        foreach (var node in vanilla) {
+            uint hash = (uint)node.GetMap()["Hash"].Value!;
+            if (!expectedInVanilla.Remove(hash)) {
+                changelog[hash] = BymlChangeType.Remove;
+            }
         }
 
         return changelog;
