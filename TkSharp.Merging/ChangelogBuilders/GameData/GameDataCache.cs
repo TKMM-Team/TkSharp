@@ -23,7 +23,7 @@ public static class GameDataCache
         using var vanilla = tk.GetVanilla("GameData/GameDataList.Product.byml", TkFileAttributes.HasZsExtension | TkFileAttributes.HasZsExtension);
         using var ms = new MemoryStream(vanilla.Segment.Array ?? [], 0, vanilla.Segment.Count);
 
-        int gameVersion = GetRomGameDataVersion(tk.GameVersion);
+        int gameVersion = GetNearestGameDataVersion(tk.GameVersion);
         File.WriteAllBytes(GetGameDataCacheFilePath(gameVersion), vanilla.Span);
 
         int startIndex = _gameDataVersions.IndexOf(gameVersion);
@@ -59,5 +59,5 @@ public static class GameDataCache
     private static string GetGameDataCacheFilePath(int version)
         => Path.Combine(_cacheFolderPath, $"{version}.gdcache");
 
-    public static int GetRomGameDataVersion(int gameVersion) => _gameDataVersions.Last(ver => ver <= gameVersion);
+    public static int GetNearestGameDataVersion(int gameVersion) => _gameDataVersions.Last(ver => ver <= gameVersion);
 }

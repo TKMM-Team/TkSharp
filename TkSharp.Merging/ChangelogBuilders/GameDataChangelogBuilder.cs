@@ -20,7 +20,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
         var src = Byml.FromBinary(srcBuffer).GetMap()["Data"].GetMap();
 
         // Load correct GDL version from runtime cache
-        var romGameDataVersion = GameDataCache.GetRomGameDataVersion(gameVersion);
+        var romGameDataVersion = GameDataCache.GetNearestGameDataVersion(gameVersion);
         var hasMatchingGameDataFile = path.FileVersion == romGameDataVersion;
         var vanillaFileVersion = hasMatchingGameDataFile ? romGameDataVersion : path.FileVersion;
         var vanilla = Byml.FromBinary(
