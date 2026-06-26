@@ -54,7 +54,7 @@ public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBu
                     vanillaData = vanillaRented.Segment;
                 }
 
-                if (data.AsSpan().SequenceEqual(vanillaData)) {
+                if (data.AsSpan().SequenceEqual(vanillaData) || _tk.IsVanillaAnyVersion(name, data.AsSpan())) {
                     if (vanillaRented.IsEmpty) {
                         // Vanilla file existing in archive, ignore
                         continue;
