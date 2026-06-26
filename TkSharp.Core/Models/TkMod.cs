@@ -35,11 +35,13 @@ public sealed partial class TkMod : TkStoredItem
     /// </summary>
     public ObservableCollection<TkModDependency> Dependencies { get; init; } = [];
     
+    [JsonIgnore]
     public bool HasELink => Changelog.ChangelogFiles.Concat(
             OptionGroups.SelectMany(grp => grp.Options)
                 .SelectMany(option => option.Changelog.ChangelogFiles))
         .Any(x => x.Canonical.EndsWith(".belnk"));
 
+    [JsonIgnore]
     public bool HasSLink => Changelog.ChangelogFiles.Concat(
             OptionGroups.SelectMany(grp => grp.Options)
                 .SelectMany(option => option.Changelog.ChangelogFiles))
