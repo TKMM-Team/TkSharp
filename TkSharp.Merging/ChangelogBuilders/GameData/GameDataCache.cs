@@ -5,7 +5,11 @@ namespace TkSharp.Merging.ChangelogBuilders.GameData;
 
 public static class GameDataCache
 {
+#if !SWITCH
     private static readonly string _cacheFolderPath = Path.Combine(AppContext.BaseDirectory, ".gdcache");
+#else
+    private static readonly string _cacheFolderPath = "/flash/tkmm/storage/.tkmm/.gdcache";
+#endif
     private static readonly int[] _gameDataVersions = [110, 140];
 
     /// <summary>
