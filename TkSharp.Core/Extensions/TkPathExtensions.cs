@@ -73,11 +73,13 @@ public static class TkPathExtensions
             canonical = new Span<char>(ptr, size);
         }
 
+        var stripVersion = size < 7 || !canonical[..size].EndsWith(".pchtxt", StringComparison.OrdinalIgnoreCase);
+
         var state = State.Default;
         for (var i = 0; i < size; i++) {
             ref var @char = ref canonical[i];
 
-            if (@char is '.') {
+            if (stripVersion && @char is '.') {
                 switch (size - i) {
                     case > 2 when canonical[i..(i + 2)] is ".1" && (canonical.Length < 5 || canonical[^5..] is not ".txtg"):
                         attributes |= TkFileAttributes.IsProductFile;
