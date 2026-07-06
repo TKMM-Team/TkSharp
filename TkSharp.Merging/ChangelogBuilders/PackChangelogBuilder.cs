@@ -26,6 +26,7 @@ public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBu
         
         var vanilla = Sarc.FromBinary(vanillaBuffer);
         Sarc changelog = [];
+        var hasNestedChanges = false;
 
         foreach (var (name, data) in sarc) {
             var nested = new TkPath(
@@ -62,19 +63,23 @@ public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBu
                     
                     // Vanilla file, but not normally in this archive
                     WritePlaceholder(nested, name, canonical, openWrite);
+                    hasNestedChanges = true;
                 }
 
                 if (TkChangelogBuilder.GetChangelogBuilder(nested) is not { } builder) {
                     goto MoveContent;
                 }
 
-                builder.Build(name, nested, flags, data, vanillaData,
-                    (tkPath, canon, _, _) => openWrite(tkPath, canon, archiveCanonical: canonical), gameVersion);
+                if (builder.Build(name, nested, flags, data, vanillaData,
+                    (tkPath, canon, _, _) => openWrite(tkPath, canon, archiveCanonical: canonical), gameVersion)) {
+                    hasNestedChanges = true;
+                }
                 builder.Dispose();
 
                 continue;
 
             MoveContent:
+                hasNestedChanges = true;
                 changelog[name] = [];
                 using var inlineOut = openWrite(nested, name, archiveCanonical: canonical);
                 inlineOut.Write(data);
@@ -93,7 +98,7 @@ public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBu
         }
 
         if (changelog.Count == 0) {
-            return false;
+            return hasNestedChanges;
         }
 
         using var output = openWrite(path, canonical);
