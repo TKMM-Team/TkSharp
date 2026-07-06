@@ -14,7 +14,6 @@ public sealed class TkChecksums
     
     private readonly int _version;
     private readonly FrozenDictionary<ulong, Entry[]> _entries;
-    private readonly FrozenSet<(int Size, ulong Hash)> _vanillaContent;
 
     public static TkChecksums FromStream(in Stream stream)
     {
@@ -51,15 +50,6 @@ public sealed class TkChecksums
     {
         _version = version;
         _entries = entries.ToFrozenDictionary();
-
-        HashSet<(int Size, ulong Hash)> content = new();
-        foreach (var versions in entries.Values) {
-            foreach (var entry in versions) {
-                content.Add((entry.Size, entry.Hash));
-            }
-        }
-
-        _vanillaContent = content.ToFrozenSet();
     }
 
     public bool IsFileVanilla(ReadOnlySpan<char> canonical, Span<byte> src, int fileVersion)
@@ -69,8 +59,14 @@ public sealed class TkChecksums
 
     public bool IsFileVanillaAnyVersion(ReadOnlySpan<char> canonical, Span<byte> src)
     {
-        _ = canonical;
-        return _vanillaContent.Contains((src.Length, XxHash3.HashToUInt64(src)));
+        if (!_entries.TryGetValue(GetNameHash(canonical), out var pathEntries)) {
+            return false;
+        }
+
+        var hash = XxHash3.HashToUInt64(src);
+        var size = src.Length;
+
+        return pathEntries.Any(entry => entry.Size == size && entry.Hash == hash);
     }
 
     public bool IsFileVanilla(ReadOnlySpan<char> canonical, Span<byte> src, int fileVersion, out bool isEntryFound)
