@@ -17,6 +17,7 @@ public class TkChangelogBuilder(
 {
     private static ITkRom? _sessionRom;
     private static ITkRomProvider? _romProvider;
+    private static string? _baseDirectory;
 
     // This is a bit sketchy and should probably be fixed
     // in a better way.
@@ -39,9 +40,10 @@ public class TkChangelogBuilder(
         Source = systemSource
     };
 
-    public static void Init(ITkRomProvider tkRomProvider)
+    public static void Init(ITkRomProvider tkRomProvider, string baseDirectory)
     {
         _romProvider = tkRomProvider;
+        _baseDirectory = baseDirectory;
     }
 
     private static ITkRom InitSession(ITkRom tk)
@@ -66,7 +68,7 @@ public class TkChangelogBuilder(
 
     public TkChangelog Build()
     {
-        GameDataCache.Cache(_tk);
+        GameDataCache.Cache(_tk, _baseDirectory!);
         
         foreach (var (file, entry) in _source.Files) {
             BuildTarget(file, entry);

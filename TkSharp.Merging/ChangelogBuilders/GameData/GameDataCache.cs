@@ -5,20 +5,18 @@ namespace TkSharp.Merging.ChangelogBuilders.GameData;
 
 public static class GameDataCache
 {
-#if !SWITCH
-    private static readonly string _cacheFolderPath = Path.Combine(AppContext.BaseDirectory, ".gdcache");
-#else
-    private static readonly string _cacheFolderPath = "/flash/tkmm/storage/.tkmm/.gdcache";
-#endif
     private static readonly int[] _gameDataVersions = [110, 140];
+    private static string? _baseDirectory;
 
     /// <summary>
     /// Generate all GDL file versions from precompiled deltas
     /// </summary>
     /// <param name="tk"></param>
-    public static void Cache(ITkRom tk)
+    /// <param name="baseDirectory"></param>
+    public static void Cache(ITkRom tk, string baseDirectory)
     {
-        Directory.CreateDirectory(_cacheFolderPath);
+        _baseDirectory = baseDirectory;
+        Directory.CreateDirectory(GetCacheFolderPath());
 
         if (_gameDataVersions.All(version => File.Exists(GetGameDataCacheFilePath(version)))) {
             return;
@@ -61,7 +59,12 @@ public static class GameDataCache
             $"TkSharp.Merging.Resources.GameDataDelta.GameDataDelta.{sourceVersion}-{targetVersion}.gdldelta")!;
 
     private static string GetGameDataCacheFilePath(int version)
-        => Path.Combine(_cacheFolderPath, $"{version}.gdcache");
+        => Path.Combine(GetCacheFolderPath(), $"{version}.gdcache");
+
+    private static string GetCacheFolderPath()
+        => _baseDirectory is not null
+            ? Path.Combine(_baseDirectory, ".gdcache")
+            : throw new InvalidOperationException($"{nameof(GameDataCache)} has not been initialized. Call {nameof(Cache)} first.");
 
     public static int GetNearestGameDataVersion(int gameVersion) => _gameDataVersions.Last(ver => ver <= gameVersion);
 }
