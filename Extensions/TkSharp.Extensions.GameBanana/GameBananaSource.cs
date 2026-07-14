@@ -1,5 +1,4 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using System.Net.NetworkInformation;
 
 namespace TkSharp.Extensions.GameBanana;
 
@@ -22,7 +21,6 @@ public sealed partial class GameBananaSource(int gameId) : ObservableObject, IGa
         Feed = new GameBananaFeed();
         await GameBanana.FillFeed(Feed, _gameId, page, sort, searchTerm, ct);
         await FilterRecords(Feed, ct);
-        _ = DownloadThumbnails(Feed, ct);
     }
 
     private static async ValueTask FilterRecords(GameBananaFeed feed, CancellationToken ct)
@@ -49,16 +47,5 @@ public sealed partial class GameBananaSource(int gameId) : ObservableObject, IGa
             feed.Records.RemoveAt(i);
             i--;
         }
-    }
-
-    private static Task DownloadThumbnails(GameBananaFeed feed, CancellationToken ct)
-    {
-        if (!NetworkInterface.GetIsNetworkAvailable()) {
-            return Task.CompletedTask;
-        }
-        
-        return Task.Run(() => Parallel.ForEachAsync(
-            feed.Records, ct, static (record, ct) => record.DownloadThumbnail(ct)
-        ), ct);
     }
 }

@@ -1,8 +1,5 @@
 ﻿using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
-using Microsoft.Extensions.Logging;
-using TkSharp.Core;
-using TkSharp.Core.Models;
 
 namespace TkSharp.Extensions.GameBanana;
 
@@ -38,32 +35,13 @@ public partial class GameBananaModRecord : ObservableObject
     [JsonIgnore]
     public GameBananaMod? Full { get; private set; }
 
+    [JsonIgnore]
+    public string? ThumbnailUrl => Media.Images.FirstOrDefault() is { } img
+        ? $"{img.BaseUrl}/{img.SmallFile}"
+        : null;
+
     public async ValueTask DownloadFullMod(CancellationToken ct = default)
     {
         Full = await GameBanana.GetMod(Id, ct);
-    }
-
-    public async ValueTask DownloadThumbnail(CancellationToken ct = default)
-    {
-        if (Media.Images.FirstOrDefault() is not { } img || TkThumbnail.CreateBitmap is null) {
-            return;
-        }
-
-        try {
-            await using var image = await GameBanana.Get($"{img.BaseUrl}/{img.SmallFile}", ct);
-            await using MemoryStream ms = new();
-            await image.CopyToAsync(ms, ct);
-            ms.Seek(0, SeekOrigin.Begin);
-
-            Thumbnail = TkThumbnail.CreateBitmap(ms);
-        }
-        catch (HttpRequestException ex) {
-            var truncatedEx = ex.ToString().Split(Environment.NewLine)[0];
-            TkLog.Instance.LogWarning("Failed to download GameBanana thumbnails: {Message}", truncatedEx);
-        }
-        catch (Exception ex) {
-            TkLog.Instance.LogWarning("Failed to download GameBanana thumbnails: {Message}", ex);
-        }
-
     }
 }
