@@ -3,7 +3,7 @@ namespace TkSharp.Extensions.GameBanana;
 internal static class GameBananaFeedFilter
 {
     public static bool IsMemberMod(GameBananaModRecord record, int gameId)
-        => record is { ModelName: "Mod", IsContentRated: false } && record.Game.Id == gameId;
+        => record is { IsContentRated: false } && record.Game.Id == gameId;
 
     public static async ValueTask FilterFullMods(GameBananaFeed feed, CancellationToken ct)
     {

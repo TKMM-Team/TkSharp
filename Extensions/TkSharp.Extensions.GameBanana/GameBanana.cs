@@ -13,7 +13,7 @@ public static class GameBanana
     private const string MOD_ENDPOINT = "/Mod/{0}/ProfilePage";
     private const string FEED_ENDPOINT = "/Game/{0}/Subfeed?_nPage={1}&_sSort={2}&_csvModelInclusions=Mod";
     private const string FEED_ENDPOINT_SEARCH = "/Game/{0}/Subfeed?_nPage={1}&_sSort={2}&_sName={3}&_csvModelInclusions=Mod";
-    private const string MEMBER_FEED_ENDPOINT = "/Member/{0}/SubFeed?_nPage={1}&_nPerpage=50";
+    private const string MEMBER_FEED_ENDPOINT = "/Mod/Index?_aFilters%5BGeneric_Submitter%5D={0}&_nPage={1}&_nPerpage=50";
     
     public static async ValueTask<Stream> Get(string url, CancellationToken ct = default)
     {
