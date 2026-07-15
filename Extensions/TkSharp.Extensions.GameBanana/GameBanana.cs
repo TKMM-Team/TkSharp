@@ -11,8 +11,8 @@ public static class GameBanana
     
     private const string ROOT = "https://gamebanana.com/apiv11";
     private const string MOD_ENDPOINT = "/Mod/{0}/ProfilePage";
-    private const string FEED_ENDPOINT = "/Game/{0}/Subfeed?_nPage={1}&_sSort={2}&_csvModelInclusions=Mod";
-    private const string FEED_ENDPOINT_SEARCH = "/Game/{0}/Subfeed?_nPage={1}&_sSort={2}&_sName={3}&_csvModelInclusions=Mod";
+    private const string FEED_ENDPOINT = "/Mod/Index?_aFilters%5BGeneric_Game%5D={0}&_nPage={1}&_sSort={2}&_nPerpage=30";
+    private const string FEED_ENDPOINT_SEARCH = "/Mod/Index?_nPerpage=30&_aFilters%5BGeneric_Game%5D={0}&_nPage={1}&_sSort={2}&_aFilters%5BGeneric_Name%5D=contains%2C{3}";
     private const string MEMBER_FEED_ENDPOINT = "/Mod/Index?_aFilters%5BGeneric_Submitter%5D={0}&_nPage={1}&_nPerpage=50";
     
     public static async ValueTask<Stream> Get(string url, CancellationToken ct = default)
@@ -51,22 +51,18 @@ public static class GameBanana
 
     public static async ValueTask<GameBananaFeed?> FillFeed(GameBananaFeed feed, int gameId, int page, string sort, string? searchTerm, CancellationToken ct = default)
     {
-        page *= 2;
+        var response = await Get<GameBananaFeed>(
+            GetEndpoint(gameId, page + 1, sort, searchTerm),
+            GameBananaFeedJsonContext.Default.GameBananaFeed, ct
+        );
 
-        for (var i = 0; i < 2; i++) {
-            var response = await Get<GameBananaFeed>(
-                GetEndpoint(gameId, page + i + 1, sort, searchTerm),
-                GameBananaFeedJsonContext.Default.GameBananaFeed, ct
-            );
-            
-            if (response is null) {
-                return feed;
-            }
-            
-            feed.Metadata = response.Metadata;
-            foreach (var record in response.Records) {
-                feed.Records.Add(record);
-            }
+        if (response is null) {
+            return feed;
+        }
+
+        feed.Metadata = response.Metadata;
+        foreach (var record in response.Records) {
+            feed.Records.Add(record);
         }
 
         return feed;

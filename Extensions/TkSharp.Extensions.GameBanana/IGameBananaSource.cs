@@ -2,9 +2,14 @@ namespace TkSharp.Extensions.GameBanana;
 
 public enum GameBananaSortMode
 {
-    Default,
-    New,
-    Updated
+    Generic_Newest,
+    Generic_Oldest,
+    Generic_LatestModified,
+    Generic_NewAndUpdated,
+    Generic_LatestUpdated,
+    Generic_MostLiked,
+    Generic_MostViewed,
+    Generic_MostDownloaded
 }
 
 public interface IGameBananaSource
