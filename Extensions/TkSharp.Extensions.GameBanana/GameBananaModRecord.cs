@@ -29,6 +29,12 @@ public partial class GameBananaModRecord : ObservableObject
     [JsonPropertyName("_sVersion")]
     public string Version { get; set; } = string.Empty;
 
+    [JsonPropertyName("_sModelName")]
+    public string ModelName { get; set; } = string.Empty;
+
+    [JsonPropertyName("_aGame")]
+    public GameBananaGame Game { get; set; } = new();
+
     [ObservableProperty]
     private object? _thumbnail;
 

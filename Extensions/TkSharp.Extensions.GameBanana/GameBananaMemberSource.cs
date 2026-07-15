@@ -2,8 +2,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace TkSharp.Extensions.GameBanana;
 
-public sealed partial class GameBananaSource(int gameId) : ObservableObject, IGameBananaSource
+public sealed partial class GameBananaMemberSource(int memberId, int gameId) : ObservableObject, IGameBananaSource
 {
+    public int MemberId => memberId;
+
     [ObservableProperty]
     private int _currentPage;
 
@@ -12,12 +14,11 @@ public sealed partial class GameBananaSource(int gameId) : ObservableObject, IGa
 
     [ObservableProperty]
     private GameBananaFeed? _feed;
-    
+
     public async ValueTask LoadPage(int page, string? searchTerm = null, CancellationToken ct = default)
     {
-        var sort = SortMode.ToString().ToLower();
         Feed = new GameBananaFeed();
-        await GameBanana.FillFeed(Feed, gameId, page, sort, searchTerm, ct);
+        await GameBanana.FillMemberFeed(Feed, memberId, gameId, page, ct);
         await GameBananaFeedFilter.FilterFullMods(Feed, ct);
     }
 }

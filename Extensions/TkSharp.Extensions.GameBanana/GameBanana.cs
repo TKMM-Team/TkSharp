@@ -13,6 +13,7 @@ public static class GameBanana
     private const string MOD_ENDPOINT = "/Mod/{0}/ProfilePage";
     private const string FEED_ENDPOINT = "/Game/{0}/Subfeed?_nPage={1}&_sSort={2}&_csvModelInclusions=Mod";
     private const string FEED_ENDPOINT_SEARCH = "/Game/{0}/Subfeed?_nPage={1}&_sSort={2}&_sName={3}&_csvModelInclusions=Mod";
+    private const string MEMBER_FEED_ENDPOINT = "/Member/{0}/SubFeed?_nPage={1}&_nPerpage=50";
     
     public static async ValueTask<Stream> Get(string url, CancellationToken ct = default)
     {
@@ -66,6 +67,31 @@ public static class GameBanana
             foreach (var record in response.Records) {
                 feed.Records.Add(record);
             }
+        }
+
+        return feed;
+    }
+
+    public static async ValueTask<GameBananaFeed?> FillMemberFeed(
+        GameBananaFeed feed, int memberId, int gameId, int page, CancellationToken ct = default)
+    {
+        var response = await Get<GameBananaFeed>(
+            string.Format(MEMBER_FEED_ENDPOINT, memberId, page + 1),
+            GameBananaFeedJsonContext.Default.GameBananaFeed, ct
+        );
+
+        if (response is null) {
+            return feed;
+        }
+
+        feed.Metadata = response.Metadata;
+
+        foreach (var record in response.Records) {
+            if (!GameBananaFeedFilter.IsMemberMod(record, gameId)) {
+                continue;
+            }
+
+            feed.Records.Add(record);
         }
 
         return feed;
