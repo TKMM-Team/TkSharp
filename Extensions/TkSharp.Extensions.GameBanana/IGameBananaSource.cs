@@ -2,6 +2,8 @@ namespace TkSharp.Extensions.GameBanana;
 
 public enum GameBananaSortMode
 {
+    // ReSharper disable InconsistentNaming
+    // ReSharper disable UnusedMember.Global
     Generic_Newest,
     Generic_Oldest,
     Generic_LatestModified,
@@ -20,12 +22,7 @@ public interface IGameBananaSource
     /// The 0-based page index.
     /// </summary>
     int CurrentPage { get; set; }
-    
-    /// <summary>
-    /// The active sorting mode.
-    /// </summary>
-    GameBananaSortMode SortMode { get; set; }
-    
+
     /// <summary>
     /// The active sorting mode.
     /// </summary>

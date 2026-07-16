@@ -17,16 +17,15 @@ public sealed class GameBananaAuthor : INotifyPropertyChanged
 
     [JsonPropertyName("_sAvatarUrl")]
     public string AvatarUrl { get; set; } = string.Empty;
-    
-    private object? _loadedAvatar;
-    public object? LoadedAvatar 
-    { 
-        get => _loadedAvatar;
+
+    public object? LoadedAvatar {
+        get;
         set {
-            if (_loadedAvatar == value) {
+            if (field == value) {
                 return;
             }
-            _loadedAvatar = value;
+
+            field = value;
             OnPropertyChanged();
         }
     }
