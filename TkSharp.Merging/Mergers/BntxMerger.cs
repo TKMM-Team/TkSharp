@@ -9,22 +9,15 @@ public sealed class BntxMerger(ITkRom rom) : ITkMerger
 {
     public MergeResult Merge(TkChangelogEntry entry, RentedBuffers<byte> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
-        Dictionary<string, Texture> lastTextures = new(StringComparer.Ordinal);
+        using MemoryStream vanillaMs = new(vanillaData.Array!, vanillaData.Offset, vanillaData.Count, writable: false, publiclyVisible: true);
+        var vanillaBntx = new BntxFile(vanillaMs, leaveOpen: false);
 
         for (var i = 0; i < inputs.Count; i++) {
             var input = inputs[i].Segment;
             using MemoryStream ms = new(input.Array!, input.Offset, input.Count, writable: false, publiclyVisible: true);
-            var bntx = new BntxFile(ms, leaveOpen: false);
-
-            foreach (var tex in bntx.Textures) {
-                lastTextures[tex.Name] = tex;
-            }
+            var changelogBntx = new BntxFile(ms, leaveOpen: false);
+            ApplyTextures(entry.Canonical, vanillaBntx, changelogBntx.Textures);
         }
-
-        using MemoryStream vanillaMs = new(vanillaData.Array!, vanillaData.Offset, vanillaData.Count, writable: false, publiclyVisible: true);
-        var vanillaBntx = new BntxFile(vanillaMs, leaveOpen: false);
-
-        ApplyTextures(entry.Canonical, vanillaBntx, lastTextures);
 
         vanillaBntx.Save(output, leaveOpen: true);
         return MergeResult.Default;
@@ -32,21 +25,14 @@ public sealed class BntxMerger(ITkRom rom) : ITkMerger
 
     public MergeResult Merge(TkChangelogEntry entry, IEnumerable<ArraySegment<byte>> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
-        Dictionary<string, Texture> lastTextures = new(StringComparer.Ordinal);
-
-        foreach (var input in inputs) {
-            using MemoryStream ms = new(input.Array!, input.Offset, input.Count, writable: false, publiclyVisible: true);
-            var bntx = new BntxFile(ms, leaveOpen: false);
-
-            foreach (var tex in bntx.Textures) {
-                lastTextures[tex.Name] = tex;
-            }
-        }
-
         using MemoryStream vanillaMs = new(vanillaData.Array!, vanillaData.Offset, vanillaData.Count, writable: false, publiclyVisible: true);
         var vanillaBntx = new BntxFile(vanillaMs, leaveOpen: false);
 
-        ApplyTextures(entry.Canonical, vanillaBntx, lastTextures);
+        foreach (var input in inputs) {
+            using MemoryStream ms = new(input.Array!, input.Offset, input.Count, writable: false, publiclyVisible: true);
+            var changelogBntx = new BntxFile(ms, leaveOpen: false);
+            ApplyTextures(entry.Canonical, vanillaBntx, changelogBntx.Textures);
+        }
 
         vanillaBntx.Save(output, leaveOpen: true);
         return MergeResult.Default;
@@ -60,43 +46,32 @@ public sealed class BntxMerger(ITkRom rom) : ITkMerger
         using MemoryStream ms = new(input.Array!, input.Offset, input.Count, writable: false, publiclyVisible: true);
         var changelogBntx = new BntxFile(ms, leaveOpen: false);
 
-        Dictionary<string, Texture> lastTextures = new(StringComparer.Ordinal);
-        foreach (var tex in changelogBntx.Textures) {
-            lastTextures[tex.Name] = tex;
-        }
-
-        ApplyTextures(entry.Canonical, vanillaBntx, lastTextures);
+        ApplyTextures(entry.Canonical, vanillaBntx, changelogBntx.Textures);
         vanillaBntx.Save(output, leaveOpen: true);
         return MergeResult.Default;
     }
 
-    private void ApplyTextures(string bntxCanonical, BntxFile vanillaBntx, IReadOnlyDictionary<string, Texture> texturesToApply)
+    private void ApplyTextures(string bntxCanonical, BntxFile targetBntx, IList<Texture> texturesToApply)
     {
-        HashSet<string> vanillaNames = new(StringComparer.Ordinal);
-
-        for (var i = 0; i < vanillaBntx.Textures.Count; i++) {
-            var vanillaTex = vanillaBntx.Textures[i];
-            vanillaNames.Add(vanillaTex.Name);
-
-            if (!texturesToApply.TryGetValue(vanillaTex.Name, out var modTexture)) {
-                continue;
-            }
-
-            var modFlat = FlattenTexture(modTexture);
-            var textureCanonical = $"{bntxCanonical}/{modTexture.Name}";
-            if (rom.IsVanillaAnyVersion(textureCanonical, modFlat.AsSpan())) {
-                continue;
-            }
-
-            vanillaBntx.Textures[i] = modTexture;
+        Dictionary<string, int> indexByName = new(StringComparer.Ordinal);
+        for (var i = 0; i < targetBntx.Textures.Count; i++) {
+            indexByName[targetBntx.Textures[i].Name] = i;
         }
 
-        foreach (var (name, texture) in texturesToApply) {
-            if (vanillaNames.Contains(name)) {
+        foreach (var texture in texturesToApply) {
+            var flat = FlattenTexture(texture);
+            var textureCanonical = $"{bntxCanonical}/{texture.Name}";
+            if (rom.IsVanillaAnyVersion(textureCanonical, flat.AsSpan())) {
                 continue;
             }
 
-            vanillaBntx.Textures.Add(texture);
+            if (indexByName.TryGetValue(texture.Name, out var index)) {
+                targetBntx.Textures[index] = texture;
+                continue;
+            }
+
+            indexByName[texture.Name] = targetBntx.Textures.Count;
+            targetBntx.Textures.Add(texture);
         }
     }
 

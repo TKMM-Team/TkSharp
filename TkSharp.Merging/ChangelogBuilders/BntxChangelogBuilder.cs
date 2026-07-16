@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Syroot.NintenTools.NSW.Bntx;
 using TkSharp.Core;
 
@@ -23,8 +22,7 @@ public sealed class BntxChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChan
             if (tk.IsVanillaAnyVersion(textureCanonical, flat.AsSpan())) {
                 continue;
             }
-
-            TkLog.Instance.LogDebug("Found modded texture '{Texture}' in '{Bntx}'", texture.Name, canonical);
+            
             nonVanillaTextures.Add(texture);
         }
 
