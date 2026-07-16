@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using TkSharp.Extensions.GameBanana.Helpers;
 
@@ -35,10 +36,22 @@ public static class GameBanana
     
     public static async ValueTask<T?> Get<T>(string path, JsonTypeInfo<T>? typeInfo = null, CancellationToken ct = default)
     {
-        return await (typeInfo is not null
-            ? DownloadHelper.Client.GetFromJsonAsync($"{ROOT}/{path}", typeInfo, ct)
-            : DownloadHelper.Client.GetFromJsonAsync<T>($"{ROOT}/{path}", cancellationToken: ct)
-        );
+        var attempts = 0;
+
+    Retry:
+        try {
+            attempts++;
+            return await (typeInfo is not null
+                ? DownloadHelper.Client.GetFromJsonAsync($"{ROOT}/{path}", typeInfo, ct)
+                : DownloadHelper.Client.GetFromJsonAsync<T>($"{ROOT}/{path}", cancellationToken: ct)
+            );
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.BadGateway && attempts < MAX_RETRIES) {
+            goto Retry;
+        }
+        catch (JsonException) when (attempts < MAX_RETRIES) {
+            goto Retry;
+        }
     }
 
     public static async ValueTask<GameBananaMod?> GetMod(long id, CancellationToken ct = default)
