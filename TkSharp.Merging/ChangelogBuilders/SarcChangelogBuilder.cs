@@ -5,8 +5,6 @@ namespace TkSharp.Merging.ChangelogBuilders;
 
 public sealed class SarcChangelogBuilder : Singleton<SarcChangelogBuilder>, ITkChangelogBuilder
 {
-    private static readonly byte[] _deletedFileMark = "TKSCRMVD"u8.ToArray();
-    
     public bool CanProcessWithoutVanilla => false;
 
     public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer,
@@ -18,6 +16,10 @@ public sealed class SarcChangelogBuilder : Singleton<SarcChangelogBuilder>, ITkC
         var sarc = Sarc.FromBinary(srcBuffer);
 
         foreach (var (name, data) in sarc) {
+            if (TkChangelogBuilder.SessionRom.IsVanillaAnyVersion($"{canonical}/{name}", data.AsSpan())) {
+                continue;
+            }
+            
             if (!vanilla.TryGetValue(name, out var vanillaData)) {
                 // Custom file, use entire content
                 goto MoveContent;
@@ -40,21 +42,21 @@ public sealed class SarcChangelogBuilder : Singleton<SarcChangelogBuilder>, ITkC
                 goto MoveContent;
             }
 
-            builder.Build(name, nested, flags, data, vanillaData,
-                (_, canon, _, _) => changelog.OpenWrite(canon), gameVersion
-            );
+            if (name.EndsWith("__Combined.bntx")) {
+                builder.Build($"{canonical}/{name}", nested, flags, data, vanillaData,
+                    (_, _, _, _) => changelog.OpenWrite(name), gameVersion);
+            }
+            else {
+                builder.Build(name, nested, flags, data, vanillaData,
+                    (_, canon, _, _) => changelog.OpenWrite(canon), gameVersion);
+            }
+
             builder.Dispose();
 
             continue;
 
         MoveContent:
             changelog[name] = data;
-        }
-
-        foreach (var (key, _) in vanilla) {
-            if (!sarc.ContainsKey(key)) {
-                changelog[key] = _deletedFileMark;
-            }
         }
 
         if (changelog.Count == 0) {

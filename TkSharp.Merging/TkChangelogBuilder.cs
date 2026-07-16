@@ -261,6 +261,10 @@ public class TkChangelogBuilder(
             // return a new instance just for this call.
             return new PackChangelogBuilder(SessionRom, disposeTkRom: _sessionRom is null);
         }
+
+        if (path.Extension is ".bntx" && path.Canonical.EndsWith("__Combined.bntx")) {
+            return new BntxChangelogBuilder(SessionRom, disposeTkRom: _sessionRom is null);
+        }
         
         return path switch {
             { Canonical: "GameData/GameDataList.Product.byml" } => GameDataChangelogBuilder.Instance,

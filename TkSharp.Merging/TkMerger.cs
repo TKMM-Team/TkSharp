@@ -29,6 +29,7 @@ public sealed class TkMerger
     private readonly string? _ipsOutputFolderPath;
     private readonly TkPackFileCollector _packFileCollector;
     private readonly BfresMcMerger _bfresMcMerger;
+    private readonly BntxMerger _bntxMerger;
 
     public TkMerger(ITkModWriter output, ITkRom rom, string locale = "USen", string? ipsOutputFolderPath = null)
     {
@@ -41,6 +42,7 @@ public sealed class TkMerger
         _packFileCollector = new TkPackFileCollector(this, _resourceSizeCollector, _rom);
         _packMerger = new PackMerger(_packFileCollector);
         _bfresMcMerger = new BfresMcMerger(rom);
+        _bntxMerger = new BntxMerger(rom);
     }
 
     public async ValueTask MergeAsync(IEnumerable<TkChangelog> changelogs, CancellationToken ct = default)
@@ -473,6 +475,7 @@ public sealed class TkMerger
             _ => Path.GetExtension(canonical) switch {
                 ".pack" => _packMerger,
                 ".bfarc" or ".bkres" or ".blarc" or ".genvb" or ".ta" => _sarcMerger,
+                ".bntx" => canonical.EndsWith("__Combined.bntx") ? _bntxMerger : null,
                 ".byml" or ".bgyml" => BymlMerger.Instance,
                 ".msbt" => MsbtMerger.Instance,
                 ".bfres" => attributes.HasFlag(TkFileAttributes.HasMcExtension) ? _bfresMcMerger : null,

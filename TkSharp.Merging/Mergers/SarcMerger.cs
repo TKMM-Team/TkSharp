@@ -24,7 +24,7 @@ public sealed class SarcMerger(TkMerger masterMerger, TkResourceSizeCollector re
             changelogs[i] = Sarc.FromBinary(input.Segment);
         }
         
-        MergeMany(merged, changelogs);
+        MergeMany(entry.Canonical, merged, changelogs);
         merged.Write(output);
         
         return MergeResult.Default;
@@ -33,7 +33,7 @@ public sealed class SarcMerger(TkMerger masterMerger, TkResourceSizeCollector re
     public MergeResult Merge(TkChangelogEntry entry, IEnumerable<ArraySegment<byte>> inputs, ArraySegment<byte> vanillaData, Stream output)
     {
         var merged = Sarc.FromBinary(vanillaData);
-        MergeMany(merged, inputs.Select(Sarc.FromBinary));
+        MergeMany(entry.Canonical, merged, inputs.Select(Sarc.FromBinary));
         merged.Write(output);
         
         return MergeResult.Default;
@@ -49,7 +49,7 @@ public sealed class SarcMerger(TkMerger masterMerger, TkResourceSizeCollector re
         return MergeResult.Default;
     }
 
-    private void MergeMany(Sarc merged, IEnumerable<Sarc> changelogs)
+    private void MergeMany(string parentCanonical, Sarc merged, IEnumerable<Sarc> changelogs)
     {
         IEnumerable<(string Name, ArraySegment<byte>[] Buffers)> groups = changelogs
             .SelectMany(x => x)
@@ -63,15 +63,17 @@ public sealed class SarcMerger(TkMerger masterMerger, TkResourceSizeCollector re
             zsDictionaryId: -1);
         
         foreach (var (name, buffers) in groups) {
-            var last = buffers[^1];
-            
-            if (!merged.TryGetValue(name, out var vanillaData)) {
-                merged[name] = last;
+            // Legacy SARC changelogs may contain deletion marks from older TKMM versions.
+            // Ignore them so files added by game updates are not removed.
+            var effective = buffers.Where(buffer => !IsRemovedEntry(buffer)).ToArray();
+            if (effective.Length == 0) {
                 continue;
             }
 
-            if (IsRemovedEntry(last)) {
-                merged.Remove(name);
+            var last = effective[^1];
+            
+            if (!merged.TryGetValue(name, out var vanillaData)) {
+                merged[name] = last;
                 continue;
             }
 
@@ -80,23 +82,16 @@ public sealed class SarcMerger(TkMerger masterMerger, TkResourceSizeCollector re
                 continue;
             }
             
-            fakeEntry.Canonical = name;
+            fakeEntry.Canonical = $"{parentCanonical}/{name}";
             
-            switch (buffers.Length) {
-                case 1: {
-                    using Stream output = merged.OpenWrite(name);
-                    merger.MergeSingle(fakeEntry, buffers[0], vanillaData, output);
-                    continue;
-                }
-                case 2 when IsRemovedEntry(buffers[0]): {
-                    Stream output = merged.OpenWrite(name);
-                    merger.MergeSingle(fakeEntry, last, vanillaData, output);
-                    continue;
-                }
+            if (effective.Length == 1) {
+                using Stream output = merged.OpenWrite(name);
+                merger.MergeSingle(fakeEntry, effective[0], vanillaData, output);
+                continue;
             }
 
             using (Stream output = merged.OpenWrite(name)) {
-                merger.Merge(fakeEntry, buffers.Where(buffer => !IsRemovedEntry(buffer)), vanillaData, output);
+                merger.Merge(fakeEntry, effective, vanillaData, output);
             }
         }
     }
@@ -110,13 +105,14 @@ public sealed class SarcMerger(TkMerger masterMerger, TkResourceSizeCollector re
             zsDictionaryId: -1);
         
         foreach (var (name, data) in changelog) {
-            if (!merged.TryGetValue(name, out var vanillaData)) {
-                merged[name] = data;
+            // Legacy SARC changelogs may contain deletion marks from older TKMM versions.
+            // Ignore them so files added by game updates are not removed.
+            if (IsRemovedEntry(data)) {
                 continue;
             }
-            
-            if (IsRemovedEntry(data)) {
-                merged.Remove(name);
+
+            if (!merged.TryGetValue(name, out var vanillaData)) {
+                merged[name] = data;
                 continue;
             }
 
@@ -125,7 +121,7 @@ public sealed class SarcMerger(TkMerger masterMerger, TkResourceSizeCollector re
                 continue;
             }
 
-            fakeEntry.Canonical = name;
+            fakeEntry.Canonical = $"{parentCanonical}/{name}";
 
             using Stream output = merged.OpenWrite(name);
             merger.MergeSingle(fakeEntry, data, vanillaData, output);
