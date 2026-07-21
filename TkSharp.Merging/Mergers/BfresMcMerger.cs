@@ -33,13 +33,13 @@ public sealed class BfresMcMerger(ITkRom rom) : ITkMerger
     private bool _stringCacheLoaded;
 
     public MergeResult MergeSingle(TkChangelogEntry entry, ArraySegment<byte> input, ArraySegment<byte> @base, Stream output)
-        => WriteOutput(output, ProcessBfresMc(input));
+        => WriteOutput(output, ProcessBfresMc(entry, input));
 
     public MergeResult Merge(TkChangelogEntry entry, RentedBuffers<byte> inputs, ArraySegment<byte> vanillaData, Stream output)
-        => WriteOutput(output, ProcessBfresMc(inputs[^1].Segment));
+        => WriteOutput(output, ProcessBfresMc(entry, inputs[^1].Segment));
 
     public MergeResult Merge(TkChangelogEntry entry, IEnumerable<ArraySegment<byte>> inputs, ArraySegment<byte> vanillaData, Stream output)
-        => WriteOutput(output, ProcessBfresMc(inputs.Last()));
+        => WriteOutput(output, ProcessBfresMc(entry, inputs.Last()));
 
     private static MergeResult WriteOutput(Stream output, byte[] data)
     {
@@ -62,7 +62,7 @@ public sealed class BfresMcMerger(ITkRom rom) : ITkMerger
         _stringCacheLoaded = true;
     }
 
-    private byte[] ProcessBfresMc(ArraySegment<byte> mcData)
+    private byte[] ProcessBfresMc(TkChangelogEntry entry, ArraySegment<byte> mcData)
     {
         lock (ProcessLock) {
             EnsureStringCacheLoaded();
@@ -73,6 +73,7 @@ public sealed class BfresMcMerger(ITkRom rom) : ITkMerger
                 return mcData.ToArray();
             }
 
+            entry.RuntimeResourceSizeOverride = 0;
             using var ms = new MemoryStream();
             resFile.Save(ms);
             return CompressMcpk(ms.ToArray());

@@ -285,7 +285,7 @@ public sealed class TkMerger
             var size = TkZstd.IsCompressed(input)
                 ? TkZstd.GetDecompressedSize(input)
                 : (int)input.Length;
-            _resourceSizeCollector.Collect(size, relativePath, []);
+            _resourceSizeCollector.Collect(size, relativePath, [], changelog.RuntimeResourceSizeOverride);
             input.CopyTo(output);
             input.Dispose();
             return;
@@ -295,7 +295,7 @@ public sealed class TkMerger
         var raw = buffer.Span;
 
         if (!TkZstd.IsCompressed(raw)) {
-            _resourceSizeCollector.Collect(raw.Length, relativePath, raw);
+            _resourceSizeCollector.Collect(raw.Length, relativePath, raw, changelog.RuntimeResourceSizeOverride);
             output.Write(raw);
             input.Dispose();
             return;
@@ -304,7 +304,7 @@ public sealed class TkMerger
         using var decompressed = SpanOwner<byte>.Allocate(TkZstd.GetDecompressedSize(raw));
         var data = decompressed.Span;
         _rom.Zstd.Decompress(raw, data);
-        _resourceSizeCollector.Collect(data.Length, relativePath, data);
+        _resourceSizeCollector.Collect(data.Length, relativePath, data, changelog.RuntimeResourceSizeOverride);
         output.Write(raw);
         input.Dispose();
     }
@@ -326,14 +326,14 @@ public sealed class TkMerger
             return;
         }
 
-        CopyMergedToSimpleOutput(input, relativePath, changelog.Attributes, changelog.ZsDictionaryId);
+        CopyMergedToSimpleOutput(input, relativePath, changelog.Attributes, changelog.ZsDictionaryId, changelog.RuntimeResourceSizeOverride);
     }
 
     internal void CopyMergedToSimpleOutput(in MemoryStream input, string relativePath,
-        TkFileAttributes entryFileAttributes, int zsDictionaryId)
+        TkFileAttributes entryFileAttributes, int zsDictionaryId, uint resourceSizeOverride = 0)
     {
         var buffer = input.GetSpan();
-        _resourceSizeCollector.Collect(buffer.Count, relativePath, buffer);
+        _resourceSizeCollector.Collect(buffer.Count, relativePath, buffer, resourceSizeOverride);
 
         using var output = _output.OpenWrite(
             Path.Combine("romfs", relativePath));
@@ -416,6 +416,12 @@ public sealed class TkMerger
         // every archive requesting this file
         group.Key.RuntimeArchiveCanonicals = group.SelectMany(x => x.Entry.ArchiveCanonicals).ToList();
 
+        // the complete BFRES and its authored resource size must come from the same winning mod.
+        var last = group.LastOrDefault(x => x.Entry.Type != ChangelogEntryType.Placeholder);
+        group.Key.RuntimeResourceSizeOverride = last.Changelog is not null
+            ? _resourceSizeCollector.GetResourceSizeOverride(last.Changelog, group.Key.Canonical)
+            : 0;
+
         if (GetMerger(group.Key.Canonical, group.Key.Attributes) is { } merger) {
             return (
                 Changelog: group.Key,
@@ -431,9 +437,6 @@ public sealed class TkMerger
         // TODO: Proper support for mixed version usage should
         // be implemented, however by always using the path of
         // the last entry, we can avoid explicitly handling it
-        var last
-            = group.LastOrDefault(x => x.Entry.Type != ChangelogEntryType.Placeholder);
-        
         if (last.Entry is null || last.Changelog is null) {
             return (
                 Changelog: group.Key,

@@ -6,6 +6,7 @@ using RstbLibrary.Helpers;
 using TkSharp.Core;
 using TkSharp.Core.Extensions;
 using TkSharp.Core.IO.Buffers;
+using TkSharp.Core.Models;
 using TkSharp.Merging.ResourceSizeTable.Calculators;
 
 namespace TkSharp.Merging.ResourceSizeTable;
@@ -48,7 +49,7 @@ public sealed class TkResourceSizeCollector
         output.Write(compressedData[..compressedSize]);
     }
 
-    public void Collect(int fileSize, string path, in Span<byte> data)
+    public void Collect(int fileSize, string path, in Span<byte> data, uint resourceSizeOverride = 0)
     {
         var canonical = GetResourceName(path);
         var extension = GetResourceExtension(path);
@@ -66,11 +67,9 @@ public sealed class TkResourceSizeCollector
         
         fileSize += fileSize.AlignUp(0x20);
         
-        var size = GetResourceSize(
-            (uint)fileSize,
-            canonical,
-            extension,
-            data);
+        var size = resourceSizeOverride == 0
+            ? GetResourceSize((uint)fileSize, canonical, extension, data)
+            : resourceSizeOverride;
 
         if (_result.OverflowTable.ContainsKey(canonical)) {
             lock (_result) {
@@ -100,6 +99,11 @@ public sealed class TkResourceSizeCollector
         lock (_result) {
             _result.HashTable[hash] = size;
         }
+    }
+
+    public uint GetResourceSizeOverride(TkChangelog changelog, string canonical)
+    {
+        return TkResourceSizeOverride.Resolve(_vanilla, changelog, canonical);
     }
 
     [Pure]
