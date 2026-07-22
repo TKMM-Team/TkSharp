@@ -1,3 +1,8 @@
 namespace TkSharp.Packaging;
 
-public sealed record TkResourceSizeOverrideCandidate(string Canonical, uint Size);
+public sealed class TkResourceSizeOverrideCandidate(string canonical, uint size)
+{
+    public string Canonical { get; } = canonical;
+
+    public uint Size { get; } = size;
+}
