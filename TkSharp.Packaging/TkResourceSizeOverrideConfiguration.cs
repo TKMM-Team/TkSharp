@@ -8,11 +8,5 @@ public partial class TkResourceSizeOverrideConfiguration : ObservableObject
     private bool _enabled;
 
     [ObservableProperty]
-    private int _gameVersion;
-
-    [ObservableProperty]
-    private bool _allVersions;
-
-    [ObservableProperty]
     private Dictionary<string, uint> _entries = [];
 }

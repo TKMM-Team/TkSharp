@@ -60,13 +60,6 @@ public partial class TkProject(string folderPath) : ObservableObject
         ITkRom rom,
         CancellationToken ct = default)
     {
-        var fileName = Path.GetFileName(resourceSizeTablePath);
-        _ = fileName.GetCanonical(out var gameVersion, out _);
-        if (gameVersion != rom.GameVersion) {
-            throw new InvalidDataException(
-                $"The selected resource-size table targets game version {gameVersion}, but the configured game version is {rom.GameVersion}.");
-        }
-
         Rstb table;
         using (var input = File.OpenRead(resourceSizeTablePath)) {
             using var raw = RentedBuffer<byte>.Allocate(input);
@@ -117,10 +110,8 @@ public partial class TkProject(string folderPath) : ObservableObject
     {
         PackThumbnails(writer);
 
-        var resourceSizeOverrides = GetResourceSizeOverrides(rom);
-        var flags = Flags.GetBuilderFlags(
-            resourceSizeOverrides,
-            Flags.ResourceSizeOverrides.AllVersions);
+        var resourceSizeOverrides = GetResourceSizeOverrides();
+        var flags = Flags.GetBuilderFlags(resourceSizeOverrides);
 
         FolderModSource source = new(FolderPath);
         Mod.Changelog = await Build(Mod, source, writer, rom, systemSource, flags, ct);
@@ -143,16 +134,11 @@ public partial class TkProject(string folderPath) : ObservableObject
         TkLog.Instance.LogInformation("Build completed");
     }
 
-    private IReadOnlyDictionary<string, uint>? GetResourceSizeOverrides(ITkRom rom)
+    private IReadOnlyDictionary<string, uint>? GetResourceSizeOverrides()
     {
         var configuration = Flags.ResourceSizeOverrides;
         if (!configuration.Enabled || configuration.Entries.Count == 0) {
             return null;
-        }
-
-        if (!configuration.AllVersions && configuration.GameVersion != rom.GameVersion) {
-            throw new InvalidDataException(
-                $"Resource-size overrides target game version {configuration.GameVersion}, but the project is being packaged for {rom.GameVersion}.");
         }
 
         Dictionary<string, uint> result = new(StringComparer.Ordinal);

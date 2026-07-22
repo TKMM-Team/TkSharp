@@ -483,16 +483,12 @@ public sealed class TkMerger
 
         foreach (var changelog in changelogs) {
             var entry = changelog.ChangelogFiles.FirstOrDefault(entry =>
-                entry.Canonical is TkResourceSizeOverride.CANONICAL
-                && (entry.Versions.Count == 0 || entry.Versions.Contains(_rom.GameVersion)));
+                entry.Canonical is TkResourceSizeOverride.CANONICAL);
             if (entry is null || changelog.Source is null) {
                 continue;
             }
 
-            var relativePath = entry.Versions.Count == 0
-                ? TkResourceSizeOverride.GetRelativePath()
-                : TkResourceSizeOverride.GetRelativePath(_rom.GameVersion);
-            using var input = changelog.Source.OpenRead(relativePath);
+            using var input = changelog.Source.OpenRead(TkResourceSizeOverride.GetRelativePath());
             using var buffer = RentedBuffer<byte>.Allocate(input);
             _resourceSizeOverrides[changelog] = Rstb.FromBinary(buffer.Span);
         }

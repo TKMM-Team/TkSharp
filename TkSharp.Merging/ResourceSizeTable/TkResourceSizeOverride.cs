@@ -11,8 +11,6 @@ public static class TkResourceSizeOverride
     public static void Write(
         ITkModWriter writer,
         TkChangelog changelog,
-        int gameVersion,
-        bool applyToAllVersions,
         IEnumerable<KeyValuePair<string, uint>> entries)
     {
         Rstb table = new();
@@ -28,22 +26,15 @@ public static class TkResourceSizeOverride
             CANONICAL,
             ChangelogEntryType.Changelog,
             TkFileAttributes.IsProductFile | TkFileAttributes.HasZsExtension,
-            zsDictionaryId: -1,
-            versions: applyToAllVersions ? [] : [gameVersion]);
+            zsDictionaryId: -1);
         changelog.ChangelogFiles.Add(entry);
 
-        var relativePath = applyToAllVersions ? GetRelativePath() : GetRelativePath(gameVersion);
-        using var output = writer.OpenWrite(relativePath);
+        using var output = writer.OpenWrite(GetRelativePath());
         table.WriteBinary(output);
     }
 
     public static string GetRelativePath()
     {
         return Path.Combine("romfs", CANONICAL);
-    }
-
-    public static string GetRelativePath(int gameVersion)
-    {
-        return Path.Combine("romfs", $"{CANONICAL}{gameVersion}");
     }
 }
