@@ -11,5 +11,8 @@ public partial class TkResourceSizeOverrideConfiguration : ObservableObject
     private int _gameVersion;
 
     [ObservableProperty]
+    private bool _allVersions;
+
+    [ObservableProperty]
     private Dictionary<string, uint> _entries = [];
 }

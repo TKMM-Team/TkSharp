@@ -11,8 +11,13 @@ public partial class TkChangelogFlags : ObservableObject
     [ObservableProperty]
     private TkResourceSizeOverrideConfiguration _resourceSizeOverrides = new();
     
-    public TkChangelogBuilderFlags GetBuilderFlags(IReadOnlyDictionary<string, uint>? resourceSizeOverrides = null)
+    public TkChangelogBuilderFlags GetBuilderFlags(
+        IReadOnlyDictionary<string, uint>? resourceSizeOverrides = null,
+        bool applyResourceSizeOverridesToAllVersions = false)
     {
-        return new TkChangelogBuilderFlags(TrackRemovedRsDbEntries, resourceSizeOverrides);
+        return new TkChangelogBuilderFlags(
+            TrackRemovedRsDbEntries,
+            resourceSizeOverrides,
+            applyResourceSizeOverridesToAllVersions);
     }
 }

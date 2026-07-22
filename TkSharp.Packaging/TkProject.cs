@@ -118,7 +118,9 @@ public partial class TkProject(string folderPath) : ObservableObject
         PackThumbnails(writer);
 
         var resourceSizeOverrides = GetResourceSizeOverrides(rom);
-        var flags = Flags.GetBuilderFlags(resourceSizeOverrides);
+        var flags = Flags.GetBuilderFlags(
+            resourceSizeOverrides,
+            Flags.ResourceSizeOverrides.AllVersions);
 
         FolderModSource source = new(FolderPath);
         Mod.Changelog = await Build(Mod, source, writer, rom, systemSource, flags, ct);
@@ -148,7 +150,7 @@ public partial class TkProject(string folderPath) : ObservableObject
             return null;
         }
 
-        if (configuration.GameVersion != rom.GameVersion) {
+        if (!configuration.AllVersions && configuration.GameVersion != rom.GameVersion) {
             throw new InvalidDataException(
                 $"Resource-size overrides target game version {configuration.GameVersion}, but the project is being packaged for {rom.GameVersion}.");
         }

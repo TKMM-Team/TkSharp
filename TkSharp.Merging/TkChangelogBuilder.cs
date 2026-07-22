@@ -307,6 +307,7 @@ public class TkChangelogBuilder(
                 _writer,
                 _changelog,
                 _tk.GameVersion,
+                flags.ApplyResourceSizeOverridesToAllVersions,
                 resourceSizeOverrides.Where(entry =>
                     _entries.TryGetValue(entry.Key, out var changelogEntry)
                     && changelogEntry.Type is ChangelogEntryType.Copy));
