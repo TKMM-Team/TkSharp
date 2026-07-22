@@ -1,42 +1,47 @@
 using RstbLibrary;
-using RstbLibrary.Helpers;
+using TkSharp.Core;
 using TkSharp.Core.Models;
 
 namespace TkSharp.Merging.ResourceSizeTable;
 
 public static class TkResourceSizeOverride
 {
-    private const string PREFIX = "RSTB:";
+    public const string CANONICAL = "System/Resource/ResourceSizeTable.Product.rsizetable";
 
-    public static uint Resolve(Rstb vanilla, TkChangelog changelog, string canonical)
+    public static void Write(
+        ITkModWriter writer,
+        TkChangelog changelog,
+        int gameVersion,
+        IEnumerable<KeyValuePair<string, uint>> entries)
     {
-        if (!canonical.EndsWith(".bfres", StringComparison.Ordinal)) {
-            return 0;
+        Rstb table = new();
+        foreach (var (canonical, size) in entries) {
+            table.OverflowTable[canonical] = size;
         }
 
-        var prefix = $"{PREFIX}{canonical}:";
-        var value = changelog.Reserved1.LastOrDefault(entry => entry.StartsWith(prefix, StringComparison.Ordinal));
-        if (value is null || !uint.TryParse(value.AsSpan(prefix.Length), out var authoredSize)) {
-            return 0;
+        if (table.OverflowTable.Count == 0) {
+            return;
         }
 
-        return TryGetResourceSize(vanilla, canonical, out var vanillaSize) && authoredSize == vanillaSize ? 0 : authoredSize;
+        TkChangelogEntry entry = new(
+            CANONICAL,
+            ChangelogEntryType.Changelog,
+            TkFileAttributes.IsProductFile | TkFileAttributes.HasZsExtension,
+            zsDictionaryId: -1,
+            versions: [gameVersion]);
+        changelog.ChangelogFiles.Add(entry);
+
+        using var output = writer.OpenWrite(GetRelativePath(gameVersion));
+        table.WriteBinary(output);
     }
 
-    public static void Collect(Rstb table, IEnumerable<TkChangelogEntry> entries, ICollection<string> output)
+    public static bool TryGetValue(Rstb table, string canonical, out uint size)
     {
-        foreach (var entry in entries) {
-            if (!entry.Canonical.EndsWith(".bfres", StringComparison.Ordinal)
-                || !TryGetResourceSize(table, entry.Canonical, out var size)) {
-                continue;
-            }
-
-            output.Add($"{PREFIX}{entry.Canonical}:{size}");
-        }
+        return table.OverflowTable.TryGetValue(canonical, out size);
     }
 
-    private static bool TryGetResourceSize(Rstb table, string canonical, out uint size)
+    public static string GetRelativePath(int gameVersion)
     {
-        return table.OverflowTable.TryGetValue(canonical, out size) || table.HashTable.TryGetValue(Crc32.Compute(canonical), out size);
+        return Path.Combine("romfs", $"{CANONICAL}{gameVersion}");
     }
 }

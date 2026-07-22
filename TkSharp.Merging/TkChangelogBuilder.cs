@@ -1,7 +1,5 @@
-using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
-using RstbLibrary;
 using TkSharp.Core;
 using TkSharp.Core.IO.Buffers;
 using TkSharp.Core.Models;
@@ -36,7 +34,6 @@ public class TkChangelogBuilder(
     private readonly ITkModWriter _writer = writer;
     private readonly ITkRom _tk = InitSession(tk);
     private readonly Dictionary<string, TkChangelogEntry> _entries = [];
-    private readonly ConcurrentDictionary<int, byte[]> _resourceSizeTables = [];
 
     private readonly TkChangelog _changelog = new() {
         BuilderVersion = 200,
@@ -120,10 +117,7 @@ public class TkChangelogBuilder(
                 }
 
                 return;
-            case { Extension: ".rsizetable" }:
-                CaptureResourceSizeTable(path.FileVersion, content);
-                return;
-            case { Canonical: "desktop.ini" }:
+            case { Extension: ".rsizetable" } or { Canonical: "desktop.ini" }:
                 return;
         }
 
@@ -308,46 +302,14 @@ public class TkChangelogBuilder(
     private void InsertEntries()
     {
         _changelog.ChangelogFiles.AddRange(_entries.Values);
-        CollectResourceSizeOverrides();
-    }
-
-    private void CollectResourceSizeOverrides()
-    {
-        if (!_entries.Values.Any(entry => entry.Canonical.EndsWith(".bfres", StringComparison.Ordinal))) {
-            return;
+        if (flags.ResourceSizeOverrides is { Count: > 0 } resourceSizeOverrides) {
+            TkResourceSizeOverride.Write(
+                _writer,
+                _changelog,
+                _tk.GameVersion,
+                resourceSizeOverrides.Where(entry =>
+                    _entries.TryGetValue(entry.Key, out var changelogEntry)
+                    && changelogEntry.Type is ChangelogEntryType.Copy));
         }
-
-        if (!_resourceSizeTables.TryGetValue(_tk.GameVersion, out var resourceSizeTable)) {
-            resourceSizeTable = _resourceSizeTables.Count == 1
-                ? _resourceSizeTables.Values.Single()
-                : null;
-        }
-
-        if (resourceSizeTable is null) {
-            if (_resourceSizeTables.Count > 0) {
-                TkLog.Instance.LogWarning(
-                    "Could not select a source resource size table because multiple candidates were ambiguous");
-            }
-
-            return;
-        }
-
-        try {
-            using MemoryStream input = new(resourceSizeTable);
-            using var data = _tk.Zstd.Decompress(input);
-            var table = Rstb.FromBinary(data.Span);
-            TkResourceSizeOverride.Collect(table, _entries.Values, _changelog.Reserved1);
-        }
-        catch (Exception ex) {
-            TkLog.Instance.LogWarning(ex, "Could not read authored BFRES resource sizes");
-        }
-    }
-
-    private void CaptureResourceSizeTable(int version, Stream content)
-    {
-        using MemoryStream buffer = new();
-        content.CopyTo(buffer);
-
-        _resourceSizeTables[version] = buffer.ToArray();
     }
 }

@@ -6,7 +6,6 @@ using RstbLibrary.Helpers;
 using TkSharp.Core;
 using TkSharp.Core.Extensions;
 using TkSharp.Core.IO.Buffers;
-using TkSharp.Core.Models;
 using TkSharp.Merging.ResourceSizeTable.Calculators;
 
 namespace TkSharp.Merging.ResourceSizeTable;
@@ -99,11 +98,6 @@ public sealed class TkResourceSizeCollector
         lock (_result) {
             _result.HashTable[hash] = size;
         }
-    }
-
-    public uint GetResourceSizeOverride(TkChangelog changelog, string canonical)
-    {
-        return TkResourceSizeOverride.Resolve(_vanilla, changelog, canonical);
     }
 
     [Pure]
