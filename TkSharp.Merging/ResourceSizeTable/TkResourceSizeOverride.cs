@@ -32,17 +32,18 @@ public static class TkResourceSizeOverride
             versions: applyToAllVersions ? [] : [gameVersion]);
         changelog.ChangelogFiles.Add(entry);
 
-        using var output = writer.OpenWrite(GetRelativePath(gameVersion, applyToAllVersions));
+        var relativePath = applyToAllVersions ? GetRelativePath() : GetRelativePath(gameVersion);
+        using var output = writer.OpenWrite(relativePath);
         table.WriteBinary(output);
     }
 
-    public static bool TryGetValue(Rstb table, string canonical, out uint size)
+    public static string GetRelativePath()
     {
-        return table.OverflowTable.TryGetValue(canonical, out size);
+        return Path.Combine("romfs", CANONICAL);
     }
 
-    public static string GetRelativePath(int gameVersion, bool applyToAllVersions = false)
+    public static string GetRelativePath(int gameVersion)
     {
-        return Path.Combine("romfs", applyToAllVersions ? CANONICAL : $"{CANONICAL}{gameVersion}");
+        return Path.Combine("romfs", $"{CANONICAL}{gameVersion}");
     }
 }

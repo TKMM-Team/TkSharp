@@ -470,7 +470,7 @@ public sealed class TkMerger
         if (entry?.Type is not ChangelogEntryType.Copy
             || changelog is null
             || !_resourceSizeOverrides.TryGetValue(changelog, out var table)
-            || !TkResourceSizeOverride.TryGetValue(table, entry.Canonical, out var size)) {
+            || !table.OverflowTable.TryGetValue(entry.Canonical, out var size)) {
             return 0;
         }
 
@@ -489,8 +489,10 @@ public sealed class TkMerger
                 continue;
             }
 
-            using var input = changelog.Source.OpenRead(
-                TkResourceSizeOverride.GetRelativePath(_rom.GameVersion, entry.Versions.Count == 0));
+            var relativePath = entry.Versions.Count == 0
+                ? TkResourceSizeOverride.GetRelativePath()
+                : TkResourceSizeOverride.GetRelativePath(_rom.GameVersion);
+            using var input = changelog.Source.OpenRead(relativePath);
             using var buffer = RentedBuffer<byte>.Allocate(input);
             _resourceSizeOverrides[changelog] = Rstb.FromBinary(buffer.Span);
         }
