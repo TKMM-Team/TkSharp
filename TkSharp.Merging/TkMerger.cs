@@ -31,7 +31,7 @@ public sealed class TkMerger
     private readonly TkPackFileCollector _packFileCollector;
     private readonly BfresMcMerger _bfresMcMerger;
     private readonly BntxMerger _bntxMerger;
-    private readonly Dictionary<TkChangelog, Rstb> _resourceSizeOverrides = new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<TkChangelog, Rstb> _resourceSizeOverrides = [];
 
     public TkMerger(ITkModWriter output, ITkRom rom, string locale = "USen", string? ipsOutputFolderPath = null)
     {
