@@ -20,6 +20,8 @@ public class TkChangelogEntry(string canonical, ChangelogEntryType type, TkFileA
 
     public List<string> RuntimeArchiveCanonicals { get; set; } = [];
 
+    public uint RuntimeResourceSizeOverride { get; set; }
+
     public void Deconstruct(out string canonical, out ChangelogEntryType type, out TkFileAttributes attributes, out int zsDictionaryId)
     {
         canonical = Canonical;

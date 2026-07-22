@@ -48,7 +48,7 @@ public sealed class TkResourceSizeCollector
         output.Write(compressedData[..compressedSize]);
     }
 
-    public void Collect(int fileSize, string path, in Span<byte> data)
+    public void Collect(int fileSize, string path, in Span<byte> data, uint resourceSizeOverride = 0)
     {
         var canonical = GetResourceName(path);
         var extension = GetResourceExtension(path);
@@ -66,11 +66,9 @@ public sealed class TkResourceSizeCollector
         
         fileSize += fileSize.AlignUp(0x20);
         
-        var size = GetResourceSize(
-            (uint)fileSize,
-            canonical,
-            extension,
-            data);
+        var size = resourceSizeOverride == 0
+            ? GetResourceSize((uint)fileSize, canonical, extension, data)
+            : resourceSizeOverride;
 
         if (_result.OverflowTable.ContainsKey(canonical)) {
             lock (_result) {

@@ -1,6 +1,7 @@
 using CommunityToolkit.HighPerformance.Buffers;
 using LanguageExt;
 using Microsoft.Extensions.Logging;
+using RstbLibrary;
 using TkSharp.Core;
 using TkSharp.Core.Extensions;
 using TkSharp.Core.IO.Buffers;
@@ -30,6 +31,7 @@ public sealed class TkMerger
     private readonly TkPackFileCollector _packFileCollector;
     private readonly BfresMcMerger _bfresMcMerger;
     private readonly BntxMerger _bntxMerger;
+    private readonly Dictionary<TkChangelog, Rstb> _resourceSizeOverrides = [];
 
     public TkMerger(ITkModWriter output, ITkRom rom, string locale = "USen", string? ipsOutputFolderPath = null)
     {
@@ -49,6 +51,8 @@ public sealed class TkMerger
     {
         var tkChangelogs =
             changelogs as TkChangelog[] ?? changelogs.ToArray();
+
+        LoadResourceSizeOverrides(tkChangelogs);
 
         Task[] tasks = [
             Task.Run(() => MergeIps(tkChangelogs), ct),
@@ -72,6 +76,8 @@ public sealed class TkMerger
     {
         var tkChangelogs =
             changelogs as TkChangelog[] ?? changelogs.ToArray();
+
+        LoadResourceSizeOverrides(tkChangelogs);
 
         MergeIps(tkChangelogs);
 
@@ -129,11 +135,16 @@ public sealed class TkMerger
                 }
                 
                 if (vanilla.IsEmpty && merger is not BfresMcMerger) {
+                    changelog.RuntimeResourceSizeOverride = 0;
                     MergeCustomTarget(merger, streams[0], streams.AsSpan(1..), changelog, output, _rom.GameVersion);
                     break;
                 }
 
                 using var inputs = RentedBuffers<byte>.Allocate(streams, disposeStreams: true);
+                if (merger is not BfresMcMerger) {
+                    changelog.RuntimeResourceSizeOverride = 0;
+                }
+
                 result = merger.Merge(changelog, inputs, vanilla.Segment, output);
                 break;
 
@@ -155,6 +166,10 @@ public sealed class TkMerger
                 }
                 
                 using var input = RentedBuffer<byte>.Allocate(single);
+                if (merger is not BfresMcMerger) {
+                    changelog.RuntimeResourceSizeOverride = 0;
+                }
+
                 result = merger.MergeSingle(changelog, input.Segment, vanilla.Segment, output);
                 single.Dispose();
                 break;
@@ -285,7 +300,7 @@ public sealed class TkMerger
             var size = TkZstd.IsCompressed(input)
                 ? TkZstd.GetDecompressedSize(input)
                 : (int)input.Length;
-            _resourceSizeCollector.Collect(size, relativePath, []);
+            _resourceSizeCollector.Collect(size, relativePath, [], changelog.RuntimeResourceSizeOverride);
             input.CopyTo(output);
             input.Dispose();
             return;
@@ -295,7 +310,7 @@ public sealed class TkMerger
         var raw = buffer.Span;
 
         if (!TkZstd.IsCompressed(raw)) {
-            _resourceSizeCollector.Collect(raw.Length, relativePath, raw);
+            _resourceSizeCollector.Collect(raw.Length, relativePath, raw, changelog.RuntimeResourceSizeOverride);
             output.Write(raw);
             input.Dispose();
             return;
@@ -304,7 +319,7 @@ public sealed class TkMerger
         using var decompressed = SpanOwner<byte>.Allocate(TkZstd.GetDecompressedSize(raw));
         var data = decompressed.Span;
         _rom.Zstd.Decompress(raw, data);
-        _resourceSizeCollector.Collect(data.Length, relativePath, data);
+        _resourceSizeCollector.Collect(data.Length, relativePath, data, changelog.RuntimeResourceSizeOverride);
         output.Write(raw);
         input.Dispose();
     }
@@ -326,14 +341,15 @@ public sealed class TkMerger
             return;
         }
 
-        CopyMergedToSimpleOutput(input, relativePath, changelog.Attributes, changelog.ZsDictionaryId);
+        CopyMergedToSimpleOutput(input, relativePath, changelog.Attributes, changelog.ZsDictionaryId,
+            changelog.RuntimeResourceSizeOverride);
     }
 
     internal void CopyMergedToSimpleOutput(in MemoryStream input, string relativePath,
-        TkFileAttributes entryFileAttributes, int zsDictionaryId)
+        TkFileAttributes entryFileAttributes, int zsDictionaryId, uint resourceSizeOverride = 0)
     {
         var buffer = input.GetSpan();
-        _resourceSizeCollector.Collect(buffer.Count, relativePath, buffer);
+        _resourceSizeCollector.Collect(buffer.Count, relativePath, buffer, resourceSizeOverride);
 
         using var output = _output.OpenWrite(
             Path.Combine("romfs", relativePath));
@@ -401,6 +417,7 @@ public sealed class TkMerger
     {
         return changelogs
             .SelectMany(changelog => changelog.ChangelogFiles
+                .Where(entry => entry.Canonical is not TkResourceSizeOverride.CANONICAL)
                 .Select(entry => (Entry: entry, Changelog: changelog))
             )
             .GroupBy(
@@ -415,6 +432,9 @@ public sealed class TkMerger
         // Ensure the key changelog contains
         // every archive requesting this file
         group.Key.RuntimeArchiveCanonicals = group.SelectMany(x => x.Entry.ArchiveCanonicals).ToList();
+
+        var last = group.LastOrDefault(x => x.Entry.Type != ChangelogEntryType.Placeholder);
+        group.Key.RuntimeResourceSizeOverride = GetResourceSizeOverride(last.Entry, last.Changelog);
 
         if (GetMerger(group.Key.Canonical, group.Key.Attributes) is { } merger) {
             return (
@@ -431,9 +451,6 @@ public sealed class TkMerger
         // TODO: Proper support for mixed version usage should
         // be implemented, however by always using the path of
         // the last entry, we can avoid explicitly handling it
-        var last
-            = group.LastOrDefault(x => x.Entry.Type != ChangelogEntryType.Placeholder);
-        
         if (last.Entry is null || last.Changelog is null) {
             return (
                 Changelog: group.Key,
@@ -446,6 +463,35 @@ public sealed class TkMerger
             Changelog: group.Key,
             Target: last.Changelog.Source!.OpenRead(relativeFilePath)
         );
+    }
+
+    private uint GetResourceSizeOverride(TkChangelogEntry? entry, TkChangelog? changelog)
+    {
+        if (entry?.Type is not ChangelogEntryType.Copy
+            || changelog is null
+            || !_resourceSizeOverrides.TryGetValue(changelog, out var table)
+            || !table.OverflowTable.TryGetValue(entry.Canonical, out var size)) {
+            return 0;
+        }
+
+        return size;
+    }
+
+    private void LoadResourceSizeOverrides(IEnumerable<TkChangelog> changelogs)
+    {
+        _resourceSizeOverrides.Clear();
+
+        foreach (var changelog in changelogs) {
+            var entry = changelog.ChangelogFiles.FirstOrDefault(entry =>
+                entry.Canonical is TkResourceSizeOverride.CANONICAL);
+            if (entry is null || changelog.Source is null) {
+                continue;
+            }
+
+            using var input = changelog.Source.OpenRead(TkResourceSizeOverride.GetRelativePath());
+            using var buffer = RentedBuffer<byte>.Allocate(input);
+            _resourceSizeOverrides[changelog] = Rstb.FromBinary(buffer.Span);
+        }
     }
 
     public ITkMerger? GetMerger(ReadOnlySpan<char> canonical, TkFileAttributes attributes = default)
