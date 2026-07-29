@@ -10,11 +10,11 @@ public static class GameBanana
 {
     private const int MAX_RETRIES = 5;
     
-    private const string ROOT = "https://gamebanana.com/apiv11";
+    private const string ROOT = "https://gamebanana.com/apiv12";
     private const string MOD_ENDPOINT = "/Mod/{0}/ProfilePage";
-    private const string FEED_ENDPOINT = "/Mod/Index?_aFilters%5BGeneric_Game%5D={0}&_nPage={1}&_sSort={2}&_nPerpage=30";
-    private const string FEED_ENDPOINT_SEARCH = "/Mod/Index?_nPerpage=30&_aFilters%5BGeneric_Game%5D={0}&_nPage={1}&_sSort={2}&_aFilters%5BGeneric_Name%5D=contains%2C{3}";
-    private const string MEMBER_FEED_ENDPOINT = "/Mod/Index?_aFilters%5BGeneric_Game%5D={0}&_aFilters%5BGeneric_Submitter%5D={1}&_nPage={2}&_nPerpage=50";
+    private const string FEED_ENDPOINT = "/Mod/Index?_aFilters[Generic_Game]={0}&_nPage={1}&_sSort={2}&_nPerpage=30";
+    private const string FEED_ENDPOINT_SEARCH = "/Mod/Index?_nPerpage=30&_aFilters[Generic_Game]={0}&_nPage={1}&_sSort={2}&_aFilters[Generic_Name]=contains,{3}";
+    private const string MEMBER_FEED_ENDPOINT = "/Mod/Index?_aFilters[Generic_Game]={0}&_aFilters[Generic_Submitter]={1}&_nPage={2}&_nPerpage=50";
     
     public static async ValueTask<Stream> Get(string url, CancellationToken ct = default)
     {
