@@ -6,9 +6,12 @@ using System.Text.Json.Serialization;
 using CommunityToolkit.HighPerformance.Buffers;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.Logging;
+using RstbLibrary;
+using RstbLibrary.Helpers;
 using TkSharp.Core;
 using TkSharp.Core.Extensions;
 using TkSharp.Core.IO;
+using TkSharp.Core.IO.Buffers;
 using TkSharp.Core.IO.ModSources;
 using TkSharp.Core.Models;
 using TkSharp.Merging;
@@ -52,11 +55,63 @@ public partial class TkProject(string folderPath) : ObservableObject
         TkLog.Instance.LogInformation("Packaged: '{ModName}'", Mod.Name);
     }
 
+    public async ValueTask<IReadOnlyList<TkResourceSizeOverrideCandidate>> GetResourceSizeOverrideCandidates(
+        string resourceSizeTablePath,
+        ITkRom rom,
+        CancellationToken ct = default)
+    {
+        Rstb table;
+        using (var input = File.OpenRead(resourceSizeTablePath)) {
+            using var raw = RentedBuffer<byte>.Allocate(input);
+            if (TkZstd.IsCompressed(raw.Span)) {
+                table = Rstb.FromBinary(rom.Zstd.Decompress(raw.Span));
+            }
+            else {
+                table = Rstb.FromBinary(raw.Span);
+            }
+        }
+
+        List<TkChangelog> changelogs = [];
+        DiscardModWriter writer = new();
+        FolderModSource source = new(FolderPath);
+        TkChangelogBuilder builder = new(source, writer, rom, systemSource: null);
+        changelogs.Add(await builder.BuildAsync(ct));
+
+        foreach (var option in Mod.OptionGroups.SelectMany(group => group.Options)) {
+            if (!TryGetPath(option, out var optionPath)) {
+                continue;
+            }
+
+            FolderModSource optionSource = new(optionPath);
+            TkChangelogBuilder optionBuilder = new(optionSource, writer, rom, systemSource: null);
+            changelogs.Add(await optionBuilder.BuildAsync(ct));
+        }
+
+        return changelogs
+            .SelectMany(changelog => changelog.ChangelogFiles)
+            .Where(entry => entry.Type is ChangelogEntryType.Copy)
+            .Select(entry => entry.Canonical)
+            .Distinct(StringComparer.Ordinal)
+            .Select(canonical => TryGetResourceSize(table, canonical, out var size) && size > 0
+                ? new TkResourceSizeOverrideCandidate(canonical, size)
+                : null)
+            .OfType<TkResourceSizeOverrideCandidate>()
+            .OrderBy(entry => entry.Canonical, StringComparer.Ordinal)
+            .ToArray();
+    }
+
+    private static bool TryGetResourceSize(Rstb table, string canonical, out uint size)
+    {
+        return table.OverflowTable.TryGetValue(canonical, out size)
+               || table.HashTable.TryGetValue(Crc32.Compute(canonical), out size);
+    }
+
     public async ValueTask Build(ITkModWriter writer, ITkRom rom, ITkSystemSource? systemSource = null, CancellationToken ct = default)
     {
         PackThumbnails(writer);
 
-        var flags = Flags.GetBuilderFlags();
+        var resourceSizeOverrides = GetResourceSizeOverrides();
+        var flags = Flags.GetBuilderFlags(resourceSizeOverrides);
 
         FolderModSource source = new(FolderPath);
         Mod.Changelog = await Build(Mod, source, writer, rom, systemSource, flags, ct);
@@ -74,7 +129,64 @@ public partial class TkProject(string folderPath) : ObservableObject
                 option, optionSource, writer, rom, systemSource?.GetRelative(id), flags, ct);
         }
 
+        ValidateResourceSizeOverrideTargets(resourceSizeOverrides);
+
         TkLog.Instance.LogInformation("Build completed");
+    }
+
+    private IReadOnlyDictionary<string, uint>? GetResourceSizeOverrides()
+    {
+        var configuration = Flags.ResourceSizeOverrides;
+        if (!configuration.Enabled || configuration.Entries.Count == 0) {
+            return null;
+        }
+
+        Dictionary<string, uint> result = new(StringComparer.Ordinal);
+        List<string> invalid = [];
+
+        foreach (var (canonical, size) in configuration.Entries) {
+            if (size == 0 || !IsCanonicalResourcePath(canonical) || !result.TryAdd(canonical, size)) {
+                invalid.Add(canonical);
+            }
+        }
+
+        if (invalid.Count > 0) {
+            throw new InvalidDataException(
+                $"Invalid resource-size override entries: {string.Join(", ", invalid)}");
+        }
+
+        return result;
+    }
+
+    private void ValidateResourceSizeOverrideTargets(IReadOnlyDictionary<string, uint>? resourceSizeOverrides)
+    {
+        if (resourceSizeOverrides is not { Count: > 0 }) {
+            return;
+        }
+
+        var eligible = Mod.Changelog.ChangelogFiles
+            .Concat(Mod.OptionGroups.SelectMany(group => group.Options)
+                .SelectMany(option => option.Changelog.ChangelogFiles))
+            .Where(entry => entry.Type is ChangelogEntryType.Copy)
+            .Select(entry => entry.Canonical)
+            .ToHashSet(StringComparer.Ordinal);
+        var invalid = resourceSizeOverrides.Keys.Where(canonical => !eligible.Contains(canonical)).ToArray();
+
+        if (invalid.Length > 0) {
+            throw new InvalidDataException(
+                $"Resource-size overrides must target unchanged project resources: {string.Join(", ", invalid)}");
+        }
+    }
+
+    private static bool IsCanonicalResourcePath(string canonical)
+    {
+        return canonical.Length > 0
+               && !Path.IsPathRooted(canonical)
+               && !canonical.StartsWith("romfs/", StringComparison.OrdinalIgnoreCase)
+               && !canonical.Contains('\\')
+               && !canonical.Split('/').Contains("..", StringComparer.Ordinal)
+               && !canonical.EndsWith(".zs", StringComparison.Ordinal)
+               && !canonical.EndsWith(".mc", StringComparison.Ordinal);
     }
 
     private static async ValueTask<TkChangelog> Build(TkStoredItem item, ITkModSource source, ITkModWriter writer,
@@ -210,6 +322,15 @@ public partial class TkProject(string folderPath) : ObservableObject
 
         using var output = writer.OpenWrite(thumbnailFilePath);
         output.Write(buffer.Span);
+    }
+
+    private sealed class DiscardModWriter : ITkModWriter
+    {
+        public Stream OpenWrite(string filePath) => Stream.Null;
+
+        public void SetRelativeFolder(string rootFolder)
+        {
+        }
     }
 
     public async ValueTask PackageOptimizer(Stream output, CancellationToken ct = default)

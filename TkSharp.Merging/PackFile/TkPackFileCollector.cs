@@ -50,7 +50,7 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
             if (entry.IsStreamedData() && entry.Data is MemoryStream msData) {
                 var buffer = msData.GetSpan();
                 sarc[name] = buffer;
-                resourceSizeCollector.Collect(buffer.Count, name, buffer);
+                resourceSizeCollector.Collect(buffer.Count, name, buffer, entry.Changelog.RuntimeResourceSizeOverride);
                 continue;
             }
 
@@ -64,7 +64,7 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
                 }
             }
 
-            resourceSizeCollector.Collect(sarc[name].Count, name, sarc[name]);
+            resourceSizeCollector.Collect(sarc[name].Count, name, sarc[name], entry.Changelog.RuntimeResourceSizeOverride);
         }
 
         using MemoryStream ms = new();

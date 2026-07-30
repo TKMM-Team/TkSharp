@@ -5,6 +5,7 @@ using TkSharp.Core.IO.Buffers;
 using TkSharp.Core.Models;
 using TkSharp.Merging.ChangelogBuilders;
 using TkSharp.Merging.ChangelogBuilders.GameData;
+using TkSharp.Merging.ResourceSizeTable;
 
 namespace TkSharp.Merging;
 
@@ -301,5 +302,13 @@ public class TkChangelogBuilder(
     private void InsertEntries()
     {
         _changelog.ChangelogFiles.AddRange(_entries.Values);
+        if (flags.ResourceSizeOverrides is { Count: > 0 } resourceSizeOverrides) {
+            TkResourceSizeOverride.Write(
+                _writer,
+                _changelog,
+                resourceSizeOverrides.Where(entry =>
+                    _entries.TryGetValue(entry.Key, out var changelogEntry)
+                    && changelogEntry.Type is ChangelogEntryType.Copy));
+        }
     }
 }
