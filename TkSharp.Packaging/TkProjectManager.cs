@@ -3,6 +3,7 @@ using System.Text.Json;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using TkSharp.Core;
+using TkSharp.Core.Common;
 using TkSharp.Core.Models;
 
 namespace TkSharp.Packaging;
@@ -137,6 +138,7 @@ public partial class TkProjectManager
 
         project.RegisterItem(group, optionGroupFolderPath);
         project.Mod.OptionGroups.Add(group);
+        TkOptionSelectionFlagsLookup.EnsureValidDefaultSelections(group);
     }
 
     public static void LoadOptionFolder(TkProject project, TkModOptionGroup group, string optionFolderPath)
@@ -158,7 +160,12 @@ public partial class TkProjectManager
 
     Result:
         project.RegisterItem(option, optionFolderPath);
+        option.InitializeSelectionFlags(group);
         group.Options.Add(option);
+
+        if (option.IsDefaultSelected && !group.DefaultSelectedOptions.Contains(option)) {
+            group.DefaultSelectedOptions.Add(option);
+        }
     }
 
     private static void InsertRecentProject(TkProject project)

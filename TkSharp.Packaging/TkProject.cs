@@ -44,11 +44,16 @@ public partial class TkProject(string folderPath) : ObservableObject
     {
         TkLog.Instance.LogInformation("Packaging '{ModName}'", Mod.Name);
 
-        ArchiveModWriter writer = new();
+        foreach (var group in Mod.OptionGroups) {
+            group.SyncSelectionCollectionsFromOptions();
+        }
+
+        ArchiveModWriter archiveWriter = new();
+        ITkModWriter writer = new RomfsBucketModWriter(archiveWriter);
         await Build(writer, rom, ct: ct);
 
         using MemoryStream contentArchiveOutput = new();
-        writer.Compile(contentArchiveOutput);
+        archiveWriter.Compile(contentArchiveOutput);
 
         TkPackWriter.Write(output, Mod, contentArchiveOutput.GetSpan());
 
@@ -218,6 +223,8 @@ public partial class TkProject(string folderPath) : ObservableObject
             if (!TryGetPath(group, out var groupFolderPath)) {
                 continue;
             }
+
+            group.SyncSelectionCollectionsFromOptions();
 
             var metadataFilePath = Path.Combine(groupFolderPath, "info.json");
             using var fs = File.Create(metadataFilePath);

@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.Logging;
 using Revrs.Extensions;
 using TkSharp.Core;
+using TkSharp.Core.IO;
 using TkSharp.Core.Models;
 using TkSharp.IO;
 using TkSharp.IO.Serialization;
@@ -105,7 +106,7 @@ public sealed partial class TkModManager : ObservableObject, ITkSystemProvider
 
     public ITkModWriter GetSystemWriter(TkModContext modContext)
     {
-        return new SystemModWriter(this, modContext.Id);
+        return new RomfsBucketModWriter(new SystemModWriter(this, modContext.Id));
     }
 
     public ITkSystemSource GetSystemSource(string relativeFolderPath)

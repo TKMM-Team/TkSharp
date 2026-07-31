@@ -29,19 +29,33 @@ public sealed partial class TkProfileMod(TkMod mod) : ObservableObject
         return Mod.GetHashCode();
     }
 
-    public void EnsureOptionSelection()
+    public void EnsureOptionSelection(bool applyPackagedDefaults = false)
     {
         foreach (var group in Mod.OptionGroups) {
-            if (group.Type is not (OptionGroupType.MultiRequired or OptionGroupType.SingleRequired)) {
-                continue;
-            }
-
             if (!SelectedOptions.TryGetValue(group, out var selection)) {
                 SelectedOptions[group] = selection = [];
             }
 
-            if (selection.Count == 0 && group.Options.FirstOrDefault() is { } option) {
-                selection.Add(option);
+            var wasEmpty = selection.Count == 0;
+
+            if (applyPackagedDefaults && wasEmpty && group.DefaultSelectedOptions.Count > 0) {
+                switch (group.Type) {
+                    case OptionGroupType.Single or OptionGroupType.SingleRequired:
+                        selection.Add(group.DefaultSelectedOptions[0]);
+                        break;
+                    default:
+                        foreach (var option in group.DefaultSelectedOptions) {
+                            selection.Add(option);
+                        }
+
+                        break;
+                }
+            }
+
+            if (group.Type is OptionGroupType.MultiRequired or OptionGroupType.SingleRequired
+                && selection.Count == 0
+                && group.Options.FirstOrDefault() is { } fallback) {
+                selection.Add(fallback);
             }
         }
     }

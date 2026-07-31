@@ -74,9 +74,9 @@ public static class TkBinaryReader
         var defaultSelectedOptionCount = input.Read<int>();
         for (var i = 0; i < defaultSelectedOptionCount; i++) {
             var index = input.Read<int>();
-            result.DefaultSelectedOptions.Add(
-                result.Options[index]
-            );
+            var option = result.Options[index];
+            result.DefaultSelectedOptions.Add(option);
+            option.SetSelectionFlagsFromCollections(isDefaultSelected: true);
         }
         
         var dependencyCount = input.Read<int>();

@@ -141,12 +141,14 @@ public sealed partial class TkProfile : TkItem
     public void AddOrUpdate(TkMod target)
     {
         TkProfileMod profileMod;
+        var isNew = true;
         
         foreach (var existingProfileMod in Mods) {
             if (existingProfileMod.Mod.Id == target.Id) {
                 profileMod = existingProfileMod;
                 existingProfileMod.Mod = target;
                 RebaseOptions(existingProfileMod);
+                isNew = false;
                 goto EnsureOptions;
             }
         }
@@ -155,7 +157,7 @@ public sealed partial class TkProfile : TkItem
         Mods.Add(profileMod);
         
     EnsureOptions:
-        profileMod.EnsureOptionSelection();
+        profileMod.EnsureOptionSelection(applyPackagedDefaults: isNew);
     }
 
     public void Update(TkMod target)
@@ -164,7 +166,7 @@ public sealed partial class TkProfile : TkItem
             if (existingProfileMod.Mod.Id == target.Id) {
                 existingProfileMod.Mod = target;
                 existingProfileMod.SelectedOptions = [];
-                existingProfileMod.EnsureOptionSelection();
+                existingProfileMod.EnsureOptionSelection(applyPackagedDefaults: true);
                 return;
             }
         }

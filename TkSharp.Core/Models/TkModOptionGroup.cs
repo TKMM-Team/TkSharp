@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using TkSharp.Core.Common;
 
 namespace TkSharp.Core.Models;
 
@@ -36,5 +37,21 @@ public sealed partial class TkModOptionGroup : TkItem
 
     public TkModOptionGroup()
     {
+    }
+
+    partial void OnTypeChanged(OptionGroupType value)
+        => TkOptionSelectionFlagsLookup.EnsureValidDefaultSelections(this);
+
+    public void SyncSelectionCollectionsFromOptions()
+    {
+        DefaultSelectedOptions.Clear();
+
+        foreach (var option in Options) {
+            if (option.IsDefaultSelected && !DefaultSelectedOptions.Contains(option)) {
+                DefaultSelectedOptions.Add(option);
+            }
+        }
+
+        TkOptionSelectionFlagsLookup.EnsureValidDefaultSelections(this);
     }
 }
