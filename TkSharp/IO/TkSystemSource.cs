@@ -4,8 +4,8 @@ namespace TkSharp.IO;
 
 public sealed class TkSystemSource(string rootFolderPath) : ITkSystemSource
 {
-    private readonly Lock _bucketsLock = new();
     private string[]? _romfsBuckets;
+    private Dictionary<string, string>? _logicalRomfsFiles;
 
     public Stream OpenRead(string relativeFilePath)
     {
@@ -32,9 +32,7 @@ public sealed class TkSystemSource(string rootFolderPath) : ITkSystemSource
 
     public IEnumerable<string> EnumerateRomfsBuckets()
     {
-        foreach (var bucket in GetRomfsBuckets()) {
-            yield return Path.GetFileName(bucket);
-        }
+        return GetRomfsBuckets().Select(bucket => Path.GetFileName(bucket));
     }
 
     private bool TryResolvePath(string relativeFilePath, out string resolvedPath)
@@ -53,36 +51,52 @@ public sealed class TkSystemSource(string rootFolderPath) : ITkSystemSource
 
         var relative = normalized["romfs/".Length..];
         var relativeOs = relative.Replace('/', Path.DirectorySeparatorChar);
-        var romfsRoot = Path.Combine(rootFolderPath, "romfs");
-        if (!Directory.Exists(romfsRoot)) {
-            resolvedPath = direct;
-            return false;
-        }
 
         foreach (var bucket in GetRomfsBuckets()) {
             var candidate = Path.Combine(bucket, relativeOs);
-            if (File.Exists(candidate)) {
-                resolvedPath = candidate;
-                return true;
+            
+            if (!File.Exists(candidate)) {
+                continue;
             }
+            
+            resolvedPath = candidate;
+            return true;
         }
 
-        var fileName = Path.GetFileName(relativeOs);
-        if (fileName.Length > 0) {
-            foreach (var file in Directory.EnumerateFiles(romfsRoot, fileName, SearchOption.AllDirectories)) {
-                var underRomfs = Path.GetRelativePath(romfsRoot, file).Replace('\\', '/');
-                
-                if (!StripBucketPrefixes(underRomfs).Equals(relative, StringComparison.OrdinalIgnoreCase)) {
-                    continue;
-                }
-                
-                resolvedPath = file;
-                return true;
-            }
+        var index = GetLogicalRomfsFiles();
+        if (index.TryGetValue(relative, out resolvedPath!)) {
+            return true;
+        }
+
+        var stripped = StripBucketPrefixes(relative);
+        if (stripped.Length != relative.Length && index.TryGetValue(stripped, out resolvedPath!)) {
+            return true;
         }
 
         resolvedPath = direct;
         return false;
+    }
+
+    private Dictionary<string, string> GetLogicalRomfsFiles()
+    {
+        if (_logicalRomfsFiles is not null) {
+            return _logicalRomfsFiles;
+        }
+
+        Dictionary<string, string> index = new(StringComparer.OrdinalIgnoreCase);
+        var romfsRoot = Path.Combine(rootFolderPath, "romfs");
+        
+        if (!Directory.Exists(romfsRoot)) {
+            return _logicalRomfsFiles ??= index;
+        }
+        
+        foreach (var file in Directory.EnumerateFiles(romfsRoot, "*", SearchOption.AllDirectories)) {
+            var underRomfs = Path.GetRelativePath(romfsRoot, file).Replace('\\', '/');
+            index.TryAdd(underRomfs, file);
+            index.TryAdd(StripBucketPrefixes(underRomfs), file);
+        }
+
+        return _logicalRomfsFiles ??= index;
     }
 
     private static string StripBucketPrefixes(string path)
@@ -105,33 +119,33 @@ public sealed class TkSystemSource(string rootFolderPath) : ITkSystemSource
 
     private string[] GetRomfsBuckets()
     {
-        lock (_bucketsLock) {
-            if (_romfsBuckets is not null) {
-                return _romfsBuckets;
-            }
+        if (_romfsBuckets is not null) {
+            return _romfsBuckets;
+        }
 
-            var romfsRoot = Path.Combine(rootFolderPath, "romfs");
-            if (!Directory.Exists(romfsRoot)) {
-                return _romfsBuckets = [];
-            }
+        var romfsRoot = Path.Combine(rootFolderPath, "romfs");
+        if (!Directory.Exists(romfsRoot)) {
+            return _romfsBuckets ??= [];
+        }
 
-            return _romfsBuckets = Directory.EnumerateDirectories(romfsRoot)
-                .Where(static path => {
-                    var name = Path.GetFileName(path.AsSpan());
-                    if (name.Length < 5 || !name.StartsWith("TKMM", StringComparison.OrdinalIgnoreCase)) {
+        var buckets = Directory.EnumerateDirectories(romfsRoot)
+            .Where(static path => {
+                var name = Path.GetFileName(path.AsSpan());
+                if (name.Length < 5 || !name.StartsWith("TKMM", StringComparison.OrdinalIgnoreCase)) {
+                    return false;
+                }
+
+                for (var i = 4; i < name.Length; i++) {
+                    if (!char.IsDigit(name[i])) {
                         return false;
                     }
+                }
 
-                    for (var i = 4; i < name.Length; i++) {
-                        if (!char.IsDigit(name[i])) {
-                            return false;
-                        }
-                    }
+                return name.Length > 4;
+            })
+            .OrderBy(static path => path, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
-                    return name.Length > 4;
-                })
-                .OrderBy(static path => path, StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-        }
+        return _romfsBuckets ??= buckets;
     }
 }
