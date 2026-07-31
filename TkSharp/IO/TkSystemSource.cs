@@ -23,6 +23,13 @@ public sealed class TkSystemSource(string rootFolderPath) : ITkSystemSource
         );
     }
 
+    public IEnumerable<string> EnumerateRomfsBuckets()
+    {
+        foreach (var bucket in GetRomfsBuckets()) {
+            yield return Path.GetFileName(bucket);
+        }
+    }
+
     private string ResolvePath(string relativeFilePath)
     {
         if (TryResolvePath(relativeFilePath, out var resolved)) {

@@ -37,4 +37,16 @@ public static class TkResourceSizeOverride
     {
         return Path.Combine("romfs", CANONICAL);
     }
+
+    public static string GetRelativePath(ITkSystemSource source)
+    {
+        foreach (var bucket in source.EnumerateRomfsBuckets()) {
+            var bucketPath = Path.Combine("romfs", bucket, CANONICAL);
+            if (source.Exists(bucketPath)) {
+                return bucketPath;
+            }
+        }
+
+        return GetRelativePath();
+    }
 }

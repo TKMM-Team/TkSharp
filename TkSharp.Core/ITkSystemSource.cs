@@ -10,4 +10,6 @@ public interface ITkSystemSource
     bool Exists(string relativeFilePath);
 
     ITkSystemSource GetRelative(string relativeSourcePath);
+
+    IEnumerable<string> EnumerateRomfsBuckets() => [];
 }

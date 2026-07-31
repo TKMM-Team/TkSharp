@@ -488,7 +488,12 @@ public sealed class TkMerger
                 continue;
             }
 
-            using var input = changelog.Source.OpenRead(TkResourceSizeOverride.GetRelativePath());
+            var relativePath = TkResourceSizeOverride.GetRelativePath(changelog.Source);
+            if (!changelog.Source.Exists(relativePath)) {
+                continue;
+            }
+
+            using var input = changelog.Source.OpenRead(relativePath);
             using var buffer = RentedBuffer<byte>.Allocate(input);
             _resourceSizeOverrides[changelog] = Rstb.FromBinary(buffer.Span);
         }
