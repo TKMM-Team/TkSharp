@@ -41,7 +41,7 @@ public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomPro
         ITkModReaderProvider readerProvider,
         CancellationToken ct = default)
     {
-        var (roots, embeddedMod, isValid) = await LocateRoots(archive, readerProvider, fileName, ct)
+        var (roots, embeddedMod, isValid) = await LocateRoots(archive, readerProvider, fileName, context, ct)
             .ConfigureAwait(false);
         if (!isValid) {
             return null;
@@ -111,22 +111,44 @@ public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomPro
     }
 
     internal static async ValueTask<(IReadOnlyList<LocatedArchiveRoot> Roots, TkMod? EmbeddedMod, bool IsValid)> LocateRoots(
-        IArchive archive, ITkModReaderProvider readerProvider, string fileName, CancellationToken ct = default)
+        IArchive archive, ITkModReaderProvider readerProvider, string fileName, TkModContext context, CancellationToken ct = default)
     {
+        List<IArchiveEntry> tkclEntries = [];
         foreach (var entry in archive.Entries) {
             if (entry.Key is not null
-                && Path.GetExtension(entry.Key.AsSpan()) is ".tkcl"
-                && readerProvider.GetReader(entry.Key) is { } reader) {
-                await using var entryStream = entry.OpenEntryStream();
-                await using MemoryStream tkclBuffer = new();
-                await entryStream.CopyToAsync(tkclBuffer, ct);
-                tkclBuffer.Position = 0;
-                var embeddedMod = await reader.ReadMod(entry.Key, tkclBuffer, ct: ct)
-                    .ConfigureAwait(false);
-                if (embeddedMod is not null) {
-                    return ([], embeddedMod, true);
-                }
+                && !entry.IsDirectory
+                && Path.GetExtension(entry.Key.AsSpan()) is ".tkcl") {
+                tkclEntries.Add(entry);
             }
+        }
+
+        if (tkclEntries.Count > 0) {
+            var candidates = tkclEntries
+                .Select(static entry => entry.Key!)
+                .ToList();
+
+            var selectedKey = await context.ResolveEmbeddedTkcl(candidates, ct)
+                .ConfigureAwait(false);
+            if (selectedKey is null) {
+                return ([], null, false);
+            }
+
+            var selectedEntry = tkclEntries.FirstOrDefault(entry =>
+                string.Equals(entry.Key, selectedKey, StringComparison.OrdinalIgnoreCase));
+            if (selectedEntry is null || readerProvider.GetReader(selectedKey) is not { } reader) {
+                return ([], null, false);
+            }
+
+            await using var entryStream = selectedEntry.OpenEntryStream();
+            await using MemoryStream tkclBuffer = new();
+            await entryStream.CopyToAsync(tkclBuffer, ct).ConfigureAwait(false);
+            tkclBuffer.Position = 0;
+
+            var embeddedMod = await reader.ReadMod(selectedKey, tkclBuffer, context, ct)
+                .ConfigureAwait(false);
+            return embeddedMod is not null
+                ? ([], embeddedMod, true)
+                : ([], null, false);
         }
 
         Dictionary<string, string?> uniqueRoots = new(StringComparer.OrdinalIgnoreCase);
