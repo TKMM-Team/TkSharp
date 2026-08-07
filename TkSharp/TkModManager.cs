@@ -104,9 +104,10 @@ public sealed partial class TkModManager : ObservableObject, ITkSystemProvider
             .Reverse();
     }
 
-    public ITkModWriter GetSystemWriter(TkModContext modContext)
+    public ITkModWriter GetSystemWriter(TkModContext modContext, bool enableRomfsBucketing = true)
     {
-        return new RomfsBucketModWriter(new SystemModWriter(this, modContext.Id));
+        ITkModWriter writer = new SystemModWriter(this, modContext.Id);
+        return enableRomfsBucketing ? new RomfsBucketModWriter(writer) : writer;
     }
 
     public ITkSystemSource GetSystemSource(string relativeFolderPath)

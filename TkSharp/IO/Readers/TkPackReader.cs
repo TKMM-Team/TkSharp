@@ -38,7 +38,7 @@ public sealed class TkPackReader(ITkSystemProvider systemProvider) : ITkModReade
 
         var reader = ZipReader.OpenReader(stream);
         
-        var writer = _systemProvider.GetSystemWriter(context);
+        var writer = _systemProvider.GetSystemWriter(context, enableRomfsBucketing: false);
         while (reader.MoveToNextEntry()) {
             var entry = reader.Entry;
             await using Stream archiveStream = reader.OpenEntryStream();
