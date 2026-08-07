@@ -23,7 +23,7 @@ public sealed class TkMerger
 {
     private readonly ITkModWriter _output;
     private readonly ITkRom _rom;
-    private readonly string _locale;
+    private readonly string[] _locales;
     private readonly TkResourceSizeCollector _resourceSizeCollector;
     private readonly SarcMerger _sarcMerger;
     private readonly PackMerger _packMerger;
@@ -33,11 +33,11 @@ public sealed class TkMerger
     private readonly BntxMerger _bntxMerger;
     private readonly Dictionary<TkChangelog, Rstb> _resourceSizeOverrides = [];
 
-    public TkMerger(ITkModWriter output, ITkRom rom, string locale = "USen", string? ipsOutputFolderPath = null)
+    public TkMerger(ITkModWriter output, ITkRom rom, string[]? locales = null, string? ipsOutputFolderPath = null)
     {
         _output = output;
         _rom = rom;
-        _locale = locale;
+        _locales = locales ?? ["USen"];
         _resourceSizeCollector = new TkResourceSizeCollector(output, rom);
         _sarcMerger = new SarcMerger(this, _resourceSizeCollector);
         _ipsOutputFolderPath = ipsOutputFolderPath;
@@ -429,27 +429,36 @@ public sealed class TkMerger
 
     private void MergeMals(TkChangelog[] changelogs)
     {
-        var malsStreams = changelogs
-            .SelectMals(_locale)
-            .Select(entry => entry.Changelog.Source!.OpenRead($"romfs/{entry.MalsFile}"))
-            .ToList();
+        foreach (var locale in _locales) {
+            var malsStreams = changelogs
+                .SelectMals(locale)
+                .Select(entry => entry.Changelog.Source!.OpenRead($"romfs/{entry.MalsFile}"))
+                .ToList();
+    
+            using var combinedBuffers = RentedBuffers<byte>.Allocate(malsStreams.ToArray(), disposeStreams: true);
+    
+            if (combinedBuffers.Count == 0) {
+                continue;
+            }
+    
+            var canonical = $"Mals/{locale}.Product.sarc";
+            const TkFileAttributes attributes = TkFileAttributes.HasZsExtension | TkFileAttributes.IsProductFile;
+            TkChangelogEntry fakeEntry = new(canonical, ChangelogEntryType.Changelog, attributes, zsDictionaryId: 1);
+            var relativeFilePath = _rom.CanonicalToRelativePath(canonical, attributes);
+    
+            using var vanilla = _rom.GetVanilla(relativeFilePath);
+            if (vanilla.IsEmpty) {
+                TkLog.Instance.LogWarning(
+                    "The changelog for '{Canonical}' could not be merged because the vanilla file could not be found",
+                    canonical);
+                continue;
+            }
 
-        using var combinedBuffers = RentedBuffers<byte>.Allocate(malsStreams.ToArray(), disposeStreams: true);
-
-        if (combinedBuffers.Count == 0) {
-            return;
+            using MemoryStream ms = new();
+            _sarcMerger.Merge(fakeEntry, combinedBuffers, vanilla.Segment, ms);
+    
+            CopyMergedToOutput(ms, relativeFilePath, fakeEntry);
         }
-
-        var canonical = $"Mals/{_locale}.Product.sarc";
-        const TkFileAttributes attributes = TkFileAttributes.HasZsExtension | TkFileAttributes.IsProductFile;
-        TkChangelogEntry fakeEntry = new(canonical, ChangelogEntryType.Changelog, attributes, zsDictionaryId: 1);
-        var relativeFilePath = _rom.CanonicalToRelativePath(canonical, attributes);
-
-        using var vanilla = _rom.GetVanilla(relativeFilePath);
-        using MemoryStream ms = new();
-        _sarcMerger.Merge(fakeEntry, combinedBuffers, vanilla.Segment, ms);
-
-        CopyMergedToOutput(ms, relativeFilePath, fakeEntry);
     }
 
     private IEnumerable<MergeTarget> GetTargets(TkChangelog[] changelogs)
