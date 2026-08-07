@@ -14,7 +14,8 @@ public class TkChangelogBuilder(
     ITkModWriter writer,
     ITkRom tk,
     ITkSystemSource? systemSource,
-    TkChangelogBuilderFlags flags = default)
+    TkChangelogBuilderFlags flags = default,
+    ITkModSource? baseModSource = null)
 {
     private static ITkRom? _sessionRom;
     private static ITkRomProvider? _romProvider;
@@ -33,6 +34,7 @@ public class TkChangelogBuilder(
     private readonly ITkModSource _source = source;
     private readonly ITkModWriter _writer = writer;
     private readonly ITkRom _tk = InitSession(tk);
+    private readonly ITkModSource? _baseModSource = baseModSource;
     private readonly Dictionary<string, TkChangelogEntry> _entries = [];
 
     private readonly TkChangelog _changelog = new() {
@@ -161,9 +163,11 @@ public class TkChangelogBuilder(
         using var vanilla
             = _tk.GetVanilla(canonical, path.Attributes);
 
+        using var baseModVanilla = vanilla.IsEmpty ? TryGetBaseModVanilla(canonical) : default;
+
         // Let the changelog builder handle
         // pack files without a vanilla file  
-        if (vanilla.IsEmpty && !builder.CanProcessWithoutVanilla) {
+        if (vanilla.IsEmpty && baseModVanilla.IsEmpty && !builder.CanProcessWithoutVanilla) {
             AddChangelogMetadata(path, ref canonical, ChangelogEntryType.Copy, zsDictionaryId, path.FileVersion);
             outputFilePath = Path.Combine(path.Root.ToString(), canonical);
             using var output = _writer.OpenWrite(outputFilePath);
@@ -171,8 +175,10 @@ public class TkChangelogBuilder(
             return;
         }
 
+        var vanillaSegment = !vanilla.IsEmpty ? vanilla.Segment : baseModVanilla.Segment;
+
         var parentAttributes = path.Attributes;
-        var isVanilla = !builder.Build(canonical, path, flags, decompressed.IsEmpty ? raw.Segment : decompressed.Segment, vanilla.Segment,
+        var isVanilla = !builder.Build(canonical, path, flags, decompressed.IsEmpty ? raw.Segment : decompressed.Segment, vanillaSegment,
             (path, canon, archiveCanon, type) => {
                 if (Path.GetFileName(canon).IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) {
                     TkLog.Instance.LogWarning("The target '{FileName}' was ignored due to incorrect characters in the file name", canon);
@@ -191,6 +197,36 @@ public class TkChangelogBuilder(
             TkLog.Instance.LogTrace(
                 "The target '{FileName}' was skipped because no changes were found from the vanilla file", canonical);
         }
+    }
+
+    private RentedBuffer<byte> TryGetBaseModVanilla(string canonical)
+    {
+        if (_baseModSource is null) {
+            return default;
+        }
+
+        foreach (var (filePath, entry) in _baseModSource.Files) {
+            var path = TkPath.FromPath(filePath, _baseModSource.PathToRoot, out var isInvalid);
+            if (isInvalid
+                || !path.Root.Equals("romfs", StringComparison.OrdinalIgnoreCase)
+                || !path.Canonical.Equals(canonical, StringComparison.Ordinal)) {
+                continue;
+            }
+
+            using var content = _baseModSource.OpenRead(entry);
+            using var raw = RentedBuffer<byte>.Allocate(content);
+            if (!TkZstd.IsCompressed(raw.Span)) {
+                var copy = RentedBuffer<byte>.Allocate(raw.Span.Length);
+                raw.Span.CopyTo(copy.Span);
+                return copy;
+            }
+
+            var decompressed = RentedBuffer<byte>.Allocate(TkZstd.GetDecompressedSize(raw.Span));
+            _tk.Zstd.Decompress(raw.Span, decompressed.Span);
+            return decompressed;
+        }
+
+        return default;
     }
 
     public static ArraySegment<ArraySegment<byte>> CreateChangelogsExternal(string canonical, TkChangelogBuilderFlags flags,

@@ -73,7 +73,36 @@ public sealed class SarcMerger(TkMerger masterMerger, TkResourceSizeCollector re
             var last = effective[^1];
             
             if (!merged.TryGetValue(name, out var vanillaData)) {
-                merged[name] = last;
+                if (effective.Length == 1 || _masterMerger.GetMerger(name) is not { } customMerger) {
+                    merged[name] = last;
+                    continue;
+                }
+
+                fakeEntry.Canonical = $"{parentCanonical}/{name}";
+                using Stream customOutput = merged.OpenWrite(name);
+
+                var later = effective.AsSpan(1..);
+                var sizes = new int[later.Length];
+                for (var i = 0; i < later.Length; i++) {
+                    sizes[i] = later[i].Count;
+                }
+
+                using var targetsBuffer = RentedBuffers<byte>.Allocate(sizes);
+                for (var i = 0; i < later.Length; i++) {
+                    later[i].AsSpan().CopyTo(targetsBuffer[i].Span);
+                }
+
+                var deltas = TkChangelogBuilder.CreateChangelogsExternal(
+                    fakeEntry.Canonical, flags: default, effective[0], targetsBuffer,
+                    TkFileAttributes.None, _masterMerger.GameVersion);
+
+                if (deltas.Count == 0) {
+                    customOutput.Write(effective[0]);
+                }
+                else {
+                    customMerger.Merge(fakeEntry, deltas, effective[0], customOutput);
+                }
+
                 continue;
             }
 

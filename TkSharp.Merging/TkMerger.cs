@@ -9,7 +9,7 @@ using TkSharp.Core.Models;
 using TkSharp.Merging.Mergers;
 using TkSharp.Merging.PackFile;
 using TkSharp.Merging.ResourceSizeTable;
-using MergeTarget = (TkSharp.Core.Models.TkChangelogEntry Changelog, LanguageExt.Either<(TkSharp.Merging.ITkMerger Merger, System.IO.Stream[] Streams), System.IO.Stream> Target);
+using MergeTarget = (TkSharp.Core.Models.TkChangelogEntry Changelog, LanguageExt.Either<(TkSharp.Merging.ITkMerger Merger, System.IO.Stream[] Streams, TkSharp.Core.Models.ChangelogEntryType[] Types), System.IO.Stream> Target);
 
 namespace TkSharp.Merging;
 
@@ -46,6 +46,8 @@ public sealed class TkMerger
         _bfresMcMerger = new BfresMcMerger(rom);
         _bntxMerger = new BntxMerger(rom);
     }
+
+    internal int GameVersion => _rom.GameVersion;
 
     public async ValueTask MergeAsync(IEnumerable<TkChangelog> changelogs, CancellationToken ct = default)
     {
@@ -89,7 +91,7 @@ public sealed class TkMerger
 
         MergeMals(tkChangelogs);
 
-        foreach ((var changelog, Either<(ITkMerger, Stream[]), Stream> target) in GetTargets(tkChangelogs)) {
+        foreach ((var changelog, Either<(ITkMerger, Stream[], ChangelogEntryType[]), Stream> target) in GetTargets(tkChangelogs)) {
             MergeTarget(changelog, target);
         }
 
@@ -97,13 +99,13 @@ public sealed class TkMerger
         _resourceSizeCollector.Write();
     }
 
-    private void MergeTarget(TkChangelogEntry changelog, Either<(ITkMerger, Stream[]), Stream> target)
+    private void MergeTarget(TkChangelogEntry changelog, Either<(ITkMerger, Stream[], ChangelogEntryType[]), Stream> target)
     {
         var relativeFilePath = changelog.RuntimeArchiveCanonicals.Count > 0
             ? _rom.CanonicalToRelativePath(changelog.Canonical, TkFileAttributes.None)
             : _rom.CanonicalToRelativePath(changelog.Canonical, changelog.Attributes);
 
-        if (target.Case is (ITkMerger _, Stream[] { Length: 0 }) or null) {
+        if (target.Case is (ITkMerger _, Stream[] { Length: 0 }, _) or null) {
             if (_rom.GetVanilla(relativeFilePath, out var isFoundMissing) is { IsEmpty: false } vanilla) {
                 CopyVanillaPlaceholderToOutput(vanilla, changelog);
                 vanilla.Dispose();
@@ -121,7 +123,7 @@ public sealed class TkMerger
         var result = MergeResult.Default;
 
         switch (target.Case) {
-            case (ITkMerger merger, Stream[] { Length: > 1 } streams): {
+            case (ITkMerger merger, Stream[] { Length: > 1 } streams, ChangelogEntryType[] types): {
                 // TODO: It would be more efficient to avoid
                 // GetVanilla on nested files. Checking loaded
                 // pack files first would be optimal. 
@@ -136,7 +138,7 @@ public sealed class TkMerger
                 
                 if (vanilla.IsEmpty && merger is not BfresMcMerger) {
                     changelog.RuntimeResourceSizeOverride = 0;
-                    MergeCustomTarget(merger, streams[0], streams.AsSpan(1..), changelog, output, _rom.GameVersion);
+                    MergeCustomTarget(merger, streams, types, changelog, output, _rom.GameVersion);
                     break;
                 }
 
@@ -149,7 +151,7 @@ public sealed class TkMerger
                 break;
 
             }
-            case (ITkMerger merger, Stream[] { Length: 1 } streams): {
+            case (ITkMerger merger, Stream[] { Length: 1 } streams, ChangelogEntryType[] types): {
                 using var vanilla = _rom.GetVanilla(relativeFilePath, out var isFoundMissing);
                 var single = streams[0];
                 
@@ -161,6 +163,14 @@ public sealed class TkMerger
                 }
                 
                 if (vanilla.IsEmpty && merger is not BfresMcMerger) {
+                    if (types[0] is ChangelogEntryType.Changelog) {
+                        TkLog.Instance.LogWarning(
+                            "The changelog for '{Canonical}' could not be merged because no base/custom ancestor file was available",
+                            changelog.Canonical);
+                        single.Dispose();
+                        return;
+                    }
+
                     CopyToOutput(single, relativeFilePath, changelog);
                     return;
                 }
@@ -266,10 +276,47 @@ public sealed class TkMerger
         }
     }
 
-    private void MergeCustomTarget(ITkMerger merger, Stream @base, ReadOnlySpan<Stream> targets, TkChangelogEntry changelog, Stream output, int gameVersion)
+    private void MergeCustomTarget(ITkMerger merger, Stream[] streams, ChangelogEntryType[] types,
+        TkChangelogEntry changelog, Stream output, int gameVersion)
     {
-        using var fakeVanilla = _rom.Zstd.Decompress(@base);
-        MergeCustomTarget(merger, fakeVanilla.Segment, targets, changelog, output, gameVersion);
+        using var fakeVanilla = _rom.Zstd.Decompress(streams[0]);
+        streams[0].Dispose();
+
+        if (types.Skip(1).All(static t => t is not ChangelogEntryType.Changelog)) {
+            MergeCustomTarget(merger, fakeVanilla.Segment, streams.AsSpan(1..), changelog, output, gameVersion);
+            return;
+        }
+
+        List<ArraySegment<byte>> deltas = [];
+        List<Stream> copyStreams = [];
+        for (var i = 1; i < streams.Length; i++) {
+            if (types[i] is ChangelogEntryType.Changelog) {
+                using var buffer = RentedBuffer<byte>.Allocate(streams[i]);
+                streams[i].Dispose();
+                deltas.Add(buffer.Span.ToArray());
+            }
+            else {
+                copyStreams.Add(streams[i]);
+            }
+        }
+
+        if (copyStreams.Count > 0) {
+            using var targetsBuffer = RentedBuffers<byte>.Allocate(
+                System.Runtime.InteropServices.CollectionsMarshal.AsSpan(copyStreams), disposeStreams: true);
+            var synthesized = TkChangelogBuilder.CreateChangelogsExternal(
+                changelog.Canonical, flags: default, fakeVanilla.Segment, targetsBuffer,
+                changelog.Attributes, gameVersion);
+            for (var i = 0; i < synthesized.Count; i++) {
+                deltas.Add(synthesized[i]);
+            }
+        }
+
+        if (deltas.Count == 0) {
+            output.Write(fakeVanilla.Segment);
+            return;
+        }
+
+        merger.Merge(changelog, deltas, fakeVanilla.Segment, output);
     }
 
     private static void MergeCustomTarget(ITkMerger merger, ArraySegment<byte> @base, ReadOnlySpan<Stream> targets, TkChangelogEntry changelog, Stream output, int gameVersion)
@@ -437,13 +484,17 @@ public sealed class TkMerger
         group.Key.RuntimeResourceSizeOverride = GetResourceSizeOverride(last.Entry, last.Changelog);
 
         if (GetMerger(group.Key.Canonical, group.Key.Attributes) is { } merger) {
+            var entries = group
+                .Where(changelog => changelog.Entry.Type != ChangelogEntryType.Placeholder)
+                .ToArray();
+
             return (
                 Changelog: group.Key,
                 Target: (Merger: merger,
-                    Streams: group
-                        .Where(changelog => changelog.Entry.Type != ChangelogEntryType.Placeholder)
+                    Streams: entries
                         .Select(changelog => changelog.Changelog.Source!.OpenRead(GetRelativeRomFsPath(changelog.Entry)))
-                        .ToArray()
+                        .ToArray(),
+                    Types: entries.Select(changelog => changelog.Entry.Type).ToArray()
                 )
             );
         }
@@ -454,7 +505,7 @@ public sealed class TkMerger
         if (last.Entry is null || last.Changelog is null) {
             return (
                 Changelog: group.Key,
-                Target: Either<(ITkMerger Merger, Stream[] Streams), Stream>.Bottom
+                Target: Either<(ITkMerger Merger, Stream[] Streams, ChangelogEntryType[] Types), Stream>.Bottom
             );
         }
 

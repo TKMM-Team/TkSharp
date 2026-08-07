@@ -88,7 +88,7 @@ public partial class TkProject(string folderPath) : ObservableObject
             }
 
             FolderModSource optionSource = new(optionPath);
-            TkChangelogBuilder optionBuilder = new(optionSource, writer, rom, systemSource: null);
+            TkChangelogBuilder optionBuilder = new(optionSource, writer, rom, systemSource: null, baseModSource: source);
             changelogs.Add(await optionBuilder.BuildAsync(ct));
         }
 
@@ -131,7 +131,7 @@ public partial class TkProject(string folderPath) : ObservableObject
             var id = option.Id.ToString();
             writer.SetRelativeFolder(id);
             option.Changelog = await Build(
-                option, optionSource, writer, rom, systemSource?.GetRelative(id), flags, ct);
+                option, optionSource, writer, rom, systemSource?.GetRelative(id), flags, ct, baseModSource: source);
         }
 
         ValidateResourceSizeOverrideTargets(resourceSizeOverrides);
@@ -195,11 +195,12 @@ public partial class TkProject(string folderPath) : ObservableObject
     }
 
     private static async ValueTask<TkChangelog> Build(TkStoredItem item, ITkModSource source, ITkModWriter writer,
-        ITkRom rom, ITkSystemSource? systemSource = null, TkChangelogBuilderFlags flags = default, CancellationToken ct = default)
+        ITkRom rom, ITkSystemSource? systemSource = null, TkChangelogBuilderFlags flags = default,
+        CancellationToken ct = default, ITkModSource? baseModSource = null)
     {
         TkLog.Instance.LogInformation("Building: '{ItemName}'", item.Name);
 
-        TkChangelogBuilder builder = new(source, writer, rom, systemSource, flags);
+        TkChangelogBuilder builder = new(source, writer, rom, systemSource, flags, baseModSource);
         var result = await builder.BuildAsync(ct)
             .ConfigureAwait(false);
 
@@ -376,7 +377,7 @@ public partial class TkProject(string folderPath) : ObservableObject
             writer.SetRelativeFolder(id);
 
             TkChangelogBuilder optionBuilder = new(optionSource, writer, nullRom,
-                systemSource?.GetRelative(id), flags);
+                systemSource?.GetRelative(id), flags, baseModSource: source);
             option.Changelog = await optionBuilder.BuildAsync(ct);
         }
 
