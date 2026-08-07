@@ -81,7 +81,7 @@ public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBu
             MoveContent:
                 hasNestedChanges = true;
                 changelog[name] = [];
-                using var inlineOut = openWrite(nested, name, archiveCanonical: canonical);
+                using var inlineOut = openWrite(nested, name, archiveCanonical: canonical, ChangelogEntryType.Copy);
                 inlineOut.Write(data);
             }
             finally {
@@ -142,7 +142,7 @@ public class PackChangelogBuilder(ITkRom tk, bool disposeTkRom) : ITkChangelogBu
             continue;
             
         WriteRaw:
-            using var inlineOut = openWrite(nested, name, archiveCanonical: canonical);
+            using var inlineOut = openWrite(nested, name, archiveCanonical: canonical, ChangelogEntryType.Copy);
             inlineOut.Write(data);
         }
     }

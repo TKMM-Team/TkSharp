@@ -151,7 +151,7 @@ public sealed class TkMerger
                 break;
 
             }
-            case (ITkMerger merger, Stream[] { Length: 1 } streams, ChangelogEntryType[] types): {
+            case (ITkMerger merger, Stream[] { Length: 1 } streams, ChangelogEntryType[]): {
                 using var vanilla = _rom.GetVanilla(relativeFilePath, out var isFoundMissing);
                 var single = streams[0];
                 
@@ -163,14 +163,6 @@ public sealed class TkMerger
                 }
                 
                 if (vanilla.IsEmpty && merger is not BfresMcMerger) {
-                    if (types[0] is ChangelogEntryType.Changelog) {
-                        TkLog.Instance.LogWarning(
-                            "The changelog for '{Canonical}' could not be merged because no base/custom ancestor file was available",
-                            changelog.Canonical);
-                        single.Dispose();
-                        return;
-                    }
-
                     CopyToOutput(single, relativeFilePath, changelog);
                     return;
                 }
@@ -282,7 +274,8 @@ public sealed class TkMerger
         using var fakeVanilla = _rom.Zstd.Decompress(streams[0]);
         streams[0].Dispose();
 
-        if (types.Skip(1).All(static t => t is not ChangelogEntryType.Changelog)) {
+        if (types[0] is not ChangelogEntryType.Copy
+            || types.Skip(1).All(static t => t is not ChangelogEntryType.Changelog)) {
             MergeCustomTarget(merger, fakeVanilla.Segment, streams.AsSpan(1..), changelog, output, gameVersion);
             return;
         }
@@ -306,9 +299,7 @@ public sealed class TkMerger
             var synthesized = TkChangelogBuilder.CreateChangelogsExternal(
                 changelog.Canonical, flags: default, fakeVanilla.Segment, targetsBuffer,
                 changelog.Attributes, gameVersion);
-            for (var i = 0; i < synthesized.Count; i++) {
-                deltas.Add(synthesized[i]);
-            }
+            deltas.AddRange(synthesized);
         }
 
         if (deltas.Count == 0) {
