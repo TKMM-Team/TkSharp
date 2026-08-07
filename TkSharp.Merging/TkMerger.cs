@@ -568,7 +568,7 @@ public sealed class TkMerger
                 "RSDB/XLinkPropertyTableList.Product.rstbl.byml" => RsdbRowMergers.RowId,
             _ => Path.GetExtension(canonical) switch {
                 ".pack" => _packMerger,
-                ".bfarc" or ".bkres" or ".blarc" or ".genvb" or ".ta" => _sarcMerger,
+                ".bfarc" or ".bkres" or ".blarc" or ".genvb" or ".sarc" or ".ta" => _sarcMerger,
                 ".bntx" => canonical.EndsWith("__Combined.bntx") ? _bntxMerger : null,
                 ".byml" or ".bgyml" => BymlMerger.Instance,
                 ".msbt" => MsbtMerger.Instance,
