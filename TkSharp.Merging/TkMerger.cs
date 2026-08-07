@@ -284,9 +284,10 @@ public sealed class TkMerger
         List<Stream> copyStreams = [];
         for (var i = 1; i < streams.Length; i++) {
             if (types[i] is ChangelogEntryType.Changelog) {
-                using var buffer = RentedBuffer<byte>.Allocate(streams[i]);
+                var buffer = new byte[streams[i].Length];
+                streams[i].ReadExactly(buffer);
                 streams[i].Dispose();
-                deltas.Add(buffer.Span.ToArray());
+                deltas.Add(buffer);
             }
             else {
                 copyStreams.Add(streams[i]);
