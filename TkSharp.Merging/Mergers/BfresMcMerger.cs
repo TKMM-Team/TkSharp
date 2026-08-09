@@ -67,9 +67,18 @@ public sealed class BfresMcMerger(ITkRom rom) : ITkMerger
         lock (ProcessLock) {
             EnsureStringCacheLoaded();
 
-            if (!TryOpenResFile(mcData, out var resFile)
-                || !TryGetShaderProductVersion(out var userVersion)
-                || !ApplyMaterialDiff(resFile, userVersion)) {
+            if (!TryOpenResFile(mcData, out var resFile)) {
+                return mcData.ToArray();
+            }
+
+            var changed = RemoveUnusedMaterials(resFile);
+
+            if (TryGetShaderProductVersion(out var userVersion)
+                && ApplyMaterialDiff(resFile, userVersion)) {
+                changed = true;
+            }
+
+            if (!changed) {
                 return mcData.ToArray();
             }
 
@@ -90,6 +99,48 @@ public sealed class BfresMcMerger(ITkRom rom) : ITkMerger
             resFile = null!;
             return false;
         }
+    }
+
+    private static bool RemoveUnusedMaterials(ResFile resFile)
+    {
+        var changed = false;
+
+        foreach (var model in resFile.Models.Values) {
+            if (model?.Materials is not { Count: > 0 }) {
+                continue;
+            }
+
+            HashSet<int> usedIndices = [];
+            foreach (var shape in model.Shapes.Values) {
+                if (shape is not null) {
+                    usedIndices.Add(shape.MaterialIndex);
+                }
+            }
+
+            for (var i = model.Materials.Count - 1; i >= 0; i--) {
+                if (usedIndices.Contains(i)) {
+                    continue;
+                }
+
+                var materialName = model.Materials.GetKey(i);
+                TkLog.Instance.LogInformation(
+                    "The material '{MaterialName}' in model '{ModelName}' was not assigned to an object and will be removed.",
+                    materialName,
+                    model.Name);
+
+                model.Materials.RemoveAt(i);
+
+                foreach (var shape in model.Shapes.Values) {
+                    if (shape is not null && shape.MaterialIndex > i) {
+                        shape.MaterialIndex--;
+                    }
+                }
+
+                changed = true;
+            }
+        }
+
+        return changed;
     }
 
     private static bool ApplyMaterialDiff(ResFile resFile, int userVersion)
@@ -133,15 +184,20 @@ public sealed class BfresMcMerger(ITkRom rom) : ITkMerger
             return false;
         }
 
+        var sourceVersion = row.First(kv => kv.Value == current).Key;
         var next = ValueForVersion(row, userVersion);
         if (next == current) {
             return false;
         }
 
         TkLog.Instance.LogInformation(
-            "The material '{MaterialName}' in model '{ModelName}' requires an update, the BFRES file will be reserialized.",
+            "The material '{MaterialName}' in model '{ModelName}' corresponds to shaders version "
+            + "'{SourceVersion}' and will be {Action} for version '{TargetVersion}'.",
             mat.Name,
-            model.Name);
+            model.Name,
+            sourceVersion,
+            userVersion > sourceVersion ? "updated" : "downgraded",
+            userVersion);
 
         option.String = next.ToString(CultureInfo.InvariantCulture);
         return true;
