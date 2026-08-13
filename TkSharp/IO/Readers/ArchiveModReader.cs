@@ -110,7 +110,7 @@ public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomPro
         return mod;
     }
 
-    internal static async ValueTask<(IReadOnlyList<LocatedArchiveRoot> Roots, TkMod? EmbeddedMod, bool IsValid)> LocateRoots(
+    private static async ValueTask<(IReadOnlyList<LocatedArchiveRoot> Roots, TkMod? EmbeddedMod, bool IsValid)> LocateRoots(
         IArchive archive, ITkModReaderProvider readerProvider, string fileName, TkModContext context, CancellationToken ct = default)
     {
         List<IArchiveEntry> tkclEntries = [];
@@ -139,16 +139,20 @@ public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomPro
                 return ([], null, false);
             }
 
-            await using var entryStream = selectedEntry.OpenEntryStream();
+            await using var entryStream = await selectedEntry.OpenEntryStreamAsync(ct);
             await using MemoryStream tkclBuffer = new();
             await entryStream.CopyToAsync(tkclBuffer, ct).ConfigureAwait(false);
             tkclBuffer.Position = 0;
 
             var embeddedMod = await reader.ReadMod(selectedKey, tkclBuffer, context, ct)
                 .ConfigureAwait(false);
-            return embeddedMod is not null
-                ? ([], embeddedMod, true)
-                : ([], null, false);
+            
+            if (embeddedMod is null) {
+                return ([], null, false);
+            }
+
+            context.IsEmbeddedTkcl = true;
+            return ([], embeddedMod, true);
         }
 
         Dictionary<string, string?> uniqueRoots = new(StringComparer.OrdinalIgnoreCase);
@@ -173,7 +177,7 @@ public sealed class ArchiveModReader(ITkSystemProvider systemProvider, ITkRomPro
         return (roots, null, true);
     }
 
-    internal readonly record struct LocatedArchiveRoot(string? PathPrefix, string GroupName, string OptionName);
+    private readonly record struct LocatedArchiveRoot(string? PathPrefix, string GroupName, string OptionName);
 
     private static IEnumerable<(string GroupName, IReadOnlyList<LocatedArchiveRoot> Roots)> GroupRoots(
         IReadOnlyList<LocatedArchiveRoot> roots)

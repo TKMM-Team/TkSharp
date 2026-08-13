@@ -10,6 +10,8 @@ public class TkModContext(Ulid id = default, object? input = null, Stream? strea
 
     public Func<IReadOnlyList<string>, CancellationToken, ValueTask<string?>>? SelectEmbeddedTkcl { get; set; }
 
+    public bool IsEmbeddedTkcl { get; set; }
+
     /// <summary>
     /// Attempt to set the context <see cref="Id"/> to a new <see cref="Ulid"/> if not already set.
     /// </summary>

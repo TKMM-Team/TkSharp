@@ -76,10 +76,17 @@ public sealed class GameBananaModReader(ITkModReaderProvider readerProvider) : I
             return null;
         }
 
+        var gbPageLink = $"*[Game Banana Mod Page ->](https://gamebanana.com/mods/{gbMod.Id})*";
+
+        if (targetFile.IsTkcl || context.IsEmbeddedTkcl) {
+            mod.Description = $"{gbPageLink}\n\n{mod.Description}";
+            return mod;
+        }
+
         mod.Name = gbMod.Name;
         mod.Author = gbMod.Submitter.Name;
         mod.Description = $"""
-            *[Game Banana Mod Page ->](https://gamebanana.com/mods/{gbMod.Id})*
+            {gbPageLink}
 
             {
                 new Converter(new Config {
