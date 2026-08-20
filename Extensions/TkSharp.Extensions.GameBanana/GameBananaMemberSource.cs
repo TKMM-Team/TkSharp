@@ -19,6 +19,6 @@ public sealed partial class GameBananaMemberSource(int memberId, int gameId) : O
     {
         Feed = new GameBananaFeed();
         await GameBanana.FillMemberFeed(Feed, memberId, gameId, page, ct);
-        await GameBananaFeedFilter.FilterFullMods(Feed, ct);
+        GameBananaFeedFilter.FilterSubmissions(Feed);
     }
 }

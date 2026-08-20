@@ -11,10 +11,10 @@ public static class GameBanana
     private const int MAX_RETRIES = 5;
     
     private const string ROOT = "https://gamebanana.com/apiv12";
-    private const string MOD_ENDPOINT = "/Mod/{0}/ProfilePage";
-    private const string FEED_ENDPOINT = "/Mod/Index?_aFilters[Generic_Game]={0}&_nPage={1}&_sSort={2}&_nPerpage=30";
-    private const string FEED_ENDPOINT_SEARCH = "/Mod/Index?_nPerpage=30&_aFilters[Generic_Game]={0}&_nPage={1}&_sSort={2}&_aFilters[Generic_Name]=contains,{3}";
-    private const string MEMBER_FEED_ENDPOINT = "/Mod/Index?_aFilters[Generic_Game]={0}&_aFilters[Generic_Submitter]={1}&_nPage={2}&_nPerpage=50";
+    private const string PROFILE_ENDPOINT = "/{0}/{1}/ProfilePage";
+    private const string FEED_ENDPOINT = "/{0}/Index?_aFilters[Generic_Game]={1}&_aFilters[Generic_ContentRatings]=-&_nPage={2}&_sSort={3}&_nPerpage=30";
+    private const string FEED_ENDPOINT_SEARCH = "/{0}/Index?_aFilters[Generic_Game]={1}&_aFilters[Generic_ContentRatings]=-&_nPage={2}&_sSort={3}&_aFilters[Generic_Name]=contains,{4}&_nPerpage=30";
+    private const string MEMBER_FEED_ENDPOINT = "/{0}/Index?_aFilters[Generic_Game]={1}&_aFilters[Generic_ContentRatings]=-&_aFilters[Generic_Submitter]={2}&_nPage={3}&_nPerpage=50";
     
     public static async ValueTask<Stream> Get(string url, CancellationToken ct = default)
     {
@@ -54,58 +54,97 @@ public static class GameBanana
         }
     }
 
-    public static async ValueTask<GameBananaMod?> GetMod(long id, CancellationToken ct = default)
+    public static async ValueTask<GameBananaSubmission?> GetSubmission(
+        long id, GameBananaSubmissionType type = GameBananaSubmissionType.Mod, CancellationToken ct = default)
     {
-        return await Get<GameBananaMod>(
-            string.Format(MOD_ENDPOINT, id),
-            GameBananaModJsonContext.Default.GameBananaMod, ct
+        var submission = await Get(
+            string.Format(PROFILE_ENDPOINT, type.ToApiName(), id),
+            GameBananaSubmissionJsonContext.Default.GameBananaSubmission, ct
         );
+
+        if (submission is not null) {
+            submission.Type = type;
+        }
+
+        return submission;
     }
 
-    public static async ValueTask<GameBananaFeed?> FillFeed(GameBananaFeed feed, int gameId, int page, string sort, string? searchTerm, CancellationToken ct = default)
+    public static async ValueTask<GameBananaFeed?> FillFeed(
+        GameBananaFeed feed, int gameId, int page, string sort, string? searchTerm,
+        GameBananaSubmissionType type = GameBananaSubmissionType.Mod, CancellationToken ct = default)
     {
-        var response = await Get<GameBananaFeed>(
-            GetEndpoint(gameId, page + 1, sort, searchTerm),
+        var response = await Get(
+            GetFeedEndpoint(type, gameId, page + 1, sort, searchTerm),
             GameBananaFeedJsonContext.Default.GameBananaFeed, ct
         );
 
-        if (response is null) {
-            return feed;
-        }
-
-        feed.Metadata = response.Metadata;
-        foreach (var record in response.Records) {
-            feed.Records.Add(record);
-        }
-
-        return feed;
+        return AppendResponse(feed, response, type);
     }
 
     public static async ValueTask<GameBananaFeed?> FillMemberFeed(
         GameBananaFeed feed, int memberId, int gameId, int page, CancellationToken ct = default)
     {
-        var response = await Get<GameBananaFeed>(
-            string.Format(MEMBER_FEED_ENDPOINT, gameId, memberId, page + 1),
-            GameBananaFeedJsonContext.Default.GameBananaFeed, ct
-        );
+        var pageNumber = page + 1;
 
+        var modTask = Get(
+            string.Format(MEMBER_FEED_ENDPOINT, GameBananaSubmissionType.Mod.ToApiName(), gameId, memberId, pageNumber),
+            GameBananaFeedJsonContext.Default.GameBananaFeed, ct
+        ).AsTask();
+
+        var wipTask = Get(
+            string.Format(MEMBER_FEED_ENDPOINT, GameBananaSubmissionType.Wip.ToApiName(), gameId, memberId, pageNumber),
+            GameBananaFeedJsonContext.Default.GameBananaFeed, ct
+        ).AsTask();
+
+        await Task.WhenAll(modTask, wipTask);
+
+        AppendResponse(feed, modTask.Result, GameBananaSubmissionType.Mod);
+        AppendResponse(feed, wipTask.Result, GameBananaSubmissionType.Wip);
+        feed.Metadata = MergeMetadata(modTask.Result?.Metadata, wipTask.Result?.Metadata);
+
+        return feed;
+    }
+
+    private static GameBananaFeed AppendResponse(
+        GameBananaFeed feed, GameBananaFeed? response, GameBananaSubmissionType type)
+    {
         if (response is null) {
             return feed;
         }
 
         feed.Metadata = response.Metadata;
         foreach (var record in response.Records) {
+            record.Type = type;
             feed.Records.Add(record);
         }
 
         return feed;
     }
 
-    private static string GetEndpoint(int gameId, int page, string sort, string? searchTerm)
+    private static GameBananaMetadata MergeMetadata(GameBananaMetadata? left, GameBananaMetadata? right)
     {
+        if (left is null) {
+            return right ?? new GameBananaMetadata();
+        }
+
+        if (right is null) {
+            return left;
+        }
+
+        return new GameBananaMetadata {
+            PerPage = Math.Max(left.PerPage, right.PerPage),
+            RecordCount = Math.Max(left.RecordCount, right.RecordCount),
+            IsCompleted = left.IsCompleted && right.IsCompleted
+        };
+    }
+
+    private static string GetFeedEndpoint(
+        GameBananaSubmissionType type, int gameId, int page, string sort, string? searchTerm)
+    {
+        var apiName = type.ToApiName();
         return searchTerm switch {
-            { Length: > 2 } => string.Format(FEED_ENDPOINT_SEARCH, gameId, page, sort, searchTerm),
-            _ => string.Format(FEED_ENDPOINT, gameId, page, sort)
+            { Length: > 2 } => string.Format(FEED_ENDPOINT_SEARCH, apiName, gameId, page, sort, searchTerm),
+            _ => string.Format(FEED_ENDPOINT, apiName, gameId, page, sort)
         };
     }
 }

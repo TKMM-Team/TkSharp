@@ -2,29 +2,13 @@ namespace TkSharp.Extensions.GameBanana;
 
 internal static class GameBananaFeedFilter
 {
-    public static async ValueTask FilterFullMods(GameBananaFeed feed, CancellationToken ct)
+    public static void FilterSubmissions(GameBananaFeed feed)
     {
-        for (var i = 0; i < feed.Records.Count; i++) {
+        for (var i = feed.Records.Count - 1; i >= 0; i--) {
             var record = feed.Records[i];
-            await record.DownloadFullMod(ct);
-
-            if (ct.IsCancellationRequested) {
-                break;
+            if (record.IsObsolete || record.IsContentRated) {
+                feed.Records.RemoveAt(i);
             }
-
-            var isRecordClean = record is {
-                Full: {
-                    IsTrashed: false, IsFlagged: false, IsPrivate: false
-                },
-                IsObsolete: false, IsContentRated: false
-            };
-
-            if (isRecordClean) {
-                continue;
-            }
-
-            feed.Records.RemoveAt(i);
-            i--;
         }
     }
 }

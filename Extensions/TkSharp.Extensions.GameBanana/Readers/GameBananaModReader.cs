@@ -15,7 +15,7 @@ public sealed class GameBananaModReader(ITkModReaderProvider readerProvider) : I
         switch (context.Input) {
             case GameBananaFile file:
                 return await ReadFrom(context, file.DownloadUrl, file.Id, file, ct);
-            case ValueTuple<GameBananaMod, GameBananaFile> pair:
+            case ValueTuple<GameBananaSubmission, GameBananaFile> pair:
                 return await ReadFrom(context, pair.Item1, pair.Item2, ct);
         }
 
@@ -27,8 +27,12 @@ public sealed class GameBananaModReader(ITkModReaderProvider readerProvider) : I
             return null;
         }
 
-        if (arg.Contains("/mods/")) {
-            return await ReadFrom(context, id, ct: ct);
+        if (arg.Contains("/mods/", StringComparison.OrdinalIgnoreCase)) {
+            return await ReadFrom(context, id, GameBananaSubmissionType.Mod, ct: ct);
+        }
+
+        if (arg.Contains("/wips/", StringComparison.OrdinalIgnoreCase)) {
+            return await ReadFrom(context, id, GameBananaSubmissionType.Wip, ct: ct);
         }
 
         return await ReadFrom(context, arg, id, ct: ct);
@@ -36,41 +40,47 @@ public sealed class GameBananaModReader(ITkModReaderProvider readerProvider) : I
 
     public bool IsKnownInput(object? input)
     {
-        return input is GameBananaFile or ValueTuple<GameBananaMod, GameBananaFile>
+        return input is GameBananaFile or ValueTuple<GameBananaSubmission, GameBananaFile>
                || (input is string arg && (
-                   arg.Contains("gamebanana.com/mods/") || arg.Contains("gamebanana.com/dl/")
+                   arg.Contains("gamebanana.com/mods/", StringComparison.OrdinalIgnoreCase)
+                   || arg.Contains("gamebanana.com/wips/", StringComparison.OrdinalIgnoreCase)
+                   || arg.Contains("gamebanana.com/dl/", StringComparison.OrdinalIgnoreCase)
                ) && GbUrlHelper.TryGetId(arg, out _));
     }
-    
-    public async ValueTask<TkMod?> ReadFrom(TkModContext context, long modId, long fileId, CancellationToken ct = default)
+
+    public async ValueTask<TkMod?> ReadFrom(TkModContext context, long submissionId, long fileId,
+        GameBananaSubmissionType type = GameBananaSubmissionType.Mod, CancellationToken ct = default)
     {
-        if (await GameBanana.Get<GameBananaFile>(
-                $"File/{fileId}", GameBananaModJsonContext.Default.GameBananaFile, ct) is not { } file) {
+        if (await GameBanana.Get(
+                $"File/{fileId}", GameBananaSubmissionJsonContext.Default.GameBananaFile, ct) is not { } file) {
             return null;
         }
-        
-        var gbMod = await GameBanana.GetMod(modId, ct);
-        return await ReadFrom(context, gbMod, file, ct);
+
+        var submission = await GameBanana.GetSubmission(submissionId, type, ct);
+        return await ReadFrom(context, submission, file, ct);
     }
-    
-    public async ValueTask<TkMod?> ReadFrom(TkModContext context, long modId, GameBananaFile? target = null, CancellationToken ct = default)
+
+    public async ValueTask<TkMod?> ReadFrom(TkModContext context, long submissionId,
+        GameBananaSubmissionType type = GameBananaSubmissionType.Mod, GameBananaFile? target = null,
+        CancellationToken ct = default)
     {
-        var gbMod = await GameBanana.GetMod(modId, ct);
-        return await ReadFrom(context, gbMod, target, ct);
+        var submission = await GameBanana.GetSubmission(submissionId, type, ct);
+        return await ReadFrom(context, submission, target, ct);
     }
-    
-    public async ValueTask<TkMod?> ReadFrom(TkModContext context, GameBananaMod? gbMod, GameBananaFile? targetFile = null, CancellationToken ct = default)
+
+    public async ValueTask<TkMod?> ReadFrom(TkModContext context, GameBananaSubmission? submission,
+        GameBananaFile? targetFile = null, CancellationToken ct = default)
     {
-        targetFile ??= gbMod?.Files
+        targetFile ??= submission?.Files
             .FirstOrDefault(static file => file.IsRecommended);
-        targetFile ??= gbMod?.Files
+        targetFile ??= submission?.Files
             .FirstOrDefault(file => _readerProvider.CanRead(file.Name));
-        targetFile ??= gbMod?.ArchivedFiles
+        targetFile ??= submission?.ArchivedFiles
             .FirstOrDefault(static file => file.IsRecommended);
-        targetFile ??= gbMod?.ArchivedFiles
+        targetFile ??= submission?.ArchivedFiles
             .FirstOrDefault(file => _readerProvider.CanRead(file.Name));
-        
-        if (targetFile is null || gbMod is null) {
+
+        if (targetFile is null || submission is null) {
             return null;
         }
 
@@ -80,15 +90,15 @@ public sealed class GameBananaModReader(ITkModReaderProvider readerProvider) : I
             return null;
         }
 
-        var gbPageLink = $"*[Game Banana Mod Page ->](https://gamebanana.com/mods/{gbMod.Id})*";
+        var gbPageLink = $"*[Game Banana Page ->]({submission.ProfileUrl})*";
 
         if (context.IsEmbeddedTkcl) {
             mod.Description = $"{gbPageLink}\n\n{mod.Description}";
             return mod;
         }
 
-        mod.Name = gbMod.Name;
-        mod.Author = gbMod.Submitter.Name;
+        mod.Name = submission.Name;
+        mod.Author = submission.Submitter.Name;
         mod.Description = $"""
             {gbPageLink}
 
@@ -96,26 +106,27 @@ public sealed class GameBananaModReader(ITkModReaderProvider readerProvider) : I
                 new Converter(new Config {
                     GithubFlavored = true,
                     ListBulletChar = '*',
-                    UnknownTags = Config.UnknownTagsOption.Bypass}).Convert(gbMod.Text)
+                    UnknownTags = Config.UnknownTagsOption.Bypass}).Convert(submission.Text)
             }
             """;
         mod.Thumbnail = new TkThumbnail {
-            ThumbnailPath = gbMod.Media.Images.First() switch {
+            ThumbnailPath = submission.Media.Images.First() switch {
                 var image => $"{image.BaseUrl}/{image.File}"
             }
         };
-        mod.Version = string.IsNullOrWhiteSpace(gbMod.Version) ? "1.0.0" : gbMod.Version;
+        mod.Version = string.IsNullOrWhiteSpace(submission.Version) ? "1.0.0" : submission.Version;
 
-        foreach (var author in gbMod.Credits.SelectMany(group => group.Authors)) {
+        foreach (var author in submission.Credits.SelectMany(group => group.Authors)) {
             mod.Contributors.Add(new TkModContributor(author.Name, author.Role));
         }
 
         return mod;
     }
 
-    public async ValueTask<TkMod?> ReadFrom(TkModContext context, string fileUrl, long fileId, GameBananaFile? target = null, CancellationToken ct = default)
+    public async ValueTask<TkMod?> ReadFrom(TkModContext context, string fileUrl, long fileId,
+        GameBananaFile? target = null, CancellationToken ct = default)
     {
-        target ??= await GameBanana.Get<GameBananaFile>($"File/{fileId}", GameBananaModJsonContext.Default.GameBananaFile, ct);
+        target ??= await GameBanana.Get($"File/{fileId}", GameBananaSubmissionJsonContext.Default.GameBananaFile, ct);
 
         if (target is null) {
             return null;

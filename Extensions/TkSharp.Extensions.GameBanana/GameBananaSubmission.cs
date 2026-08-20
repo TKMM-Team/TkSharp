@@ -1,9 +1,15 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace TkSharp.Extensions.GameBanana;
 
-public sealed class GameBananaMod
+public sealed class GameBananaSubmission
 {
+    [JsonIgnore]
+    public GameBananaSubmissionType Type { get; set; } = GameBananaSubmissionType.Mod;
+
+    [JsonIgnore]
+    public bool IsWip => Type is GameBananaSubmissionType.Wip;
+
     [JsonPropertyName("_idRow")]
     public long Id { get; set; }
 
@@ -75,11 +81,15 @@ public sealed class GameBananaMod
     [JsonPropertyName("_tsDateModified")]
     public long DateModified { get; set; }
 
+    [JsonIgnore]
+    public string ProfileUrl => $"https://gamebanana.com/{Type.ToUrlSegment()}/{Id}";
+
     public override string ToString()
     {
         return Name;
     }
 }
 
-[JsonSerializable(typeof(GameBananaMod))]
-internal partial class GameBananaModJsonContext : JsonSerializerContext;
+[JsonSerializable(typeof(GameBananaSubmission))]
+[JsonSerializable(typeof(GameBananaFile))]
+internal partial class GameBananaSubmissionJsonContext : JsonSerializerContext;

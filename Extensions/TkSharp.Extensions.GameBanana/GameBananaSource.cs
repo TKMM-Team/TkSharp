@@ -11,13 +11,16 @@ public sealed partial class GameBananaSource(int gameId) : ObservableObject, IGa
     private GameBananaSortMode _sortMode;
 
     [ObservableProperty]
+    private GameBananaSubmissionType _submissionType = GameBananaSubmissionType.Mod;
+
+    [ObservableProperty]
     private GameBananaFeed? _feed;
     
     public async ValueTask LoadPage(int page, string? searchTerm = null, CancellationToken ct = default)
     {
         var sort = SortMode.ToString();
         Feed = new GameBananaFeed();
-        await GameBanana.FillFeed(Feed, gameId, page, sort, searchTerm, ct);
-        await GameBananaFeedFilter.FilterFullMods(Feed, ct);
+        await GameBanana.FillFeed(Feed, gameId, page, sort, searchTerm, SubmissionType, ct);
+        GameBananaFeedFilter.FilterSubmissions(Feed);
     }
 }
