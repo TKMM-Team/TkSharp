@@ -28,6 +28,20 @@ public sealed class GameBananaMod
     [JsonPropertyName("_aFiles")]
     public List<GameBananaFile> Files { get; set; } = [];
 
+    [JsonPropertyName("_aArchivedFiles")]
+    public List<GameBananaFile> ArchivedFiles { get; set; } = [];
+
+    [JsonIgnore]
+    public IReadOnlyList<GameBananaFile> DownloadFiles {
+        get {
+            foreach (var file in ArchivedFiles) {
+                file.IsArchived = true;
+            }
+
+            return [.. Files, .. ArchivedFiles];
+        }
+    }
+
     [JsonPropertyName("_sText")]
     public string Text { get; set; } = string.Empty;
 

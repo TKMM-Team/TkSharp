@@ -62,8 +62,12 @@ public sealed class GameBananaModReader(ITkModReaderProvider readerProvider) : I
     public async ValueTask<TkMod?> ReadFrom(TkModContext context, GameBananaMod? gbMod, GameBananaFile? targetFile = null, CancellationToken ct = default)
     {
         targetFile ??= gbMod?.Files
-            .FirstOrDefault(static file => file.IsTkcl);
+            .FirstOrDefault(static file => file.IsRecommended);
         targetFile ??= gbMod?.Files
+            .FirstOrDefault(file => _readerProvider.CanRead(file.Name));
+        targetFile ??= gbMod?.ArchivedFiles
+            .FirstOrDefault(static file => file.IsRecommended);
+        targetFile ??= gbMod?.ArchivedFiles
             .FirstOrDefault(file => _readerProvider.CanRead(file.Name));
         
         if (targetFile is null || gbMod is null) {
@@ -78,7 +82,7 @@ public sealed class GameBananaModReader(ITkModReaderProvider readerProvider) : I
 
         var gbPageLink = $"*[Game Banana Mod Page ->](https://gamebanana.com/mods/{gbMod.Id})*";
 
-        if (targetFile.IsTkcl || context.IsEmbeddedTkcl) {
+        if (context.IsEmbeddedTkcl) {
             mod.Description = $"{gbPageLink}\n\n{mod.Description}";
             return mod;
         }
