@@ -128,15 +128,15 @@ public sealed class TkMerger
                 // GetVanilla on nested files. Checking loaded
                 // pack files first would be optimal. 
                 using var vanilla = _rom.GetVanilla(relativeFilePath, out var isFoundMissing);
-                
-                if (isFoundMissing && merger is not BfresMcMerger) {
-                    TkLog.Instance.LogWarning(
-                        "The changelog for '{Canonical}' could not be merged because the vanilla file could not be found",
-                        changelog.Canonical);
-                    return;
-                }
-                
+
                 if (vanilla.IsEmpty && merger is not BfresMcMerger) {
+                    if (isFoundMissing && types.Any(static t => t is ChangelogEntryType.Changelog)) {
+                        TkLog.Instance.LogWarning(
+                            "The changelog for '{Canonical}' could not be merged because the vanilla file could not be found",
+                            changelog.Canonical);
+                        return;
+                    }
+
                     changelog.RuntimeResourceSizeOverride = 0;
                     MergeCustomTarget(merger, streams, types, changelog, output, _rom.GameVersion);
                     break;
@@ -154,15 +154,15 @@ public sealed class TkMerger
             case (ITkMerger merger, Stream[] { Length: 1 } streams, ChangelogEntryType[]): {
                 using var vanilla = _rom.GetVanilla(relativeFilePath, out var isFoundMissing);
                 var single = streams[0];
-                
-                if (isFoundMissing && merger is not BfresMcMerger) {
-                    TkLog.Instance.LogWarning(
-                        "The changelog for '{Canonical}' could not be merged because the vanilla file could not be found",
-                        changelog.Canonical);
-                    return;
-                }
-                
+
                 if (vanilla.IsEmpty && merger is not BfresMcMerger) {
+                    if (isFoundMissing && changelog.Type is ChangelogEntryType.Changelog) {
+                        TkLog.Instance.LogWarning(
+                            "The changelog for '{Canonical}' could not be merged because the vanilla file could not be found",
+                            changelog.Canonical);
+                        return;
+                    }
+
                     CopyToOutput(single, relativeFilePath, changelog);
                     return;
                 }
