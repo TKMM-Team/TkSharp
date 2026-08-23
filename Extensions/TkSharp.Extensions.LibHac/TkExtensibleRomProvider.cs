@@ -37,6 +37,62 @@ public class TkExtensibleRomProvider : ITkRomProvider
         throw new GameRomException(error ?? "Failed to build ROM access interface (TkRom).");
     }
 
+    public IReadOnlyList<string> GetAvailableUpdateVersions()
+    {
+        HashSet<string> versions = new(StringComparer.Ordinal);
+
+        if (_config.ExtractedGameDumpFolderPath.Get(out var extractedPaths)) {
+            foreach (var path in extractedPaths) {
+                if (!TkGameDumpUtils.CheckGameDump(path, out _, out var version) || version < 110) {
+                    continue;
+                }
+
+                var displayVersion = string.Join('.', version.ToString().Select(static c => c.ToString()));
+                TkLog.Instance.LogDebug("[ROM *] Update version {Version} available in {Label}", displayVersion, path);
+                versions.Add(displayVersion);
+            }
+        }
+
+        if (TryGetKeys() is not { } keys) {
+            return SortVersions(versions);
+        }
+
+        using SwitchFsContainer collected = [];
+        CollectInto(collected, _config.PackagedBaseGame, keys);
+        CollectInto(collected, _config.PackagedUpdate, keys);
+        CollectInto(collected, _config.SdCard, keys);
+        CollectInto(collected, _config.NandFolders, keys);
+
+        foreach (var (label, switchFs) in collected) {
+            if (!switchFs.Applications.TryGetValue(TkGameRomUtils.EX_KING_APP_ID, out var totk)
+                || totk.Patch is null
+                || totk.DisplayVersion is "1.0.0") {
+                continue;
+            }
+
+            TkLog.Instance.LogDebug("[ROM *] Update version {Version} available in {Label}", totk.DisplayVersion, label);
+            versions.Add(totk.DisplayVersion);
+        }
+
+        return SortVersions(versions);
+    }
+
+    private static void CollectInto<T>(SwitchFsContainer collected, in TkExtensibleConfig<T> config, KeySet keys)
+    {
+        try {
+            _ = config.Get(out _, keys, collected);
+        }
+        catch (Exception ex) {
+            TkLog.Instance.LogError(ex, "[ROM *] Error while collecting update versions.");
+        }
+    }
+
+    private static IReadOnlyList<string> SortVersions(HashSet<string> versions)
+        => [
+            .. versions
+                .OrderByDescending(static v => int.TryParse(v.Replace(".", string.Empty), out var n) ? n : 0)
+        ];
+
     public ITkRom? TryGetRom(out bool hasBaseGame, out bool hasUpdate, out string? error)
     {
         hasBaseGame = hasUpdate = true;
