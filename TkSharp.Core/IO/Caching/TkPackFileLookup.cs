@@ -36,11 +36,14 @@ public sealed class TkPackFileLookup(Stream pkcache, Stream? precompiled = null)
         
         if (GetPackFileName(canonical, out var buffer) is ({ } packFileCanonical, var attributes)) {
             var sarcBuffer = rom.GetVanilla(packFileCanonical, attributes);
-            RevrsReader reader = new(sarcBuffer.Span);
-            ImmutableSarc sarc = new(ref reader);
-            if (sarc.TryGet(canonical, out var entry)) {
-                sarcBuffer.Slice(entry.DataStartOffset, entry.DataEndOffset);
-                return sarcBuffer;
+
+            if (!sarcBuffer.IsEmpty) {
+                RevrsReader reader = new(sarcBuffer.Span);
+                ImmutableSarc sarc = new(ref reader);
+                if (sarc.TryGet(canonical, out var entry)) {
+                    sarcBuffer.Slice(entry.DataStartOffset, entry.DataEndOffset);
+                    return sarcBuffer;
+                }    
             }
 
             sarcBuffer.Dispose();
