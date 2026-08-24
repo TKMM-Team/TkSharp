@@ -327,6 +327,7 @@ public class TkChangelogBuilder(
                 "RSDB/XLinkPropertyTable.Product.rstbl.byml" or
                 "RSDB/XLinkPropertyTableList.Product.rstbl.byml"
             } => RsdbRowChangelogBuilder.RowId,
+            { Extension: ".asb" or ".baev" } => AsbBaevChangelogBuilder.Instance,
             { Extension: ".msbt" } => MsbtChangelogBuilder.Instance,
             { Extension: ".bfarc" or ".bkres" or ".blarc" or ".genvb" or ".sarc" or ".ta" } => SarcChangelogBuilder.Instance,
             { Extension: ".bgyml" } => BymlChangelogBuilder.Instance,
