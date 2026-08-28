@@ -315,7 +315,7 @@ public sealed class TkMerger
     {
         using var targetsBuffer = RentedBuffers<byte>.Allocate(targets, disposeStreams: true);
         var changelogs = TkChangelogBuilder.CreateChangelogsExternal(
-            changelog.Canonical, flags: default, @base, targetsBuffer, changelog.Attributes, gameVersion 
+            changelog.Canonical, TkChangelogBuilderFlags.CustomFiles, @base, targetsBuffer, changelog.Attributes, gameVersion
         );
 
         if (changelogs.Count == 0) {
