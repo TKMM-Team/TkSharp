@@ -579,6 +579,7 @@ public sealed class TkMerger
                 ".pack" => _packMerger,
                 ".bfarc" or ".bkres" or ".blarc" or ".genvb" or ".sarc" or ".ta" => _sarcMerger,
                 ".bntx" => canonical.EndsWith("__Combined.bntx") ? _bntxMerger : null,
+                ".bars" => BarsMerger.Instance,
                 ".byml" or ".bgyml" => BymlMerger.Instance,
                 ".msbt" => MsbtMerger.Instance,
                 ".bfres" => attributes.HasFlag(TkFileAttributes.HasMcExtension) ? _bfresMcMerger : null,

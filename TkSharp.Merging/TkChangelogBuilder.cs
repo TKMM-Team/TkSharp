@@ -330,6 +330,7 @@ public class TkChangelogBuilder(
             { Extension: ".msbt" } => MsbtChangelogBuilder.Instance,
             { Extension: ".bfarc" or ".bkres" or ".blarc" or ".genvb" or ".sarc" or ".ta" } => SarcChangelogBuilder.Instance,
             { Extension: ".bgyml" } => BymlChangelogBuilder.Instance,
+            { Extension: ".bars" } => BarsChangelogBuilder.Instance,
             { Extension: ".byml" } when path.Canonical[..4] is not "RSDB" && path.Canonical[..8] is not "GameData" => BymlChangelogBuilder.Instance,
             _ => null
         };
