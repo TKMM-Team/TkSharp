@@ -15,6 +15,20 @@ public sealed class BarsChangelogBuilder : ITkChangelogBuilder
 
     public bool Build(string canonical, in TkPath path, in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer, OpenWriteChangelog openWrite, int gameVersion)
     {
+        var changelog = CreateChangelog(flags, srcBuffer, vanillaBuffer);
+
+        if (changelog.Count == 0) {
+            return false;
+        }
+
+        using var output = openWrite(path, canonical);
+        changelog.Write(output);
+        
+        return true;
+    }
+
+    public static AudioResource CreateChangelog(in TkChangelogBuilderFlags flags, ArraySegment<byte> srcBuffer, ArraySegment<byte> vanillaBuffer)
+    {
         var changelog = new AudioResource();
         var src = AudioResource.FromBinary(srcBuffer);
         var vanilla = AudioResource.FromBinary(vanillaBuffer);
@@ -58,14 +72,7 @@ public sealed class BarsChangelogBuilder : ITkChangelogBuilder
             }
         }
 
-        if (changelog.Count == 0) {
-            return false;
-        }
-
-        using var output = openWrite(path, canonical);
-        changelog.Write(output);
-        
-        return true;
+        return changelog;
     }
 
     public void Dispose()

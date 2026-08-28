@@ -18,7 +18,9 @@ public sealed class BarsMerger : ITkMerger
         var dropped = new HashSet<uint>();
 
         foreach (var buffer in inputs) {
-            var changelog = AudioResource.FromBinary(buffer.Span);
+            var changelog = entry.Type is ChangelogEntryType.Changelog
+                ? AudioResource.FromBinary(buffer.Span)
+                : BarsChangelogBuilder.CreateChangelog(TkChangelogBuilderFlags.CustomFiles, buffer.Segment, vanillaData);
             Merge(entry, merged, changelog, ref dropped);
         }
 
@@ -35,7 +37,9 @@ public sealed class BarsMerger : ITkMerger
         var dropped = new HashSet<uint>();
 
         foreach (var buffer in inputs) {
-            var changelog = AudioResource.FromBinary(buffer);
+            var changelog = entry.Type is ChangelogEntryType.Changelog
+                ? AudioResource.FromBinary(buffer)
+                : BarsChangelogBuilder.CreateChangelog(TkChangelogBuilderFlags.CustomFiles, buffer, vanillaData);
             Merge(entry, merged, changelog, ref dropped);
         }
 
@@ -50,7 +54,9 @@ public sealed class BarsMerger : ITkMerger
     {
         var merged = AudioResource.FromBinary(@base, out var endianness);
         var dropped = new HashSet<uint>();
-        var changelog = AudioResource.FromBinary(input);
+        var changelog = entry.Type is ChangelogEntryType.Changelog
+            ? AudioResource.FromBinary(input)
+            : BarsChangelogBuilder.CreateChangelog(TkChangelogBuilderFlags.CustomFiles, input, @base);
 
         Merge(entry, merged, changelog, ref dropped);
         ApplyDropped(merged, dropped);
