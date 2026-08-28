@@ -142,7 +142,7 @@ public sealed class TkMerger
                     break;
                 }
 
-                using var inputs = RentedBuffers<byte>.Allocate(streams, disposeStreams: true);
+                using var inputs = RentedBuffers<byte>.AllocateAndDecompress(streams, _rom.Zstd, disposeStreams: true);
                 if (merger is not BfresMcMerger) {
                     changelog.RuntimeResourceSizeOverride = 0;
                 }
@@ -166,7 +166,7 @@ public sealed class TkMerger
                     return;
                 }
 
-                using var input = RentedBuffer<byte>.Allocate(single);
+                using var input = RentedBuffer<byte>.AllocateAndDecompress(single, _rom.Zstd);
                 if (merger is not BfresMcMerger) {
                     changelog.RuntimeResourceSizeOverride = 0;
                 }
