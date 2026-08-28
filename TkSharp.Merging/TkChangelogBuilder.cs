@@ -72,7 +72,7 @@ public class TkChangelogBuilder(
     public TkChangelog Build()
     {
         GameDataCache.Cache(_tk, _baseDirectory!);
-        
+
         foreach (var (file, entry) in _source.Files) {
             BuildTarget(file, entry);
         }
@@ -184,7 +184,7 @@ public class TkChangelogBuilder(
                     TkLog.Instance.LogWarning("The target '{FileName}' was ignored due to incorrect characters in the file name", canon);
                     return Stream.Null;
                 }
-                
+
                 AddChangelogMetadata(path, ref canon, type, zsDictionaryId, path.FileVersion,
                     // Force the parent attributes onto the entry for all parent archives
                     archiveCanon, archiveCanon is not null ? parentAttributes : null);
@@ -252,7 +252,7 @@ public class TkChangelogBuilder(
                 // is disposed before this is used
                 result[++index] = output.ToArray();
             }
-            
+
             builder.Dispose();
         }
 
@@ -302,7 +302,7 @@ public class TkChangelogBuilder(
         if (path.Extension is ".bntx" && path.Canonical.EndsWith("__Combined.bntx")) {
             return new BntxChangelogBuilder(SessionRom, disposeTkRom: _sessionRom is null);
         }
-        
+
         return path switch {
             { Canonical: "GameData/GameDataList.Product.byml" } => GameDataChangelogBuilder.Instance,
             { Canonical: "RSDB/Tag.Product.rstbl.byml" } => RsdbTagChangelogBuilder.Instance,

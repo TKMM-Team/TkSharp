@@ -149,7 +149,6 @@ public sealed class TkMerger
 
                 result = merger.Merge(changelog, inputs, vanilla.Segment, output);
                 break;
-
             }
             case (ITkMerger merger, Stream[] { Length: 1 } streams, ChangelogEntryType[]): {
                 using var vanilla = _rom.GetVanilla(relativeFilePath, out var isFoundMissing);
@@ -166,7 +165,7 @@ public sealed class TkMerger
                     CopyToOutput(single, relativeFilePath, changelog);
                     return;
                 }
-                
+
                 using var input = RentedBuffer<byte>.Allocate(single);
                 if (merger is not BfresMcMerger) {
                     changelog.RuntimeResourceSizeOverride = 0;
@@ -178,7 +177,7 @@ public sealed class TkMerger
             }
             case Stream copy:
                 CopyToOutput(copy, relativeFilePath, changelog);
-                return;       
+                return;
         }
 
         if (result is MergeResult.DelayWrite) {
@@ -434,18 +433,18 @@ public sealed class TkMerger
                 .SelectMals(locale)
                 .Select(entry => entry.Changelog.Source!.OpenRead($"romfs/{entry.MalsFile}"))
                 .ToList();
-    
+
             using var combinedBuffers = RentedBuffers<byte>.Allocate(malsStreams.ToArray(), disposeStreams: true);
-    
+
             if (combinedBuffers.Count == 0) {
                 continue;
             }
-    
+
             var canonical = $"Mals/{locale}.Product.sarc";
             const TkFileAttributes attributes = TkFileAttributes.HasZsExtension | TkFileAttributes.IsProductFile;
             TkChangelogEntry fakeEntry = new(canonical, ChangelogEntryType.Changelog, attributes, zsDictionaryId: 1);
             var relativeFilePath = _rom.CanonicalToRelativePath(canonical, attributes);
-    
+
             using var vanilla = _rom.GetVanilla(relativeFilePath);
             if (vanilla.IsEmpty) {
                 TkLog.Instance.LogWarning(
@@ -456,7 +455,7 @@ public sealed class TkMerger
 
             using MemoryStream ms = new();
             _sarcMerger.Merge(fakeEntry, combinedBuffers, vanilla.Segment, ms);
-    
+
             CopyMergedToOutput(ms, relativeFilePath, fakeEntry);
         }
     }
