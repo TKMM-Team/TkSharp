@@ -311,9 +311,9 @@ public sealed class TkMerger
         merger.Merge(changelog, deltas, fakeVanilla.Segment, output);
     }
 
-    private static void MergeCustomTarget(ITkMerger merger, ArraySegment<byte> @base, ReadOnlySpan<Stream> targets, TkChangelogEntry changelog, Stream output, int gameVersion)
+    private void MergeCustomTarget(ITkMerger merger, ArraySegment<byte> @base, ReadOnlySpan<Stream> targets, TkChangelogEntry changelog, Stream output, int gameVersion)
     {
-        using var targetsBuffer = RentedBuffers<byte>.Allocate(targets, disposeStreams: true);
+        using var targetsBuffer = RentedBuffers<byte>.AllocateAndDecompress(targets, _rom.Zstd, disposeStreams: true);
         var changelogs = TkChangelogBuilder.CreateChangelogsExternal(
             changelog.Canonical, TkChangelogBuilderFlags.CustomFiles, @base, targetsBuffer, changelog.Attributes, gameVersion
         );
