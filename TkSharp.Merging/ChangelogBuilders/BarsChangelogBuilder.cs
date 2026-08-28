@@ -1,4 +1,3 @@
-using Entish;
 using Tkmm.AalSharp.Bars;
 using TkSharp.Core;
 using TkSharp.Merging.Common.AudioResource;
@@ -50,9 +49,7 @@ public sealed class BarsChangelogBuilder : ITkChangelogBuilder
             }
 
             changelog.Add(key, new AudioResourceAsset {
-                Metadata = isVanillaMetadata
-                    ? FakeMetadata.ToBinary()
-                    : entry.Metadata,
+                Metadata = entry.Metadata,
                 Asset = isVanillaAsset ? IsVanillaMark : entry.Asset,
             });
         }

@@ -68,51 +68,34 @@ public sealed class BarsMerger : ITkMerger
 
     private static void Merge(TkChangelogEntry entry, AudioResource merged, AudioResource changelog, ref HashSet<uint> dropped)
     {
-        foreach (var (key, asset) in changelog) {
-            var fakeMetadata = FakeMetadata.FromBinary(asset.Metadata);
-
-            if (fakeMetadata.Version != FakeMetadata.AMTA_FAKE_VERSION) {
-                // Overwrite asset & metadata
-                Insert(entry, merged, key, asset, hasFakeMetadata: false);
-                goto NotDropped;
-            }
-
-            if (fakeMetadata.Flags.HasFlag(FakeMetadataFlags.IsRemoved)) {
+        foreach (var (key, changelogAsset) in changelog) {
+            if (FakeMetadata.FromBinary(changelogAsset.Metadata) is {
+                    Version: FakeMetadata.AMTA_FAKE_VERSION, Flags: FakeMetadataFlags.IsRemoved
+                }) {
                 dropped.Add(key);
                 continue;
             }
 
-            Insert(entry, merged, key, asset, hasFakeMetadata: true);
+            if (!merged.TryGetValue(key, out var asset)) {
+                // Log an error if the changelog expected this vanilla entry to exist
+                if (UseVanilla(changelogAsset)) {
+                    TkLog.Instance.LogError(
+                        "Expected a vanilla asset in {CanonFile}[{Key:X8}] but none was found. " +
+                        "Skipping changelog entry", entry.Canonical, key);
+                    return;
+                }
 
-        NotDropped:
-            // Revert previous drop if applicable
-            dropped.Remove(key);
-        }
-    }
-
-    private static void Insert(TkChangelogEntry entry, AudioResource merged, uint key, AudioResourceAsset changelogAsset, bool hasFakeMetadata)
-    {
-        if (!merged.TryGetValue(key, out var asset)) {
-            // Log an error if the changelog expected this vanilla entry to exist
-            if (UseVanilla(changelogAsset) || hasFakeMetadata) {
-                TkLog.Instance.LogError(
-                    "Expected a vanilla asset in {CanonFile}[{Key:X8}] but none was found. " +
-                    "Skipping changelog entry", entry.Canonical, key);
+                merged.Add(key, changelogAsset);
                 return;
             }
-
-            merged.Add(key, changelogAsset);
-            return;
-        }
-
-        // Only apply when the metadata is not a fake metadata entry
-        if (!hasFakeMetadata) {
+            
             asset.Metadata = changelogAsset.Metadata;
-        }
-
-        // Only apply when the resource is not vanilla
-        if (!UseVanilla(changelogAsset)) {
-            asset.Asset = changelogAsset.Asset;
+            
+            if (!UseVanilla(changelogAsset)) {
+                asset.Asset = changelogAsset.Asset;
+            }
+            
+            dropped.Remove(key);
         }
     }
 
