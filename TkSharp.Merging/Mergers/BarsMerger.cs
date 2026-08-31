@@ -82,11 +82,11 @@ public sealed class BarsMerger : ITkMerger
                     TkLog.Instance.LogError(
                         "Expected a vanilla asset in {CanonFile}[{Key:X8}] but none was found. " +
                         "Skipping changelog entry", entry.Canonical, key);
-                    return;
+                    continue;
                 }
 
                 merged.Add(key, changelogAsset);
-                return;
+                continue;
             }
             
             asset.Metadata = changelogAsset.Metadata;
