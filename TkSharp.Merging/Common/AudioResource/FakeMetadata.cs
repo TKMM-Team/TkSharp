@@ -22,7 +22,7 @@ public unsafe struct FakeMetadata()
     public const ushort AMTA_FAKE_VERSION = 0x4B54;
 
     public uint Magic = AMTA_MAGIC;
-    public Endianness Endianness = Endianness.Little;
+    public Endianness Endianness = Endianness.Big; // LE mark when written in LE
     public readonly ushort Version = AMTA_FAKE_VERSION;
     public int FileSize = sizeof(FakeMetadata);
     public FakeMetadataFlags Flags;
