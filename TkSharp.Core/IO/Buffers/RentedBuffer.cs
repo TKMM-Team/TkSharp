@@ -23,6 +23,24 @@ public ref struct RentedBuffer<T> : IDisposable where T : unmanaged
         return result;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static RentedBuffer<byte> AllocateAndDecompress(Stream stream, TkZstd zstd)
+    {
+        var isCompressed = TkZstd.IsCompressed(stream);
+        var size = isCompressed ? TkZstd.GetDecompressedSize(stream) : (int)stream.Length;
+        var result = RentedBuffer<byte>.Allocate(size);
+
+        if (isCompressed) {
+            using var decompressed = zstd.Decompress(stream);
+            decompressed.Span.CopyTo(result.Span);
+        }
+        else {
+            stream.ReadExactly(result._buffer, 0, size);
+        }
+        
+        return result;
+    }
+
     public Span<T> Span {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => Segment.AsSpan();

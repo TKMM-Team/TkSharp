@@ -142,14 +142,13 @@ public sealed class TkMerger
                     break;
                 }
 
-                using var inputs = RentedBuffers<byte>.Allocate(streams, disposeStreams: true);
+                using var inputs = RentedBuffers<byte>.AllocateAndDecompress(streams, _rom.Zstd, disposeStreams: true);
                 if (merger is not BfresMcMerger) {
                     changelog.RuntimeResourceSizeOverride = 0;
                 }
 
                 result = merger.Merge(changelog, inputs, vanilla.Segment, output);
                 break;
-
             }
             case (ITkMerger merger, Stream[] { Length: 1 } streams, ChangelogEntryType[]): {
                 using var vanilla = _rom.GetVanilla(relativeFilePath, out var isFoundMissing);
@@ -166,8 +165,8 @@ public sealed class TkMerger
                     CopyToOutput(single, relativeFilePath, changelog);
                     return;
                 }
-                
-                using var input = RentedBuffer<byte>.Allocate(single);
+
+                using var input = RentedBuffer<byte>.AllocateAndDecompress(single, _rom.Zstd);
                 if (merger is not BfresMcMerger) {
                     changelog.RuntimeResourceSizeOverride = 0;
                 }
@@ -178,7 +177,7 @@ public sealed class TkMerger
             }
             case Stream copy:
                 CopyToOutput(copy, relativeFilePath, changelog);
-                return;       
+                return;
         }
 
         if (result is MergeResult.DelayWrite) {
@@ -311,11 +310,11 @@ public sealed class TkMerger
         merger.Merge(changelog, deltas, fakeVanilla.Segment, output);
     }
 
-    private static void MergeCustomTarget(ITkMerger merger, ArraySegment<byte> @base, ReadOnlySpan<Stream> targets, TkChangelogEntry changelog, Stream output, int gameVersion)
+    private void MergeCustomTarget(ITkMerger merger, ArraySegment<byte> @base, ReadOnlySpan<Stream> targets, TkChangelogEntry changelog, Stream output, int gameVersion)
     {
-        using var targetsBuffer = RentedBuffers<byte>.Allocate(targets, disposeStreams: true);
+        using var targetsBuffer = RentedBuffers<byte>.AllocateAndDecompress(targets, _rom.Zstd, disposeStreams: true);
         var changelogs = TkChangelogBuilder.CreateChangelogsExternal(
-            changelog.Canonical, flags: default, @base, targetsBuffer, changelog.Attributes, gameVersion 
+            changelog.Canonical, TkChangelogBuilderFlags.CustomFiles, @base, targetsBuffer, changelog.Attributes, gameVersion
         );
 
         if (changelogs.Count == 0) {
@@ -434,18 +433,18 @@ public sealed class TkMerger
                 .SelectMals(locale)
                 .Select(entry => entry.Changelog.Source!.OpenRead($"romfs/{entry.MalsFile}"))
                 .ToList();
-    
+
             using var combinedBuffers = RentedBuffers<byte>.Allocate(malsStreams.ToArray(), disposeStreams: true);
-    
+
             if (combinedBuffers.Count == 0) {
                 continue;
             }
-    
+
             var canonical = $"Mals/{locale}.Product.sarc";
             const TkFileAttributes attributes = TkFileAttributes.HasZsExtension | TkFileAttributes.IsProductFile;
             TkChangelogEntry fakeEntry = new(canonical, ChangelogEntryType.Changelog, attributes, zsDictionaryId: 1);
             var relativeFilePath = _rom.CanonicalToRelativePath(canonical, attributes);
-    
+
             using var vanilla = _rom.GetVanilla(relativeFilePath);
             if (vanilla.IsEmpty) {
                 TkLog.Instance.LogWarning(
@@ -456,7 +455,7 @@ public sealed class TkMerger
 
             using MemoryStream ms = new();
             _sarcMerger.Merge(fakeEntry, combinedBuffers, vanilla.Segment, ms);
-    
+
             CopyMergedToOutput(ms, relativeFilePath, fakeEntry);
         }
     }
@@ -579,6 +578,7 @@ public sealed class TkMerger
                 ".pack" => _packMerger,
                 ".bfarc" or ".bkres" or ".blarc" or ".genvb" or ".sarc" or ".ta" => _sarcMerger,
                 ".bntx" => canonical.EndsWith("__Combined.bntx") ? _bntxMerger : null,
+                ".bars" => BarsMerger.Instance,
                 ".byml" or ".bgyml" => BymlMerger.Instance,
                 ".msbt" => MsbtMerger.Instance,
                 ".bfres" => attributes.HasFlag(TkFileAttributes.HasMcExtension) ? _bfresMcMerger : null,
