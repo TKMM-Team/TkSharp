@@ -90,6 +90,7 @@ public sealed class BarsMerger : ITkMerger
             }
             
             asset.Metadata = changelogAsset.Metadata;
+            asset.IsPublic = changelogAsset.IsPublic;
             
             if (!UseVanilla(changelogAsset)) {
                 asset.Asset = changelogAsset.Asset;

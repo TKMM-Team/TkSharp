@@ -37,6 +37,7 @@ public sealed class BarsChangelogBuilder : ITkChangelogBuilder
                 changelog.Add(key, new AudioResourceAsset {
                     Metadata = entry.Metadata,
                     Asset = entry.Asset,
+                    IsPublic = entry.IsPublic
                 });
                 continue;
             }
@@ -51,6 +52,7 @@ public sealed class BarsChangelogBuilder : ITkChangelogBuilder
             changelog.Add(key, new AudioResourceAsset {
                 Metadata = entry.Metadata,
                 Asset = isVanillaAsset ? IsVanillaMark : entry.Asset,
+                IsPublic = entry.IsPublic
             });
         }
 
