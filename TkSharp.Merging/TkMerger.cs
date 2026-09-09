@@ -32,6 +32,17 @@ public sealed class TkMerger
     private readonly BfresMcMerger _bfresMcMerger;
     private readonly BntxMerger _bntxMerger;
     private readonly Dictionary<TkChangelog, Rstb> _resourceSizeOverrides = [];
+#if EXPERIMENTAL_AINB
+    private AinbMerger? _ainbMerger;
+
+    // Configure before starting a merge. No codec is bundled or enabled by default.
+    public void UseExperimentalAinbCodec(AinbModel.Contract.IAinbCodec codec,
+        Action<TkSharp.Merging.Mergers.Ainb.AinbMergeReport>? report = null)
+    {
+        ArgumentNullException.ThrowIfNull(codec);
+        _ainbMerger = new AinbMerger(codec, report);
+    }
+#endif
 
     public TkMerger(ITkModWriter output, ITkRom rom, string[]? locales = null, string? ipsOutputFolderPath = null)
     {
@@ -129,6 +140,14 @@ public sealed class TkMerger
                 // pack files first would be optimal. 
                 using var vanilla = _rom.GetVanilla(relativeFilePath, out var isFoundMissing);
 
+#if EXPERIMENTAL_AINB
+                if (vanilla.IsEmpty && merger is AinbMerger) {
+                    using var rawInputs = RentedBuffers<byte>.Allocate(streams, disposeStreams: true);
+                    changelog.RuntimeResourceSizeOverride = 0;
+                    result = merger.Merge(changelog, rawInputs, vanilla.Segment, output);
+                    break;
+                }
+#endif
                 if (vanilla.IsEmpty && merger is not BfresMcMerger) {
                     if (isFoundMissing && types.Any(static t => t is ChangelogEntryType.Changelog)) {
                         TkLog.Instance.LogWarning(
@@ -155,6 +174,15 @@ public sealed class TkMerger
                 using var vanilla = _rom.GetVanilla(relativeFilePath, out var isFoundMissing);
                 var single = streams[0];
 
+#if EXPERIMENTAL_AINB
+                if (vanilla.IsEmpty && merger is AinbMerger) {
+                    using var rawInput = RentedBuffer<byte>.Allocate(single);
+                    single.Dispose();
+                    changelog.RuntimeResourceSizeOverride = 0;
+                    result = merger.MergeSingle(changelog, rawInput.Segment, vanilla.Segment, output);
+                    break;
+                }
+#endif
                 if (vanilla.IsEmpty && merger is not BfresMcMerger) {
                     if (isFoundMissing && changelog.Type is ChangelogEntryType.Changelog) {
                         TkLog.Instance.LogWarning(
@@ -581,6 +609,9 @@ public sealed class TkMerger
                 ".bntx" => canonical.EndsWith("__Combined.bntx") ? _bntxMerger : null,
                 ".byml" or ".bgyml" => BymlMerger.Instance,
                 ".msbt" => MsbtMerger.Instance,
+#if EXPERIMENTAL_AINB
+                ".ainb" => _ainbMerger,
+#endif
                 ".bfres" => attributes.HasFlag(TkFileAttributes.HasMcExtension) ? _bfresMcMerger : null,
                 _ => null
             }

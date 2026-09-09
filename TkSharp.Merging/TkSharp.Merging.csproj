@@ -28,4 +28,17 @@
       <Using Include="TkSharp.Core.Common" />
     </ItemGroup>
 
+    <PropertyGroup Condition="'$(EnableExperimentalAinb)' == 'true'">
+      <DefineConstants>$(DefineConstants);EXPERIMENTAL_AINB</DefineConstants>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(EnableExperimentalAinb)' == 'true'">
+      <ProjectReference Include="..\experimental\AinbModel.Contract\AinbModel.Contract.csproj" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(EnableExperimentalAinb)' != 'true'">
+      <Compile Remove="Mergers\Ainb\**\*.cs" />
+    </ItemGroup>
+    <Target Name="RejectExperimentalAinbPackage" BeforeTargets="GenerateNuspec" Condition="'$(EnableExperimentalAinb)' == 'true'">
+      <Error Text="The experimental AINB contract is not a published dependency. Complete the codec/package handoff before packing this configuration." />
+    </Target>
+
 </Project>
