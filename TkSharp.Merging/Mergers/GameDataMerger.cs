@@ -149,6 +149,11 @@ public sealed class GameDataMerger : Singleton<GameDataMerger>, ITkMerger
             if (!changelog.Remove(hash, out var changelogEntry)) {
                 continue;
             }
+
+            if (changelogEntry.Value is BymlChangeType.Remove) {
+                gameDataTracking.Drop[hash] = (Table: @base, baseEntry);
+                continue;
+            }
             
             if (gameDataTracking.TryGetValue(hash, out var entry)) {
                 entry.Changes.Add(changelogEntry);

@@ -148,7 +148,7 @@ public sealed class GameDataChangelogBuilder : Singleton<GameDataChangelogBuilde
 
         // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
         foreach (var node in vanilla) {
-            uint hash = (uint)node.GetMap()["Hash"].Value!;
+            ulong hash = (ulong)node.GetMap()["Hash"].Value!;
             if (!expectedInVanilla.Remove(hash)) {
                 changelog[hash] = BymlChangeType.Remove;
             }
