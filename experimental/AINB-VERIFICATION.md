@@ -39,5 +39,18 @@ TkSharp builds emit the pre-existing VYaml source-generator warning CS8785
 (`InvalidOperationException: Unreachable`). It has not been suppressed here.
 The standalone AinbFormat package build has no warnings.
 
-The GitHub workflows are prepared but have not run remotely. The package has
-only been packed and restored locally; no NuGet release has been made.
+## Published package
+
+[AinbFormat 0.1.0-alpha.1](https://www.nuget.org/packages/AinbFormat/0.1.0-alpha.1)
+was published through GitHub Actions and NuGet Trusted Publishing.
+The package's source-only tests and pack step passed on Windows and Linux.
+
+TkSharp was restored using only NuGet.org and a new package cache, without the
+local feed. All 72 merger checks passed again against that public download,
+including the 18 native binary cases. The temporary unpublished-package packing
+guard has been removed; the experimental compile gate and opt-in remain unchanged.
+Experimental TkSharp packing was also checked with a prerelease package version.
+No TkSharp package was published.
+
+The GitHub workflows emitted a non-blocking Node.js 20 deprecation warning for
+checkout/setup-dotnet v4. This did not prevent tests, packing or publication.

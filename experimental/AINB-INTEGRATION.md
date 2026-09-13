@@ -6,7 +6,7 @@
 TkSharp contains the merge rules, diagnostics and adapter only. The temporary
 `AinbModel.Contract` project has been removed. Arch's AinbLibrary is untouched.
 
-The package candidate has been built locally, not published. The feature remains
+[AinbFormat 0.1.0-alpha.1](https://www.nuget.org/packages/AinbFormat/0.1.0-alpha.1) is published on NuGet. The feature remains
 compile-gated and explicitly opt-in. This is an experimental merger for a
 supported subset, not general support for every AINB in the game.
 
@@ -173,8 +173,11 @@ Build with `EnableExperimentalAinb=true`, then configure before starting a merge
 merger.UseExperimentalAinbCodec(new AinbFormat.AinbCodec());
 ```
 
-Default builds are unchanged. Packing the experimental TkSharp configuration is
-blocked until the referenced package is published and restored from NuGet.org.
+Default builds are unchanged. The experimental configuration now references a
+published NuGet dependency; its temporary unpublished-package guard has been removed.
+When packing an experimental TkSharp build, use a prerelease `PackageVersion`:
+a stable package should not depend on an alpha package. This PR does not change
+TkSharp's upstream release version.
 
 No separate changelog builder was added. Existing raw Copy entries reach the
 registered merger. ROMFS lookup, SARC collection, Zstandard compression, canonical
@@ -192,7 +195,7 @@ Source-only tests:
 dotnet run --project experimental/AinbMerge.Tests -p:EnableExperimentalAinb=true
 ```
 
-After restoring the locally packed candidate from a local NuGet feed, the private
+After restoring the published package from NuGet.org, the private
 fixture suite also reads `base/low/high/expected.ainb` and the independently
 decoded JSON files:
 

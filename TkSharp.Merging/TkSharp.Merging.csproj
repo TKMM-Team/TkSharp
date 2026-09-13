@@ -37,8 +37,5 @@
     <ItemGroup Condition="'$(EnableExperimentalAinb)' != 'true'">
       <Compile Remove="Mergers\Ainb\**\*.cs" />
     </ItemGroup>
-    <Target Name="RejectExperimentalAinbPackage" BeforeTargets="GenerateNuspec" Condition="'$(EnableExperimentalAinb)' == 'true'">
-      <Error Text="The experimental AINB dependency is not published yet. Confirm its release before packing this configuration." />
-    </Target>
 
 </Project>
