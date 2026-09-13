@@ -34,7 +34,7 @@ public sealed class TkSystemSource(string rootFolderPath) : ITkSystemSource
     {
         return GetRomfsBuckets().Select(bucket => Path.GetFileName(bucket));
     }
-
+    
     private bool TryResolvePath(string relativeFilePath, out string resolvedPath)
     {
         var direct = Path.Combine(rootFolderPath, relativeFilePath);

@@ -1,3 +1,4 @@
+using System.IO.Hashing;
 using CommunityToolkit.HighPerformance.Buffers;
 using LanguageExt;
 using Microsoft.Extensions.Logging;
@@ -215,7 +216,12 @@ public sealed class TkMerger
 
     public static void MergeSubSdk(ITkModWriter mergeOutput, IEnumerable<TkChangelog> changelogs)
     {
-        var index = 0;
+        const int maxSubSdkCount = 9;
+
+        var totalWrittenFileCount = 0;
+        var unwrittenOverflowFileCount = 0;
+
+        System.Collections.Generic.HashSet<ulong> writtenHashes = [];
 
         foreach (var changelog in changelogs.Reverse()) {
             if (changelog.Source is null) {
@@ -225,28 +231,29 @@ public sealed class TkMerger
                 continue;
             }
 
-            IEnumerable<(string, byte[])> subSkdFileContents = changelog.SubSdkFiles.Select(file => {
+            foreach (var file in changelog.SubSdkFiles) {
                 using var input = changelog.Source.OpenRead($"exefs/{file}");
-                var buffer = new byte[input.Length];
-                input.ReadExactly(buffer, 0, buffer.Length);
-                return (file, buffer);
-            }).DistinctBy(x => x);
+                var data = new byte[input.Length];
+                input.ReadExactly(data, 0, data.Length);
 
-            foreach (var (_, data) in subSkdFileContents) {
-                if (index > 9) {
-                    index++;
+                if (!writtenHashes.Add(XxHash3.HashToUInt64(data))) {
                     continue;
                 }
 
-                using var output = mergeOutput.OpenWrite($"exefs/subsdk{++index}");
+                if (totalWrittenFileCount >= maxSubSdkCount) {
+                    unwrittenOverflowFileCount++;
+                    continue;
+                }
+
+                using var output = mergeOutput.OpenWrite($"exefs/subsdk{++totalWrittenFileCount}");
                 output.Write(data);
             }
         }
 
-        if (index > 9) {
+        if (unwrittenOverflowFileCount > 0) {
             TkLog.Instance.LogWarning(
                 "{Count} SubSdk files were skipped when merging from the lowest priority mods.",
-                index - 9);
+                unwrittenOverflowFileCount);
         }
     }
 
