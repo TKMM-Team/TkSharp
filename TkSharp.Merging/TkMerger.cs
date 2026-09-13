@@ -244,7 +244,7 @@ public sealed class TkMerger
                 if (!writtenHashes.Add(XxHash3.HashToUInt64(data)))
                 {
                     TkLog.Instance.LogInformation(
-                        "Skipped duplicate SubSdk file {'SubSdkFile'.",
+                        "Skipped duplicate SubSdk file '{SubSdkFile}'.",
                         file);
                     continue;
                 }
