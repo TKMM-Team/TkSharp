@@ -35,6 +35,19 @@ public sealed class TkSystemSource(string rootFolderPath) : ITkSystemSource
         return GetRomfsBuckets().Select(bucket => Path.GetFileName(bucket));
     }
 
+    public IEnumerable<string> EnumerateFiles(string relativeFolderPath)
+    {
+        var folder = Path.Combine(rootFolderPath, relativeFolderPath);
+
+        if (!Directory.Exists(folder))
+        {
+            return [];
+        }
+
+        return Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories)
+            .Select(file => Path.GetRelativePath(rootFolderPath, file).Replace('\\', '/'));
+    }
+
     private bool TryResolvePath(string relativeFilePath, out string resolvedPath)
     {
         var direct = Path.Combine(rootFolderPath, relativeFilePath);
