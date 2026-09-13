@@ -8,6 +8,5 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\TkSharp.Merging\TkSharp.Merging.csproj" AdditionalProperties="EnableExperimentalAinb=true" />
-    <ProjectReference Include="..\AinbModel.Contract\AinbModel.Contract.csproj" />
   </ItemGroup>
 </Project>

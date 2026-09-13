@@ -1,211 +1,217 @@
-# AINB integration handoff
+# Experimental AINB Merging
 
-## Status
+## Status and ownership
 
-The native C# merge logic and opt-in TkSharp adapter are ready for review.
-They are NOT ready to enable in a normal TKMM release: a real C# binary codec is
-still required. At the user's request, completion of that IO is left to Arch.
-Arch's `AinbLibrary` checkout has not been edited.
+`AinbFormat 0.1.0-alpha.1` now supplies native C# IO and the typed model.
+TkSharp contains the merge rules, diagnostics and adapter only. The temporary
+`AinbModel.Contract` project has been removed. Arch's AinbLibrary is untouched.
 
-The Python v2 experiment produced the test patch that the tester reports working.
-This C# port is checked against its decoded results, not substituted into that
-game-tested ZIP. No native binary reader/writer is provided or implied here.
-Publishing and completion of the native binary codec remain separate release steps.
+The package candidate has been built locally, not published. The feature remains
+compile-gated and explicitly opt-in. This is an experimental merger for a
+supported subset, not general support for every AINB in the game.
 
-## Files to review
+The earlier in-game test used the Python v2 output. The native C# implementation
+now agrees with those reference graphs in binary integration tests, but has not
+itself been tested in-game through a complete TKMM profile.
 
-| File | Responsibility |
-| --- | --- |
-| `TkSharp.Merging/Mergers/Ainb/AinbGraphMerger.cs` | Vanilla-relative changes, correspondence, priority, branch composition, index repair, validation |
-| `TkSharp.Merging/Mergers/Ainb/AinbBinaryMerger.cs` | External codec boundary, original-byte reuse, reported priority fallback, read-back verification |
-| `TkSharp.Merging/Mergers/Ainb/AinbMergeReport.cs` | Conflicts, matching evidence, retained/reachable addition counts |
-| `TkSharp.Merging/Mergers/AinbMerger.cs` | The three `ITkMerger` entry points and TkSharp logging |
-| `TkSharp.Merging/TkMerger.cs` | Explicit opt-in registration and no-vanilla handling |
-| `TkSharp.Merging/TkSharp.Merging.csproj` | Compile gate and temporary contract project reference |
-| `experimental/AinbModel.Contract/` | Proposed immutable typed model and `IAinbCodec`; deliberately not packable |
-| `experimental/AinbMerge.Tests/` | Synthetic regression tests, adapter tests, and private-fixture parity tests |
+## The basic rule
 
-The model project is a proposal for discussion, not a replacement for Arch's API.
-Its names and ownership can change. An adapter can translate from his own types,
-or these fields can be adopted into AinbLibrary once agreed. Do not publish this
-temporary contract as a second competing AINB IO package.
+Use the actual vanilla file from the caller's ROMFS as the common baseline.
+Process mods from lowest to highest priority. Do not compare a mod only against
+the previously processed mod: a high-priority mod usually carries lots of
+unchanged vanilla data, and that data must not undo another mod's edits.
 
-## What the merger does
-
-Every mod is compared with the real vanilla file. Input order is lowest priority
-first, so the last changed value wins an actual conflict. An unchanged value in
-a higher-priority mod does not undo a lower-priority edit.
-
-Command names anchor their entry nodes. Remaining nodes match only by unique
-reference-free contents, then unique type/name/module role. GUIDs and source
-array positions are not node identities: the fixtures regenerate GUIDs and reuse
-the same GUID sequence for unrelated additions. Ambiguous matches reject the
-composition instead of guessing. Unique structural matching is still a heuristic.
-
-The core assigns temporary identities, merges by those identities, then assigns
-output indices and remaps all represented references. Additions from distinct
-source documents stay separate. Identical parsed re-exports are idempotent.
-Vanilla GUIDs are retained where possible; additions get deterministic UUIDv8 IDs.
-Those IDs differ from Python's UUIDv5 IDs and are not used as matching evidence.
-
-Properties and input records merge by type and name. Each record, including input
-wiring, is atomic. Matched output-port layouts must remain unchanged. Commands
-merge atomically by name; module records, including instance counts, by path and
-category. Queries and ordinary plug lists use atomic priority handling.
-
-For simultaneous nodes with unchanged properties, preserve in-place connection
-replacements alongside independent appended branches. Competing replacements of
-the same connection use priority. Decline that finer merge when a child list
-shrinks, a retained vanilla target moves, connection metadata changes, or a target
-repeats. Selectors and sequences remain atomic. This fixes the jump/backflip case:
+For a value, record, or atomic list:
 
 ```text
-vanilla:  common + normal jump
-armor:    common + armor-dependent jump
-Shinobi:  common + normal jump + Shinobi branch
-result:   common + armor-dependent jump + Shinobi branch
+choose(vanilla, accumulated, incoming):
+    if incoming equals vanilla:
+        return accumulated
+    if incoming equals accumulated:
+        return accumulated
+    if accumulated equals vanilla:
+        return incoming
+    record a conflict
+    return incoming
 ```
 
-Disconnected additions remain in the file and are reported; keeping a node is
-not proof that its behavior survives. The whistle conflict intentionally falls
-back to the highest-priority entire input when reference repair fails.
+Missing entries participate in the same rule. This handles additions, removals,
+edit/edit conflicts, and edit/delete conflicts. A conflict selects the incoming
+higher-priority change; it does not mean the entire higher-priority file wins.
 
-## IO contract for Arch
+## Finding corresponding nodes
 
-The two operations in `IAinbCodec` are:
+AINB indices are file-local positions. GUIDs in the supplied mods were not
+reliable enough to use as cross-mod identity.
+
+For each mod independently:
+
+1. Match command roots by command name, including secondary roots when both exist.
+   The target nodes must have the same type, name and module/non-module role.
+2. Among unmatched nodes, match unique local contents without GUIDs or outgoing
+   node references. Keep parameter names, types, defaults and source-output slots.
+3. Match remaining nodes only when their type/name/module role is unique on both sides.
+4. If a vanilla node is still unmatched but that role exists in the mod, stop
+   rather than guessing between ambiguous or replaced nodes.
+5. Give unmatched mod nodes their own internal keys. Identical semantic re-exports
+   reuse their existing addition keys; an equal GUID alone never shares a key.
+
+A matched node's output layout must stay unchanged. Remapping changed typed output
+slots is not implemented. Root-role changes and ambiguous matches cause whole-file
+fallback, not a guessed correspondence.
+
+## What merges independently
+
+- Nodes: by the correspondence above; added nodes from different mods stay distinct.
+- Commands: by command name; each command record is atomic.
+- Properties: by parameter type and name; each value/flags record is atomic.
+- Inputs: by parameter type and name; default, flags and sources are one atomic record.
+- Outputs: unchanged for matched nodes; included in full for new nodes.
+- Query lists: atomic, not appended or unioned.
+- Module declarations: by path and category; the whole declaration, including
+  instance count, is atomic.
+- Blackboard ID and parent ID: one atomic pair. Only empty blackboards are supported.
+
+Duplicate keys are not guessed at. A parameter's float, bool or int type is part
+of its identity; this is not an AINB blackboard merger.
+
+Module instance counts are not recomputed from combined runtime module usage.
+Cross-file compatibility of changed blackboard IDs is also not established.
+Both remain explicit review/testing limits.
+
+## Connection lists and the jump fix
+
+Most connection lists are atomic by connection type. Selector ordering and
+sequential execution are meaningful, so concatenating their branches would
+invent behavior.
+
+There is one narrower rule for a Simultaneous node's Child list. It is eligible
+only if both mods keep its vanilla properties unchanged, including its execution
+policies. Each list must satisfy all of these checks:
+
+- No vanilla slot is removed; the list is at least as long as vanilla.
+- Targets are unique within the list.
+- A retained vanilla target stays in its original slot.
+- A replaced slot keeps its other connection metadata.
+- Appended targets do not reuse any vanilla child target.
+
+Then merge replacements per vanilla slot and combine distinct appended targets.
+If the result would duplicate a target, abandon this special rule and use the
+ordinary atomic-list rule. A conflict in one replaced slot does not discard
+independent appended branches.
+
+```text
+vanilla: [A, B]
+armor:   [A, Shockwave]       # Shockwave may lead onward to B
+shinobi: [A, B, ShinobiTail]
+
+combined: [A, Shockwave, ShinobiTail]
+```
+
+This was the missing behavior behind the armor jump/backflip fix. It does not
+make arbitrary conflicting control flow composable.
+
+## Full merge flow
+
+```text
+merge(vanilla_bytes, inputs_low_to_high):
+    if no inputs:
+        return vanilla_bytes unchanged
+
+    read inputs through the external codec
+    read vanilla if present
+    if a parse detects malformed data:
+        fail with an error
+    if any file uses unsupported structures:
+        return the exact highest-priority input, with a fallback reason
+    if vanilla is absent:
+        return the exact highest-priority input, with a fallback reason
+
+    accumulated = vanilla graph
+    for each mod from low to high:
+        establish vanilla-to-mod node correspondence
+        assign internal keys to added nodes
+        remap that mod's references onto those keys
+        apply vanilla-relative changes with choose()
+        apply the guarded Simultaneous-child rule where eligible
+
+    assign contiguous final node indices
+    repair command roots, queries, input sources and connection targets
+    preserve reference sentinels -1 and 32767
+    keep vanilla node GUIDs where possible
+    give additions deterministic noncolliding GUIDs
+    validate all graph references and report unreachable additions
+
+    if a merge rule cannot establish a valid supported graph:
+        return the exact highest-priority input, with a fallback reason
+
+    if the result equals an input semantically:
+        reuse that input's original bytes
+    otherwise if it equals vanilla:
+        reuse vanilla's original bytes
+    otherwise:
+        write through the external codec
+        read the written file back
+        validate and compare graph contents, ignoring GUIDs and type-group layout
+        fail if the writer changed the graph
+        return the rebuilt bytes
+```
+
+`allowFallback: false` makes unsupported merges fail explicitly instead.
+A codec may stop at a recognized unsupported feature; fallback is lossless byte
+selection, **not** proof that such an input is fully valid.
+
+Reachability follows command roots, connections, queries and input dependencies.
+A retained or reachable node is not proof that its gameplay behavior will execute.
+Unreachable additions are reported, not silently removed.
+
+## TkSharp integration
+
+Build with `EnableExperimentalAinb=true`, then configure before starting a merge:
 
 ```csharp
-AinbDocument Read(ReadOnlySpan<byte> data);
-byte[] Write(AinbDocument document);
+merger.UseExperimentalAinbCodec(new AinbFormat.AinbCodec());
 ```
 
-These are decompressed, standalone AINB bytes, not SARC or Zstandard containers.
-`Read` must validate the binary, not mutate it, and return owned data. Malformed
-input must throw `InvalidDataException`. Unrepresented but valid content must be
-marked in `UnsupportedFeatures`, never silently discarded. The merger then keeps
-the winning original binary without serializing the incomplete representation.
+Default builds are unchanged. Packing the experimental TkSharp configuration is
+blocked until the referenced package is published and restored from NuGet.org.
 
-The proposed model covers:
-- File version, name/category, both blackboard IDs, and presence of section 0x6C.
-- Commands with primary/optional secondary entry indices and GUIDs.
-- Nodes with kind, name, index, GUID, flags, query references, properties, and IO.
-- Typed Int/Bool/Float/String/Vector3F/null-pointer values; pointer class names.
-- Direct/multiple input sources, output indices, optional set-blackboard marker.
-- Child/Generic/Int/String plugs, with optional generic unknown fields preserved.
-- Module path/category/instance count.
+No separate changelog builder was added. Existing raw Copy entries reach the
+registered merger. ROMFS lookup, SARC collection, Zstandard compression, canonical
+paths and resource-size handling remain with TkSharp. Filenames are not changed.
 
-Parameter flag enum values in this contract are semantic flags, NOT the binary
-bit masks. The codec must map them, not write their integer value verbatim.
-Node kind/flag values match the inspected format subset. Unsupported types,
-flags, non-null pointer payloads, or extra plug fields must not be coerced into
-the supported subset. The writer is responsible for rebuilding offsets, string
-pools, section counts, alignment, and any derived on-disk tables.
-
-The initial supported scope is intentionally narrower than the whole format:
-TOTK 0x407, empty blackboards/EXB/replacement/section-0x58 data, no attachments or
-XLink actions, and the represented parameter and plug types. This covers all
-18 overlapping fixture cases. Python could carry some unchanged extra sections;
-the draft C# contract rejects those until they have proper typed coverage.
-
-Publishing a package is not the only remaining step. The inspected AinbLibrary
-checkout still has `Ainb.FromBinary<T>` returning an unfilled model, an empty
-`IAinbCommand`, no writer, and an `AinbReader._buffer` that is never assigned.
-These observations are about the local checkout, not a claim about any newer work
-Arch may have elsewhere. No changes to those files were made in this task.
-
-## TkSharp hooks
-
-Build with `EnableExperimentalAinb=true`, then explicitly configure a codec before
-starting a merge:
-
-```csharp
-// codec is an actual AinbLibrary-backed IAinbCodec implementation, not bundled here.
-merger.UseExperimentalAinbCodec(codec, report => { /* optional diagnostics */ });
-```
-
-Both the compile flag and codec registration are required. Default builds retain
-the existing behavior. This is a review gate, not a feature toggle to expose to
-end users before a codec is ready. Do not configure the codec during a running
-merge. The adapter serializes calls to its codec instance; the graph core itself
-has no shared state.
-Packing with the experimental flag is explicitly blocked while the contract is
-temporary. Ordinary builds/packages keep the experiment disabled.
-
-No AINB-specific changelog builder was added: current TkSharp already records raw
-Copy entries when no builder exists. `GetInputs` sends those entries to a registered
-merger. That avoids parsing a file merely to write the original bytes as a fake
-delta. A compact changelog format can be added separately if wanted.
-
-The adapter leaves ROMFS lookup, pack collection, compression, original canonical
-paths, and RSTB handling with TkSharp. AINB's existing resource-size calculator is
-unchanged. The no-vanilla hook avoids `MergeCustomTarget`'s synthetic baseline:
-without real vanilla, use the exact highest-priority input and log the reason.
-
-The core and adapter consume low-to-high order. `GetInputs` preserves its incoming
-changelog sequence and the existing copy path uses the last entry. The TKMM caller
-must continue supplying that order; the adapter does NOT reverse it a second time.
-Before release, run a full UI-level test showing the top-listed mod wins.
+The core and adapter expect low-to-high inputs. TkSharp's existing last-copy-wins
+path follows the same order; the adapter must not reverse it a second time.
+A full TKMM UI test confirming the top-listed mod wins is still required.
 
 ## Verification
 
-From the TkSharp worktree:
+Source-only tests:
 
 ```powershell
-dotnet build TkSharp.Merging/TkSharp.Merging.csproj -p:EnableExperimentalAinb=false
-dotnet build TkSharp.Merging/TkSharp.Merging.csproj -p:EnableExperimentalAinb=true
 dotnet run --project experimental/AinbMerge.Tests -p:EnableExperimentalAinb=true
-dotnet run --project experimental/AinbMerge.Tests -p:EnableExperimentalAinb=true -- --fixtures experimental/AinbMerge.Tests/fixtures
 ```
 
-Private fixture snapshots are generated by the workspace's
-`ainb-work/export_csharp_fixtures.py`. They are ignored and must not be committed
-or included in a source handoff. Without `--fixtures`, only synthetic tests run.
-The JSON translator is test-only and fails on unrepresented fields; runtime
-models and merge logic do not use JSON objects or serialization for comparison.
+After restoring the locally packed candidate from a local NuGet feed, the private
+fixture suite also reads `base/low/high/expected.ainb` and the independently
+decoded JSON files:
 
-Local verification on 2026-09-08: 49 checks passed (31 synthetic/boundary checks
-and 18 private fixture cases), with no failures. Both compile configurations
-build successfully. This does not certify full TKMM or native IO behavior.
+```powershell
+dotnet run --project experimental/AinbMerge.Tests -p:EnableExperimentalAinb=true -- --fixtures path/to/private/fixtures
+```
 
-The binary-boundary tests use a deliberately fake snapshot codec. They test input
-ordering, fallback bytes, output checks, and both buffer overloads, NOT native
-AINB parsing/writing. Fixture parity compares C# results with decoded Python-v2
-binary output, including conflict and reachability counts, ignoring only GUIDs.
-That is semantic-port coverage, not native binary round-trip coverage.
+Current results are recorded in [AINB-VERIFICATION.md](AINB-VERIFICATION.md).
+No ROMFS files or private fixture data belong in this PR or either NuGet package.
 
-Both enabled and disabled builds currently emit a VYaml generator warning
-(`CS8785`, `InvalidOperationException: Unreachable`) while succeeding. It is not
-specific to the enabled AINB path; it has not been suppressed or fixed here.
+## Review map
 
-## Before enabling it
+- `AinbGraphMerger.cs`: correspondence, three-way changes, branch rules and index repair.
+- `AinbBinaryMerger.cs`: codec boundary, byte reuse, fallback and read-back checking.
+- `AinbMergeReport.cs`: conflicts and matching/reachability diagnostics.
+- `AinbMerger.cs`: ITkMerger adapter and logging.
+- `TkMerger.cs`: registration and real-vanilla handling.
+- `experimental/AinbMerge.Tests/`: synthetic, adapter and private-fixture tests.
 
-1. Agree the model/adapter API with Arch; replace the temporary contract reference
-   with the agreed AinbLibrary package or mapping layer.
-2. Implement and independently test real read/write IO, including unchanged-file
-   round-trips and bounds validation. Unsupported files must remain lossless.
-3. Rerun the fixture suite through that real codec and compare against dt/TotkBits.
-4. Test complete TKMM profiles: top-mod priority, no vanilla, pack entries, loose
-   AINBs, compression, RSTB, and the currently accepted whistle fallback.
-5. Retest the resulting native output in-game, including armor shockwaves,
-   Shinobi jump/backflip abilities, and ordinary movement/equipment changes.
-
-Remaining semantic risks include inferred node identity, combined branch side
-effects, external module dependencies/instance counts, and blackboard-ID consumers.
-Module instance records currently use priority; recomputing combined module usage
-is not implemented. Non-finite parameter values are rejected. The whole-file
-fallback is deliberate; it does not mean both mods' behavior was preserved.
-
-Credits: dt-12345 for the Python AINB IO used as the reference and fixture oracle;
-TotkBits authors Banan039/SolidLink95 for independent binary checks of the Python
-outputs; Arch for AinbLibrary/TkSharp. No GPL parser implementation is copied into
-the native merge code or proposed contract. The Python/Rust tools remain local
-test dependencies, not TkSharp runtime dependencies.
-
-## Short message for Arch
-
-The AINB merge experiment seems to be working in testing, including the jump fix
-that keeps the armor shockwave branch alongside Shinobi. I've prepared a C# port
-of the merge logic and an opt-in TkSharp adapter. I haven't changed your AinbLibrary
-repo. There's a small proposed typed-model/IO contract so you can see exactly what
-the merger needs; it can be adapted to your API. The remaining dependency is a
-working native reader/writer, then a NuGet package and full integration testing.
+Thanks to dt-12345 for the Python parser used as an oracle, the TotkBits
+contributors for independent Rust parsing, and ArchLeaders for TkSharp.
+The external parsers are development tools, not runtime dependencies.

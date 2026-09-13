@@ -32,13 +32,13 @@
       <DefineConstants>$(DefineConstants);EXPERIMENTAL_AINB</DefineConstants>
     </PropertyGroup>
     <ItemGroup Condition="'$(EnableExperimentalAinb)' == 'true'">
-      <ProjectReference Include="..\experimental\AinbModel.Contract\AinbModel.Contract.csproj" />
+      <PackageReference Include="AinbFormat" Version="0.1.0-alpha.1" />
     </ItemGroup>
     <ItemGroup Condition="'$(EnableExperimentalAinb)' != 'true'">
       <Compile Remove="Mergers\Ainb\**\*.cs" />
     </ItemGroup>
     <Target Name="RejectExperimentalAinbPackage" BeforeTargets="GenerateNuspec" Condition="'$(EnableExperimentalAinb)' == 'true'">
-      <Error Text="The experimental AINB contract is not a published dependency. Complete the codec/package handoff before packing this configuration." />
+      <Error Text="The experimental AINB dependency is not published yet. Confirm its release before packing this configuration." />
     </Target>
 
 </Project>

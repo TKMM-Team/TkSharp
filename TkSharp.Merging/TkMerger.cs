@@ -35,8 +35,8 @@ public sealed class TkMerger
 #if EXPERIMENTAL_AINB
     private AinbMerger? _ainbMerger;
 
-    // Configure before starting a merge. No codec is bundled or enabled by default.
-    public void UseExperimentalAinbCodec(AinbModel.Contract.IAinbCodec codec,
+    // Configure before starting a merge. The experimental merger is opt-in.
+    public void UseExperimentalAinbCodec(AinbFormat.IAinbCodec codec,
         Action<TkSharp.Merging.Mergers.Ainb.AinbMergeReport>? report = null)
     {
         ArgumentNullException.ThrowIfNull(codec);
