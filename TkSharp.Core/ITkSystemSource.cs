@@ -12,6 +12,4 @@ public interface ITkSystemSource
     ITkSystemSource GetRelative(string relativeSourcePath);
 
     IEnumerable<string> EnumerateRomfsBuckets() => [];
-
-    IEnumerable<string> EnumerateFiles(string relativeFolderPath) => [];
 }
