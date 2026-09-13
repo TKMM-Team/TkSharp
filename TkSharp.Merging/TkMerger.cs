@@ -218,8 +218,8 @@ public sealed class TkMerger
     {
         const int maxSubSdkCount = 9;
 
-        var written = 0;
-        var unique = 0;
+        var totalWrittenFileCount = 0;
+        var unwrittenOverflowFileCount = 0;
 
         System.Collections.Generic.HashSet<ulong> writtenHashes = [];
 
@@ -231,40 +231,29 @@ public sealed class TkMerger
                 continue;
             }
 
-            foreach (var file in changelog.SubSdkFiles)
-            {
-                byte[] data;
+            foreach (var file in changelog.SubSdkFiles) {
+                using var input = changelog.Source.OpenRead($"exefs/{file}");
+                var data = new byte[input.Length];
+                input.ReadExactly(data, 0, data.Length);
 
-                using (var input = changelog.Source.OpenRead($"exefs/{file}"))
-                {
-                    data = new byte[input.Length];
-                    input.ReadExactly(data, 0, data.Length);
-                }
-
-                if (!writtenHashes.Add(XxHash3.HashToUInt64(data)))
-                {
-                    TkLog.Instance.LogInformation(
-                        "Skipped duplicate SubSdk file '{SubSdkFile}'.",
-                        file);
+                if (!writtenHashes.Add(XxHash3.HashToUInt64(data))) {
                     continue;
                 }
 
-                unique++;
-
-                if (written >= maxSubSdkCount)
-                {
+                if (totalWrittenFileCount >= maxSubSdkCount) {
+                    unwrittenOverflowFileCount++;
                     continue;
                 }
 
-                using var output = mergeOutput.OpenWrite($"exefs/subsdk{++written}");
+                using var output = mergeOutput.OpenWrite($"exefs/subsdk{++totalWrittenFileCount}");
                 output.Write(data);
             }
         }
 
-        if (unique > maxSubSdkCount) {
+        if (unwrittenOverflowFileCount > 0) {
             TkLog.Instance.LogWarning(
                 "{Count} SubSdk files were skipped when merging from the lowest priority mods.",
-                unique - maxSubSdkCount);
+                unwrittenOverflowFileCount);
         }
     }
 
