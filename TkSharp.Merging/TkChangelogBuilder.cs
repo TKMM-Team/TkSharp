@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using TkSharp.Core;
 using TkSharp.Core.IO.Buffers;
 using TkSharp.Core.Models;
+using TkSharp.Merging.Bfres;
 using TkSharp.Merging.ChangelogBuilders;
 using TkSharp.Merging.ChangelogBuilders.GameData;
 using TkSharp.Merging.ResourceSizeTable;
@@ -127,9 +128,19 @@ public class TkChangelogBuilder(
 
     Copy:
         var outputFilePath = Path.Combine(path.Root.ToString(), canonical);
-        // ReSharper disable once ConvertToUsingDeclaration
         using (var output = _writer.OpenWrite(outputFilePath)) {
-            content.CopyTo(output);
+            if (BfresMcProcessor.IsTarget(path)) {
+                using var bfresRaw = RentedBuffer<byte>.Allocate(content);
+                if (new BfresMcProcessor(_tk).ProcessIfChanged(bfresRaw.Segment) is { } processed) {
+                    output.Write(processed);
+                }
+                else {
+                    output.Write(bfresRaw.Span);
+                }
+            }
+            else {
+                content.CopyTo(output);
+            }
         }
 
         return;
