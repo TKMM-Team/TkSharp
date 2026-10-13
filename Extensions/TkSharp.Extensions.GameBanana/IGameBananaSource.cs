@@ -4,14 +4,14 @@ public enum GameBananaSortMode
 {
     // ReSharper disable InconsistentNaming
     // ReSharper disable UnusedMember.Global
-    Generic_Newest,
-    Generic_Oldest,
-    Generic_LatestModified,
     Generic_NewAndUpdated,
+    Generic_Newest,
+    Generic_LatestModified,
     Generic_LatestUpdated,
     Generic_MostLiked,
     Generic_MostViewed,
-    Generic_MostDownloaded
+    Generic_MostDownloaded,
+    Generic_Oldest
 }
 
 public interface IGameBananaSource
