@@ -6,7 +6,7 @@ internal static class GameBananaFeedFilter
     {
         for (var i = feed.Records.Count - 1; i >= 0; i--) {
             var record = feed.Records[i];
-            if (record.IsObsolete || record.IsContentRated) {
+            if (record.IsObsolete || record.IsContentRated || record.Id == 480138) {
                 feed.Records.RemoveAt(i);
             }
         }
