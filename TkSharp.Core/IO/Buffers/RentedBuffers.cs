@@ -22,12 +22,12 @@ public readonly ref struct RentedBuffers<T> : IDisposable where T : unmanaged
             var size = Convert.ToInt32(streams[i].Length);
             sections[i] = totalBufferSize..(totalBufferSize += size);
         }
-        
+
         RentedBuffers<byte> buffers = new(totalBufferSize, sections, streams.Length);
         for (var i = 0; i < streams.Length; i++) {
             var stream = streams[i];
             _ = stream.Read(buffers[i].Span);
-            
+
             if (disposeStreams) {
                 stream.Dispose();
             }
@@ -35,41 +35,72 @@ public readonly ref struct RentedBuffers<T> : IDisposable where T : unmanaged
 
         return buffers;
     }
-    
+
+    public static RentedBuffers<byte> AllocateAndDecompress(ReadOnlySpan<Stream> streams, TkZstd zstd, bool disposeStreams = false)
+    {
+        var totalBufferSize = 0;
+        var sections = ArrayPool<Range>.Shared.Rent(streams.Length);
+        for (var i = 0; i < streams.Length; i++) {
+            var stream = streams[i];
+            var size = TkZstd.IsCompressed(stream) ? TkZstd.GetDecompressedSize(stream) : (int)stream.Length;
+            sections[i] = totalBufferSize..(totalBufferSize += size);
+        }
+
+        RentedBuffers<byte> buffers = new(totalBufferSize, sections, streams.Length);
+        for (var i = 0; i < streams.Length; i++) {
+            var stream = streams[i];
+            var span = buffers[i].Span;
+
+            if (span.Length > stream.Length) {
+                using var decompressed = zstd.Decompress(stream);
+                decompressed.Span.CopyTo(span);
+            }
+            else {
+                stream.ReadExactly(buffers[i].Span);
+            }
+
+            if (disposeStreams) {
+                stream.Dispose();
+            }
+        }
+
+        return buffers;
+    }
+
     public int Count { get; }
 
     public Entry this[int index] {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => new(_buffer, _sections[index]);
     }
-    
+
     public RentedBuffers()
     {
         _buffer = [];
         _sections = [];
     }
-    
+
     private RentedBuffers(ReadOnlySpan<int> sizes)
     {
         var totalBufferSize = 0;
-        
+
         Count = sizes.Length;
         _sections = ArrayPool<Range>.Shared.Rent(sizes.Length);
         for (var i = 0; i < sizes.Length; i++) {
             var size = sizes[i];
             _sections[i] = totalBufferSize..(totalBufferSize += size);
         }
-        
+
         _buffer = ArrayPool<T>.Shared.Rent(totalBufferSize);
     }
-    
+
     private RentedBuffers(int totalBufferSize, Range[] sections, int count)
     {
         _buffer = ArrayPool<T>.Shared.Rent(totalBufferSize);
         _sections = sections;
         Count = count;
     }
-    
+
     public void Dispose()
     {
         ArrayPool<T>.Shared.Return(_buffer);
@@ -80,7 +111,7 @@ public readonly ref struct RentedBuffers<T> : IDisposable where T : unmanaged
     {
         private readonly T[] _buffer = buffer;
         private readonly Range _range = range;
-        
+
         public Span<T> Span {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _buffer.AsSpan(_range);
@@ -128,5 +159,5 @@ public readonly ref struct RentedBuffers<T> : IDisposable where T : unmanaged
         public void Dispose()
         {
         }
-    } 
+    }
 }

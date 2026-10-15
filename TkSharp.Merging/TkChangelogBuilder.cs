@@ -73,7 +73,7 @@ public class TkChangelogBuilder(
     public TkChangelog Build()
     {
         GameDataCache.Cache(_tk, _baseDirectory!);
-        
+
         foreach (var (file, entry) in _source.Files) {
             BuildTarget(file, entry);
         }
@@ -195,7 +195,7 @@ public class TkChangelogBuilder(
                     TkLog.Instance.LogWarning("The target '{FileName}' was ignored due to incorrect characters in the file name", canon);
                     return Stream.Null;
                 }
-                
+
                 AddChangelogMetadata(path, ref canon, type, zsDictionaryId, path.FileVersion,
                     // Force the parent attributes onto the entry for all parent archives
                     archiveCanon, archiveCanon is not null ? parentAttributes : null);
@@ -263,7 +263,7 @@ public class TkChangelogBuilder(
                 // is disposed before this is used
                 result[++index] = output.ToArray();
             }
-            
+
             builder.Dispose();
         }
 
@@ -313,7 +313,7 @@ public class TkChangelogBuilder(
         if (path.Extension is ".bntx" && path.Canonical.EndsWith("__Combined.bntx")) {
             return new BntxChangelogBuilder(SessionRom, disposeTkRom: _sessionRom is null);
         }
-        
+
         return path switch {
             { Canonical: "GameData/GameDataList.Product.byml" } => GameDataChangelogBuilder.Instance,
             { Canonical: "RSDB/Tag.Product.rstbl.byml" } => RsdbTagChangelogBuilder.Instance,
@@ -341,6 +341,7 @@ public class TkChangelogBuilder(
             { Extension: ".msbt" } => MsbtChangelogBuilder.Instance,
             { Extension: ".bfarc" or ".bkres" or ".blarc" or ".genvb" or ".sarc" or ".ta" } => SarcChangelogBuilder.Instance,
             { Extension: ".bgyml" } => BymlChangelogBuilder.Instance,
+            { Extension: ".bars" } => BarsChangelogBuilder.Instance,
             { Extension: ".byml" } when path.Canonical[..4] is not "RSDB" && path.Canonical[..8] is not "GameData" => BymlChangelogBuilder.Instance,
             _ => null
         };
