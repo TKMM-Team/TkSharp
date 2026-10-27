@@ -15,6 +15,8 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
     private readonly ConcurrentBag<PackFileEntry> _cache = [];
     private readonly ConcurrentDictionary<string, Sarc> _trackedArchives = [];
     private readonly TkMerger _merger = merger;
+    private const string AI_GLOBAL_PACK_CANONICAL = "Pack/AI.Global.Product.pack";
+    public int? AiGlobalFileCount { get; private set; }
 
     public void Write()
     {
@@ -65,6 +67,10 @@ public sealed class TkPackFileCollector(TkMerger merger, TkResourceSizeCollector
             }
 
             resourceSizeCollector.Collect(sarc[name].Count, name, sarc[name], entry.Changelog.RuntimeResourceSizeOverride);
+        }
+
+        if (key.ArchiveCanonical == AI_GLOBAL_PACK_CANONICAL) {
+            AiGlobalFileCount = sarc.Count(entry => entry.Key.StartsWith("AI/", StringComparison.Ordinal));
         }
 
         using MemoryStream ms = new();

@@ -33,6 +33,7 @@ public sealed class TkMerger
     private readonly BfresMcMerger _bfresMcMerger;
     private readonly BntxMerger _bntxMerger;
     private readonly Dictionary<TkChangelog, Rstb> _resourceSizeOverrides = [];
+    internal byte[]? MergedHeapDef;
 
     public TkMerger(ITkModWriter output, ITkRom rom, string[]? locales = null, string? ipsOutputFolderPath = null)
     {
@@ -71,6 +72,11 @@ public sealed class TkMerger
 
         await Task.Run(() => {
             _packFileCollector.Write();
+
+            if (_packFileCollector.AiGlobalFileCount is { } aiGlobalFileCount) {
+                TkAiHeapDefPatcher.Apply(this, _rom, aiGlobalFileCount);
+            }
+            
             _resourceSizeCollector.Write();
         }, ct);
     }
@@ -97,6 +103,11 @@ public sealed class TkMerger
         }
 
         _packFileCollector.Write();
+
+        if (_packFileCollector.AiGlobalFileCount is { } aiGlobalFileCount) {
+            TkAiHeapDefPatcher.Apply(this, _rom, aiGlobalFileCount);
+        }
+
         _resourceSizeCollector.Write();
     }
 
@@ -396,6 +407,10 @@ public sealed class TkMerger
     {
         var buffer = input.GetSpan();
         _resourceSizeCollector.Collect(buffer.Count, relativePath, buffer, resourceSizeOverride);
+
+        if (TkAiHeapDefPatcher.IsHeapDefRelativePath(_rom, relativePath)) {
+            MergedHeapDef = buffer.ToArray();
+        }
 
         using var output = _output.OpenWrite(
             Path.Combine("romfs", relativePath));
