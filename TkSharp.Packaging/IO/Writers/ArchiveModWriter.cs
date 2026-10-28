@@ -1,6 +1,5 @@
 using System.IO.Compression;
 using TkSharp.Core;
-using TkSharp.Core.Extensions;
 
 namespace TkSharp.Packaging.IO.Writers;
 
@@ -16,13 +15,17 @@ public sealed class ArchiveModWriter : ITkModWriter
 
     public void Compile(Stream output)
     {
-        using ZipArchive writer = new(output, ZipArchiveMode.Create);
+        using ZipArchive writer = new(output, ZipArchiveMode.Create, leaveOpen: true);
 
         foreach (var (fileName, ms) in _entries.OrderBy(entry => entry.Key)) {
-            using var entry = writer.CreateEntry(fileName.Replace('\\', '/')).Open();
-            entry.Write(ms.GetSpan());
-            ms.Dispose();
+            using (ms) {
+                ms.Position = 0;
+                using var entry = writer.CreateEntry(fileName.Replace('\\', '/')).Open();
+                ms.CopyTo(entry);
+            }
         }
+
+        _entries.Clear();
     }
 
     public void SetRelativeFolder(string rootFolderPath)

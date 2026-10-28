@@ -52,10 +52,8 @@ public partial class TkProject(string folderPath) : ObservableObject
         ITkModWriter writer = new RomfsBucketModWriter(archiveWriter);
         await Build(writer, rom, ct: ct);
 
-        using MemoryStream contentArchiveOutput = new();
-        archiveWriter.Compile(contentArchiveOutput);
-
-        TkPackWriter.Write(output, Mod, contentArchiveOutput.GetSpan());
+        TkPackWriter.Write(output, Mod);
+        archiveWriter.Compile(output);
 
         TkLog.Instance.LogInformation("Packaged: '{ModName}'", Mod.Name);
     }
@@ -348,10 +346,8 @@ public partial class TkProject(string folderPath) : ObservableObject
         ArchiveModWriter writer = new();
         await BuildMetadata(writer, ct: ct);
 
-        using MemoryStream contentArchiveOutput = new();
-        writer.Compile(contentArchiveOutput);
-
-        TkPackWriter.Write(output, Mod, contentArchiveOutput.GetSpan());
+        TkPackWriter.Write(output, Mod);
+        writer.Compile(output);
 
         TkLog.Instance.LogInformation("Packaged '{ModName}'", Mod.Name);
     }
