@@ -1,11 +1,12 @@
 using System.IO.Compression;
 using TkSharp.Core;
+using TkSharp.Core.Extensions;
 
 namespace TkSharp.Packaging.IO.Writers;
 
 public sealed class ArchiveModWriter : ITkModWriter
 {
-    private string _root = string.Empty; 
+    private string _root = string.Empty;
     private readonly Dictionary<string, MemoryStream> _entries = [];
     
     public Stream OpenWrite(string filePath)
@@ -19,9 +20,8 @@ public sealed class ArchiveModWriter : ITkModWriter
 
         foreach (var (fileName, ms) in _entries.OrderBy(entry => entry.Key)) {
             using (ms) {
-                ms.Position = 0;
                 using var entry = writer.CreateEntry(fileName.Replace('\\', '/')).Open();
-                ms.CopyTo(entry);
+                entry.Write(ms.GetSpan());
             }
         }
 
